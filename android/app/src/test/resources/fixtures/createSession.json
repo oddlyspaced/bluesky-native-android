@@ -1,0 +1,9 @@
+{
+  "accessJwt": "REDACTED",
+  "refreshJwt": "REDACTED",
+  "did": "did:plc:ghobu76rtrwpqpiusuud54v2",
+  "handle": "alice.test",
+  "email": "fake1@fake.com",
+  "emailConfirmed": false,
+  "active": true
+}
