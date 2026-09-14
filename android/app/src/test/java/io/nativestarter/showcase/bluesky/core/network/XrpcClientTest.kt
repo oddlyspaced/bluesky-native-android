@@ -1,29 +1,47 @@
 package io.nativestarter.showcase.bluesky.core.network
 
-import kotlinx.coroutines.test.runTest
+import io.nativestarter.showcase.bluesky.core.session.InMemorySessionStore
+import io.nativestarter.showcase.bluesky.core.session.NotSignedInException
+import io.nativestarter.showcase.bluesky.core.session.Session
+import io.nativestarter.showcase.bluesky.core.session.SessionManager
+import io.nativestarter.showcase.bluesky.core.session.SessionState
+import io.nativestarter.showcase.bluesky.testing.Fixtures
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
-import io.nativestarter.showcase.bluesky.core.session.InMemorySessionStore
-import io.nativestarter.showcase.bluesky.core.session.Session
-import io.nativestarter.showcase.bluesky.core.session.SessionManager
-import io.nativestarter.showcase.bluesky.testing.Fixtures
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-/** Checks the header split from RN src/state/session/clients.ts and token refresh. */
+/** Header split from RN src/state/session/clients.ts, token refresh, sign-out and account scoping. */
 class XrpcClientTest {
     private val server = MockWebServer().apply { start() }
     private val proxy = "did:plc:bw7ad3erl7btq6qwf66yqiov#bsky_appview"
     private val client = XrpcClient(server.url("/").toString().trimEnd('/'), proxy)
+    private val me = Session("did:plc:me", "alice.test", "A1", "R1")
 
     @After fun tearDown() = server.shutdown()
 
+    private fun signedIn(session: Session = me, store: InMemorySessionStore = InMemorySessionStore(session)) =
+        SessionManager(client, store).also { runBlocking { it.restore() } }
+
     @Test
-    fun appviewReadsCarryProxyHeaderAndPdsWritesDoNot() = runTest {
-        val sessions = SessionManager(client, InMemorySessionStore(Session("did:plc:me", "alice.test", "A1", "R1")))
-        val repo = XrpcBskyRepository(client, sessions)
+    fun appviewReadsCarryProxyHeaderAndPdsWritesDoNot() = runBlocking {
+        val repo = XrpcBskyRepository(client, signedIn(), accountDid = me.did)
 
         server.enqueue(MockResponse().setBody(Fixtures.text("getTimeline.json")))
         repo.timeline()
@@ -38,27 +56,128 @@ class XrpcClientTest {
         assertEquals("/xrpc/com.atproto.repo.createRecord", write.path)
         assertNull(write.getHeader("atproto-proxy"))
         val body = write.body.readUtf8()
-        assert(body.contains("\"collection\":\"app.bsky.feed.like\"")) { body }
-        assert(body.contains("\"repo\":\"did:plc:me\"")) { body }
+        assertTrue(body, body.contains("\"collection\":\"app.bsky.feed.like\""))
+        assertTrue(body, body.contains("\"repo\":\"did:plc:me\""))
     }
 
     @Test
-    fun expiredTokenRefreshesOnceAndRetries() = runTest {
-        val store = InMemorySessionStore(Session("did:plc:me", "alice.test", "OLD", "R1"))
-        val sessions = SessionManager(client, store)
-        val repo = XrpcBskyRepository(client, sessions)
+    fun restoreReadsTheStoreOnce() = runBlocking {
+        val sessions = SessionManager(client, InMemorySessionStore(me))
+        assertEquals(SessionState.Restoring, sessions.state.value)
+        sessions.restore()
+        assertEquals(SessionState.SignedIn(me), sessions.state.value)
+        sessions.logout()
+        sessions.restore()
+        assertEquals("restore after sign-out must not bring the session back", SessionState.SignedOut, sessions.state.value)
+    }
+
+    @Test
+    fun expiredTokenRefreshesOnceAndRetries() = runBlocking {
+        val store = InMemorySessionStore(me.copy(accessJwt = "OLD"))
+        val repo = XrpcBskyRepository(client, signedIn(store = store), accountDid = me.did)
 
         server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error":"ExpiredToken","message":"Token has expired"}"""))
         server.enqueue(MockResponse().setBody("""{"accessJwt":"NEW","refreshJwt":"R2","did":"did:plc:me","handle":"alice.test"}"""))
         server.enqueue(MockResponse().setBody(Fixtures.text("getProfile.json")))
 
-        val profile = repo.profile("alice.test")
-        assertEquals("Alice", profile.displayName)
+        assertEquals("Alice", repo.profile("alice.test").displayName)
         server.takeRequest()
         val refresh = server.takeRequest()
         assertEquals("/xrpc/com.atproto.server.refreshSession", refresh.path)
         assertEquals("Bearer R1", refresh.getHeader("Authorization"))
         assertEquals("Bearer NEW", server.takeRequest().getHeader("Authorization"))
         assertEquals("NEW", store.load()?.accessJwt)
+    }
+
+    @Test
+    fun concurrentExpiredTokensShareOneRefresh() = runBlocking {
+        val refreshes = AtomicInteger()
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse = when {
+                request.path!!.startsWith("/xrpc/com.atproto.server.refreshSession") -> {
+                    refreshes.incrementAndGet()
+                    // A slow refresh makes the other callers queue behind the lock.
+                    MockResponse().setBodyDelay(200, TimeUnit.MILLISECONDS)
+                        .setBody("""{"accessJwt":"NEW","refreshJwt":"R2","did":"did:plc:me","handle":"alice.test"}""")
+                }
+                request.getHeader("Authorization") == "Bearer OLD" ->
+                    MockResponse().setResponseCode(400).setBody("""{"error":"ExpiredToken","message":"expired"}""")
+                else -> MockResponse().setBody(Fixtures.text("getProfile.json"))
+            }
+        }
+        val repo = XrpcBskyRepository(client, signedIn(me.copy(accessJwt = "OLD")), accountDid = me.did)
+        val results = (1..4).map { async(Dispatchers.IO) { repo.profile("alice.test").displayName } }.awaitAll()
+        assertEquals(List(4) { "Alice" }, results)
+        assertEquals("the single-use refresh token must be spent once", 1, refreshes.get())
+    }
+
+    @Test
+    fun terminalRefreshFailureSignsOut() = runBlocking {
+        val store = InMemorySessionStore(me.copy(accessJwt = "OLD"))
+        val sessions = signedIn(store = store)
+        val repo = XrpcBskyRepository(client, sessions, accountDid = me.did)
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error":"ExpiredToken","message":"expired"}"""))
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error":"ExpiredToken","message":"Token has been revoked"}"""))
+
+        try {
+            repo.profile("alice.test")
+            fail("expected the refresh failure to propagate")
+        } catch (e: XrpcException) {
+            assertEquals("ExpiredToken", e.error)
+        }
+        assertEquals(SessionState.SignedOut, sessions.state.value)
+        assertNull(store.load())
+    }
+
+    @Test
+    fun networkFailureDuringRefreshDoesNotSignOut() = runBlocking {
+        val sessions = signedIn(me.copy(accessJwt = "OLD"))
+        val repo = XrpcBskyRepository(client, sessions, accountDid = me.did)
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error":"ExpiredToken","message":"expired"}"""))
+        server.enqueue(MockResponse().setResponseCode(502).setBody("""{"error":"UpstreamFailure","message":"bad gateway"}"""))
+        runCatching { repo.profile("alice.test") }
+        assertTrue(sessions.state.value is SessionState.SignedIn)
+    }
+
+    @Test
+    fun signOutDuringRefreshStaysSignedOut() = runBlocking {
+        val paths = CopyOnWriteArrayList<String>()
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                paths += request.path!!.substringBefore('?') + " " + request.getHeader("Authorization")
+                return when {
+                    request.path!!.startsWith("/xrpc/com.atproto.server.refreshSession") -> MockResponse()
+                        .setBodyDelay(300, TimeUnit.MILLISECONDS)
+                        .setBody("""{"accessJwt":"NEW","refreshJwt":"R2","did":"did:plc:me","handle":"alice.test"}""")
+                    request.path!!.startsWith("/xrpc/com.atproto.server.deleteSession") -> MockResponse().setBody("{}")
+                    request.getHeader("Authorization") == "Bearer OLD" ->
+                        MockResponse().setResponseCode(400).setBody("""{"error":"ExpiredToken","message":"expired"}""")
+                    else -> MockResponse().setBody(Fixtures.text("getProfile.json"))
+                }
+            }
+        }
+        val store = InMemorySessionStore(me.copy(accessJwt = "OLD"))
+        val sessions = signedIn(store = store)
+        val repo = XrpcBskyRepository(client, sessions, accountDid = me.did)
+
+        val call = launch(Dispatchers.IO) { runCatching { repo.profile("alice.test") } }
+        withTimeout(5_000) { while (paths.none { it.contains("refreshSession") }) delay(10) }
+        sessions.logout()
+        call.join()
+
+        assertEquals(SessionState.SignedOut, sessions.state.value)
+        assertNull("a finished refresh must not write tokens after sign-out", store.load())
+        assertTrue(paths.toString(), paths.any { it == "/xrpc/com.atproto.server.deleteSession Bearer R2" })
+    }
+
+    @Test
+    fun callsForAnotherAccountFail() = runBlocking {
+        val repo = XrpcBskyRepository(client, signedIn(), accountDid = "did:plc:someone-else")
+        try {
+            repo.profile("alice.test")
+            fail("expected NotSignedInException")
+        } catch (e: NotSignedInException) {
+            assertEquals(0, server.requestCount)
+        }
     }
 }

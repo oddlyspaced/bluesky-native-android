@@ -56,7 +56,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import io.nativestarter.showcase.bluesky.AccountScope
 import io.nativestarter.showcase.bluesky.AppContainer
+import io.nativestarter.showcase.bluesky.core.common.runCatchingCancellable
+import io.nativestarter.showcase.bluesky.core.session.SessionState
 import io.nativestarter.showcase.bluesky.BuildConfig
 import io.nativestarter.showcase.bluesky.R
 import io.nativestarter.showcase.bluesky.core.network.BskyRepository
@@ -103,16 +106,18 @@ object Routes {
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun BlueskyRoot(container: AppContainer) {
-    val session by container.sessionManager.session.collectAsStateWithLifecycle()
+    val sessionState by container.sessionManager.state.collectAsStateWithLifecycle()
     val now = rememberMinuteTick()
     CompositionLocalProvider(LocalNow provides now) {
         // testTagsAsResourceId exposes Modifier.testTag as the resource id Maestro/UiAutomator match on.
         Box(Modifier.fillMaxSize().background(Theme.bg).semantics { testTagsAsResourceId = true }) {
-            val current = session
-            if (current == null) {
-                SignedOutScreen(container)
-            } else {
-                SignedInShell(container, current)
+            when (val state = sessionState) {
+                SessionState.Restoring -> Unit
+                SessionState.SignedOut -> SignedOutScreen(container)
+                is SessionState.SignedIn -> {
+                    val account = remember(state.session.did) { container.accountFor(state.session.did) }
+                    SignedInShell(account, state.session)
+                }
             }
         }
     }
@@ -154,8 +159,7 @@ private fun SignedOutScreen(container: AppContainer) {
                 Box(
                     Modifier.size(1.dp).background(Color.Red).testTag("e2eSignInAlice").pressable("Sign in as Alice") {
                         scope.launch {
-                            runCatching { container.sessionManager.login("alice.test", "hunter2") }
-                                .onSuccess { container.interactions.reset() }
+                            runCatchingCancellable { container.sessionManager.login("alice.test", "hunter2") }
                                 .onFailure { message = "Sign in failed: ${it.message}" }
                         }
                     },
@@ -163,8 +167,7 @@ private fun SignedOutScreen(container: AppContainer) {
                 Box(
                     Modifier.size(1.dp).background(Color.Red).testTag("e2eSignInBob").pressable("Sign in as Bob") {
                         scope.launch {
-                            runCatching { container.sessionManager.login("bob.test", "hunter2") }
-                                .onSuccess { container.interactions.reset() }
+                            runCatchingCancellable { container.sessionManager.login("bob.test", "hunter2") }
                                 .onFailure { message = "Sign in failed: ${it.message}" }
                         }
                     },
@@ -196,13 +199,13 @@ class ShellViewModel(private val repository: BskyRepository) : ViewModel() {
 
     init {
         viewModelScope.launch {
-            runCatching { repository.unreadNotificationCount() }.onSuccess { _unread.value = it }
+            runCatchingCancellable { repository.unreadNotificationCount() }.onSuccess { _unread.value = it }
         }
     }
 }
 
 @Composable
-private fun SignedInShell(container: AppContainer, session: Session) {
+private fun SignedInShell(account: AccountScope, session: Session) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
@@ -211,7 +214,7 @@ private fun SignedInShell(container: AppContainer, session: Session) {
 
     val shell: ShellViewModel = viewModel(
         key = "shell-${session.did}",
-        factory = viewModelFactory { initializer { ShellViewModel(container.repository) } },
+        factory = viewModelFactory { initializer { ShellViewModel(account.repository) } },
     )
     val unread by shell.unread.collectAsStateWithLifecycle()
     val openPost: (PostView) -> Unit = { nav.navigate(Routes.thread(it.uri)) }
@@ -219,14 +222,14 @@ private fun SignedInShell(container: AppContainer, session: Session) {
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             NavHost(nav, startDestination = Routes.HOME) {
-                composable(Routes.HOME) { HomeRoute(container, session, openPost, nav) }
+                composable(Routes.HOME) { HomeRoute(account, session, openPost, nav) }
                 composable(Routes.SEARCH) { NotInShowcase("Search") }
                 composable(Routes.MESSAGES) { NotInShowcase("Chat") }
                 composable(Routes.NOTIFICATIONS) { NotInShowcase("Notifications") }
-                composable(Routes.PROFILE) { ProfileRoute(container, session, openPost) }
+                composable(Routes.PROFILE) { ProfileRoute(account, session, openPost) }
                 composable(Routes.THREAD) { entry ->
                     val uri = Uri.decode(entry.arguments?.getString("uri").orEmpty())
-                    ThreadRoute(container, uri, openPost, onBack = { nav.popBackStack() })
+                    ThreadRoute(account, uri, openPost, onBack = { nav.popBackStack() })
                 }
                 composable(Routes.NOT_IN_SHOWCASE) { entry ->
                     val title = Uri.decode(entry.arguments?.getString("title").orEmpty())
@@ -260,10 +263,10 @@ private fun NavHostController.selectTab(route: String) {
 }
 
 @Composable
-private fun HomeRoute(container: AppContainer, session: Session, openPost: (PostView) -> Unit, nav: NavHostController) {
+private fun HomeRoute(account: AccountScope, session: Session, openPost: (PostView) -> Unit, nav: NavHostController) {
     val vm: FeedViewModel = viewModel(
         key = "feed-${session.did}",
-        factory = viewModelFactory { initializer { FeedViewModel(container.repository, container.interactions) } },
+        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     HomeScreen(
@@ -276,10 +279,10 @@ private fun HomeRoute(container: AppContainer, session: Session, openPost: (Post
 }
 
 @Composable
-private fun ProfileRoute(container: AppContainer, session: Session, openPost: (PostView) -> Unit) {
+private fun ProfileRoute(account: AccountScope, session: Session, openPost: (PostView) -> Unit) {
     val vm: ProfileViewModel = viewModel(
         key = "profile-${session.did}",
-        factory = viewModelFactory { initializer { ProfileViewModel(session.did, container.repository, container.interactions) } },
+        factory = viewModelFactory { initializer { ProfileViewModel(session.did, account.repository, account.interactions) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     ProfileScreen(
@@ -291,10 +294,10 @@ private fun ProfileRoute(container: AppContainer, session: Session, openPost: (P
 }
 
 @Composable
-private fun ThreadRoute(container: AppContainer, uri: String, openPost: (PostView) -> Unit, onBack: () -> Unit) {
+private fun ThreadRoute(account: AccountScope, uri: String, openPost: (PostView) -> Unit, onBack: () -> Unit) {
     val vm: ThreadViewModel = viewModel(
         key = "thread-$uri",
-        factory = viewModelFactory { initializer { ThreadViewModel(uri, container.repository, container.interactions) } },
+        factory = viewModelFactory { initializer { ThreadViewModel(uri, account.repository, account.interactions) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     ThreadScreen(

@@ -29,6 +29,9 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Release smoke builds only: signed with the local debug key so the APK installs on the emulator.
+            // Not a store configuration. Release keeps cleartext disabled and has no e2e controls.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -66,6 +69,7 @@ dependencies {
     // Used only for PullToRefreshBox; no Material components are drawn (keep-design).
     implementation("androidx.compose.material3:material3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     debugImplementation("androidx.compose.ui:ui-tooling")

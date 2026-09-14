@@ -6,6 +6,7 @@
     <application
         android:name=".BlueskyApp"
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
         android:label="Native showcase"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"

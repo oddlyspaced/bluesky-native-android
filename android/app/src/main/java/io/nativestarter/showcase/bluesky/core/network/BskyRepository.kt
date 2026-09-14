@@ -38,14 +38,16 @@ interface BskyRepository {
 class XrpcBskyRepository(
     private val client: XrpcClient,
     private val session: SessionManager,
+    /** Every call is scoped to this account; a call made after an account switch fails. */
+    private val accountDid: String? = null,
     private val clock: Clock = Clock.systemUTC(),
 ) : BskyRepository {
 
-    override suspend fun timeline(cursor: String?): FeedResponse = session.authed { s ->
+    override suspend fun timeline(cursor: String?): FeedResponse = session.authed(accountDid) { s ->
         decode(client.query("app.bsky.feed.getTimeline", mapOf("limit" to "30", "cursor" to cursor), s.accessJwt))
     }
 
-    override suspend fun authorFeed(actor: String, cursor: String?): FeedResponse = session.authed { s ->
+    override suspend fun authorFeed(actor: String, cursor: String?): FeedResponse = session.authed(accountDid) { s ->
         // RN profile "Posts" tab uses filter posts_and_author_threads (src/view/screens/Profile.tsx).
         decode(
             client.query(
@@ -56,22 +58,22 @@ class XrpcBskyRepository(
         )
     }
 
-    override suspend fun postThread(uri: String): ThreadNode = session.authed { s ->
+    override suspend fun postThread(uri: String): ThreadNode = session.authed(accountDid) { s ->
         decode<ThreadResponse>(client.query("app.bsky.feed.getPostThread", mapOf("uri" to uri), s.accessJwt)).thread
     }
 
-    override suspend fun profile(actor: String): ProfileViewDetailed = session.authed { s ->
+    override suspend fun profile(actor: String): ProfileViewDetailed = session.authed(accountDid) { s ->
         decode(client.query("app.bsky.actor.getProfile", mapOf("actor" to actor), s.accessJwt))
     }
 
-    override suspend fun unreadNotificationCount(): Int = session.authed { s ->
+    override suspend fun unreadNotificationCount(): Int = session.authed(accountDid) { s ->
         val page = decode<NotificationsResponse>(
             client.query("app.bsky.notification.listNotifications", mapOf("limit" to "40"), s.accessJwt),
         )
         page.notifications.count { !it.isRead }
     }
 
-    override suspend fun pinnedFeeds(): List<PinnedFeed> = session.authed { s ->
+    override suspend fun pinnedFeeds(): List<PinnedFeed> = session.authed(accountDid) { s ->
         val prefs = XrpcJson.parseToJsonElement(
             client.query("app.bsky.actor.getPreferences", emptyMap(), s.accessJwt, XrpcClient.Target.Pds),
         ).jsonObject["preferences"]?.jsonArray ?: JsonArray(emptyList())
@@ -106,7 +108,7 @@ class XrpcBskyRepository(
     override suspend fun repost(subject: StrongRef): String = createRecord("app.bsky.feed.repost", subject)
     override suspend fun deleteRepost(repostUri: String) = deleteRecord("app.bsky.feed.repost", repostUri)
 
-    private suspend fun createRecord(collection: String, subject: StrongRef): String = session.authed { s ->
+    private suspend fun createRecord(collection: String, subject: StrongRef): String = session.authed(accountDid) { s ->
         val body = buildJsonObject {
             put("repo", s.did)
             put("collection", collection)
@@ -123,7 +125,7 @@ class XrpcBskyRepository(
     }
 
     private suspend fun deleteRecord(collection: String, recordUri: String) {
-        session.authed { s ->
+        session.authed(accountDid) { s ->
             val body = buildJsonObject {
                 put("repo", s.did)
                 put("collection", collection)
