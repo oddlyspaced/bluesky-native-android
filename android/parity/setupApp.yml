@@ -1,0 +1,10 @@
+appId: io.nativestarter.showcase.bluesky
+---
+# Native counterpart of bsky-parity/setupApp.yml: fresh install state, wait for the signed-out screen.
+- launchApp:
+    appId: "io.nativestarter.showcase.bluesky"
+    clearState: true
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 180000
+- waitForAnimationToEnd
