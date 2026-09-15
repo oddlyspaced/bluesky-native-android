@@ -50,6 +50,10 @@ class AppContainer(
     val sessionManager = SessionManager(client, store)
     val toaster = Toaster()
 
+    /** Remote avatars and banners: memory cache and downsampling behind an interface (review A15). */
+    val imageLoader: io.nativestarter.showcase.bluesky.core.image.ImageLoader<android.graphics.Bitmap> =
+        io.nativestarter.showcase.bluesky.core.image.androidImageLoader()
+
     /** RN `TickEveryMinuteProvider`: one tick source for the process, started with the app (review P4). */
     val minuteTicker = io.nativestarter.showcase.bluesky.core.common.MinuteTicker(CoroutineScope(SupervisorJob() + Dispatchers.Default))
 

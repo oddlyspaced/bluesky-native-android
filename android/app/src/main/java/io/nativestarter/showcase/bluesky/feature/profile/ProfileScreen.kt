@@ -239,14 +239,15 @@ private fun ProfileHeader(profile: ProfileViewDetailed, onNotInShowcase: (String
     Box(modifier.fillMaxWidth().background(theme.bg)) {
         Column {
             // Shell: banner height 150; userBannerFallback is bg_contrast_25 when there is no banner.
-            Box(
+            io.nativestarter.showcase.bluesky.core.image.RemoteImage(
+                profile.banner,
                 Modifier
                     .fillMaxWidth()
                     .height(150.dp)
                     .background(theme.bgContrast25)
                     .semantics { contentDescription = if (profile.banner != null) "View profile banner" else "Profile banner placeholder" }
                     .testTag(if (profile.banner != null) "userBannerImage" else "userBannerFallback"),
-            )
+            ) {}
             Column(Modifier.padding(start = Space.lg, end = Space.lg, top = Space.md, bottom = Space.sm)) {
                 Row(
                     Modifier.fillMaxWidth().padding(bottom = Space.sm),

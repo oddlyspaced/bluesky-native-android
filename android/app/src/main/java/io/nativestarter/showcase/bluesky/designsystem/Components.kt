@@ -184,12 +184,19 @@ fun ShowcaseMark(size: Dp, modifier: Modifier = Modifier) {
 }
 
 /**
- * RN `UserAvatar`. Remote avatar images are not part of this slice (the seeded accounts have none),
- * so every account renders the RN fallback avatar.
+ * RN `UserAvatar`: the remote avatar, clipped to a circle, loaded through
+ * [io.nativestarter.showcase.bluesky.core.image.ImageLoader] at its pixel size (review A15). The fallback avatar
+ * shows while it loads, without an avatar, and on failure. The seeded accounts have no avatar.
  */
 @Composable
 fun UserAvatar(avatarUrl: String?, size: Dp, modifier: Modifier = Modifier) {
-    DefaultAvatar(size, modifier)
+    if (avatarUrl == null) {
+        DefaultAvatar(size, modifier)
+    } else {
+        io.nativestarter.showcase.bluesky.core.image.RemoteImage(avatarUrl, modifier.size(size).clip(CircleShape)) {
+            DefaultAvatar(size)
+        }
+    }
 }
 
 /** RN `FABInner`: 56dp circle, primary_500, EditBig icon. */

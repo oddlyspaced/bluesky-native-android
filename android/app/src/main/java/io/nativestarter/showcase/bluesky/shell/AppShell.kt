@@ -156,6 +156,7 @@ fun BlueskyRoot(container: AppContainer) {
     ProvideAlfTheme {
         CompositionLocalProvider(
             LocalNow provides now,
+            io.nativestarter.showcase.bluesky.core.image.LocalImageLoader provides container.imageLoader,
             LocalHaptics provides container.haptics,
             LocalToaster provides container.toaster,
             LocalAnalytics provides container.analytics,
