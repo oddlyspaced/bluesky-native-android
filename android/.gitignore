@@ -6,3 +6,4 @@ parity/logs/
 shots/
 # Pack capture output (run-pack.sh). Measured numbers live in PARITY.md.
 parity/out/
+parity/out2/
