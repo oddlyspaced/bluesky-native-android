@@ -8,6 +8,8 @@ import io.nativestarter.showcase.bluesky.core.network.XrpcJson
 import io.nativestarter.showcase.bluesky.designsystem.text.RichSegment
 import io.nativestarter.showcase.bluesky.designsystem.text.RichTextModel
 import io.nativestarter.showcase.bluesky.feature.feed.AuthorFeedFilter
+import io.nativestarter.showcase.bluesky.feature.feed.FALLBACK_MARKER_URI
+import io.nativestarter.showcase.bluesky.feature.feed.FeedUiState
 import io.nativestarter.showcase.bluesky.feature.feed.FeedPage
 import io.nativestarter.showcase.bluesky.feature.feed.FeedPager
 import io.nativestarter.showcase.bluesky.feature.feed.FeedReason
@@ -157,6 +159,33 @@ class Cp01FeedLogicTest {
         assertEquals("the stale page 2 was not appended", 1, s.pages.size)
         assertEquals("c1", s.cursor)
         assertFalse(s.isFetching)
+    }
+
+    @Test
+    fun failedRefreshKeepsOnlyPageOneWithoutTheFallbackMarker() = runTest(UnconfinedTestDispatcher()) {
+        // RN truncateAndInvalidate: keep page 1 and its page param, then refetch. Page 2 is where Following ran out.
+        var failFollowing = false
+        val source = HomeFeedSource { cursor ->
+            if (failFollowing) error("HTTP 500")
+            if (cursor == null) FeedResponse(listOf(itemFor(1)), "c1") else FeedResponse(emptyList(), null)
+        }
+        val pager = FeedPager(scope = this, fetch = source::fetch, selectedCount = { 1 })
+        pager.refresh()
+        assertEquals("auto-pagination loaded page 2 with the marker", 2, pager.state.value.pages.size)
+        assertTrue(pager.state.value.items.any { it.post.uri == FALLBACK_MARKER_URI })
+        failFollowing = true
+        pager.refresh(isPullToRefresh = true)
+        val s = pager.state.value
+        assertEquals("page 1 only", listOf(itemFor(1)), s.items)
+        assertFalse("no fallback marker after the truncation", s.items.any { it.post.uri == FALLBACK_MARKER_URI })
+        assertEquals("page 1's cursor, so RN still has a next page", "c1", s.cursor)
+        assertTrue(s.hasNextPage)
+        assertNotNull(s.error)
+        assertFalse(s.isFetching)
+        // PostFeed rows: page 1 plus the load-more retry row; end of feed is hidden while in error.
+        val ui = FeedUiState(rows = listOf(), isFetched = true, isFetching = false, hasNextPage = s.hasNextPage, isEmpty = false, error = s.error)
+        assertTrue(ui.showLoadMoreError)
+        assertFalse(ui.showEndOfFeed)
     }
 
     @Test

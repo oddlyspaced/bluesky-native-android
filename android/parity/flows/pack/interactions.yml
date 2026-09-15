@@ -29,6 +29,11 @@ appId: ${APP_ID}
     visible:
       id: "repostCount"
     timeout: 10000
+# Wait until the feed has finished paging: FollowingEndOfFeed renders only when
+# `!hasNextPage && !isEmpty && !isFetching && !isError` (PostFeed.tsx:950-951), so both apps show the same moment.
+- extendedWaitUntil:
+    visible: ".*reached the end of your feed.*"
+    timeout: 60000
 - waitForAnimationToEnd
 - takeScreenshot: home
 - tapOn: "Thread root"

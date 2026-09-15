@@ -27,9 +27,17 @@ appId: ${APP_ID}
     timeout: 15000
 - takeScreenshot: thread
 - back
+# Pull to refresh. RN PostFeed refreshFeed runs truncateAndInvalidate (keep page 1, refetch). After the reseed the
+# old session gets HTTP 500 from getTimeline, so both apps end in the failed-refresh state: page 1 rows plus the
+# load-more retry row (PostFeed.tsx `isError && !isEmpty`). Wait for that row, so the screenshot is taken after the
+# refresh has failed and not before it starts (React Query retries first).
 - swipe:
-    direction: DOWN
+    start: 50%, 40%
+    end: 50%, 80%
     duration: 600
+- extendedWaitUntil:
+    visible: "There was an issue fetching posts. Tap here to try again."
+    timeout: 60000
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: home

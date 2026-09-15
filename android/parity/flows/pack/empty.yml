@@ -17,10 +17,12 @@ appId: ${APP_ID}
 - takeScreenshot: home
 - tapOn:
     id: "bottomBarProfileBtn"
-# Wait for the loaded Posts tab, not only the profile header: RN shows the header before the feed query ends.
+# Wait for the loaded Posts tab, not only the profile header: RN shows ProfileHeaderLoading while the profile
+# query is pending (Profile.tsx `isDidPending || isProfilePending`), then the feed. The empty seed still creates
+# the six follows (mock-server.ts `follows`), so alice has 2 followers and 2 following, as in the full seed.
 - extendedWaitUntil:
     visible: "No posts yet"
-    timeout: 30000
+    timeout: 90000
 - runFlow:
     file: wait-profile-counts.yml
 - waitForAnimationToEnd:

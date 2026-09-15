@@ -23,6 +23,8 @@ data class FeedPagerState(
     /** RN `isError`: the last fetch (first page, refresh or next page) failed. */
     val error: Throwable? = null,
     val generation: Int = 0,
+    /** The cursor returned with page 1: RN keeps `pageParams.slice(0, 1)` on a refresh. */
+    val firstPageCursor: String? = null,
 ) {
     val items: List<FeedViewPost> get() = pages.flatten()
 }
@@ -49,11 +51,26 @@ class FeedPager(
     val state: StateFlow<FeedPagerState> = _state.asStateFlow()
     private var job: Job? = null
 
-    /** First load, pull to refresh and soft reset (`truncateAndInvalidate`: keep only a fresh first page). */
+    /**
+     * First load, pull to refresh and soft reset. RN `truncateAndInvalidate` (src/state/queries/util.ts:151-165)
+     * first keeps only page 1 and its page param, then refetches. If the refetch fails, the query keeps page 1 and is
+     * in error, so `PostFeed` shows page 1, the load-more retry row, and no fallback marker from later pages.
+     */
     fun refresh(isPullToRefresh: Boolean = false) {
         job?.cancel()
         val generation = _state.value.generation + 1
-        _state.update { it.copy(isFetching = true, isFetchingNextPage = false, isRefreshing = isPullToRefresh, generation = generation) }
+        _state.update {
+            val truncated = it.pages.isNotEmpty()
+            it.copy(
+                pages = it.pages.take(1),
+                cursor = if (truncated) it.firstPageCursor else it.cursor,
+                hasNextPage = if (truncated) it.firstPageCursor != null else it.hasNextPage,
+                isFetching = true,
+                isFetchingNextPage = false,
+                isRefreshing = isPullToRefresh,
+                generation = generation,
+            )
+        }
         job = scope.launch {
             runCatchingCancellable { fetch(null) }
                 .onSuccess { page ->
@@ -64,6 +81,7 @@ class FeedPager(
                         hasNextPage = page.cursor != null,
                         isFetched = true,
                         generation = generation,
+                        firstPageCursor = page.cursor,
                     )
                     autoPaginate(generation)
                 }
