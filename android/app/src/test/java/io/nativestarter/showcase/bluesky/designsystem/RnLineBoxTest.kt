@@ -1,6 +1,7 @@
 package io.nativestarter.showcase.bluesky.designsystem
 
 import io.nativestarter.showcase.bluesky.designsystem.text.FontMetricsPx
+import io.nativestarter.showcase.bluesky.designsystem.text.RnFontScale
 import io.nativestarter.showcase.bluesky.designsystem.text.RnTextRules
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -70,5 +71,71 @@ class RnLineBoxTest {
         val box = RnTextRules.box(regular45, null, includeFontPadding = false)
         assertEquals(55, box.height(1))
         assertEquals(44, box.firstBaseline)
+    }
+
+    /**
+     * Android 16 `FontScaleConverterFactory` tables (sources android-36.1) and the `FontScaleConverterImpl`
+     * interpolation, for the sizes below. JVM tests have no `TypedValue`, so the test holds the platform data.
+     */
+    private val fromSp = floatArrayOf(8f, 10f, 12f, 14f, 18f, 20f, 24f, 30f, 100f)
+    private val toDp = mapOf(
+        1.3f to floatArrayOf(10.4f, 13f, 15.6f, 18.8f, 21.6f, 23.6f, 26.4f, 30f, 100f),
+        2.0f to floatArrayOf(16f, 20f, 24f, 26f, 30f, 34f, 36f, 38f, 100f),
+    )
+
+    private fun scaledPx(sp: Float, fontScale: Float, density: Float = 3f): Float {
+        val table = toDp[fontScale] ?: return sp * fontScale * density
+        val i = fromSp.indexOfLast { it <= sp }
+        if (fromSp[i] == sp) return table[i] * density
+        val t = (sp - fromSp[i]) / (fromSp[i + 1] - fromSp[i])
+        return (table[i] + t * (table[i + 1] - table[i])) * density
+    }
+
+    private fun sizePx(sp: Float, scale: Float) = RnTextRules.fontSizePx(RnTextRules.pixelFromSp(sp, scaledPx(sp, scale), 3f, null))
+    private fun lineHeightPx(sp: Float, scale: Float) = RnTextRules.pixelFromSp(sp, scaledPx(sp, scale), 3f, null)
+
+    @Test
+    fun postTextLineBoxAtFontScales() {
+        // text_md 15 sp, leading_snug: lineHeight round(19.5) = 20 dp. Both go through the SP conversion.
+        assertEquals(45, sizePx(15f, 1.0f))
+        assertEquals(60, RnTextRules.box(regular45, lineHeightPx(20f, 1.0f), true).height(1))
+        // 1.3: 15 sp -> 19.5 dp -> 58.5 px -> 59 px; 20 sp -> 23.6 dp -> 70.8 px -> 71 px.
+        assertEquals(59, sizePx(15f, 1.3f))
+        val box13 = RnTextRules.box(metrics(59, 2269, -660), lineHeightPx(20f, 1.3f), true)
+        assertEquals(71, box13.height(1))
+        assertEquals(213, box13.height(3))
+        // 2.0: 15 sp -> 27 dp -> 81 px; 20 sp -> 34 dp -> 102 px. Linear scaling would give 90 and 120.
+        assertEquals(81, sizePx(15f, 2.0f))
+        val box20 = RnTextRules.box(metrics(81, 2269, -660), lineHeightPx(20f, 2.0f), true)
+        assertEquals(102, box20.height(1))
+        // Leading 102 - (78 + 20) = 4: ascent -78 - 2 = -80.
+        assertEquals(80, box20.firstBaseline)
+    }
+
+    @Test
+    fun metaAndLegacyLineBoxesAtFontScale2() {
+        // PostMeta, text_md leading_tight: 17 dp -> 29 dp at 2.0 -> 87 px.
+        assertEquals(87, RnTextRules.box(metrics(81, 2269, -660), lineHeightPx(17f, 2.0f), true).height(1))
+        // Legacy Text md (no line height) at 81 px: pitch 98, padding 12 above and 6 below.
+        val legacy = RnTextRules.box(metrics(81, 2269, -660), null, includeFontPadding = true)
+        assertEquals(98, legacy.pitch)
+        assertEquals(214, legacy.height(2))
+    }
+
+    @Test
+    fun maxFontSizeMultiplierCapsTheScaledLineBox() {
+        // Bottom bar badge, 12 sp with maxFontSizeMultiplier 1.5: 12 sp -> 24 dp at 2.0, capped at 12 * 3 * 1.5 = 54 px.
+        assertEquals(54, RnTextRules.fontSizePx(RnTextRules.pixelFromSp(12f, scaledPx(12f, 2.0f), 3f, 1.5f)))
+    }
+
+    @Test
+    fun jsHeaderOffsetExceedsTheRealTabTextBox() {
+        // useHeaderOffset: 20 * fontScale dp. The tab text line box: 20 sp through the converter.
+        assertEquals(0f, RnFontScale.jsLineHeightExcessPx(20f, scaledPx(20f, 1.0f), 3f, 1.0f), 0.01f)
+        // 1.3: 78 px predicted, 71 px real.
+        assertEquals(7f, RnFontScale.jsLineHeightExcessPx(20f, scaledPx(20f, 1.3f), 3f, 1.3f), 0.01f)
+        // 2.0: 120 px predicted, 102 px real. Measured on emulator-5554: RN composer prompt border at y 675,
+        // native (without this rule) at y 657, with the tab bar border at y 471 in both.
+        assertEquals(18f, RnFontScale.jsLineHeightExcessPx(20f, scaledPx(20f, 2.0f), 3f, 2.0f), 0.01f)
     }
 }

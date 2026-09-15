@@ -63,9 +63,12 @@ object RnTextRules {
     /** `TextAttributes.effectiveFontSize`. */
     fun fontSizePx(pixelFromSp: Float): Int = ceil(pixelFromSp.toDouble()).toInt()
 
+    /** `CustomLineHeightSpan.lineHeight`: the line box of an explicit line height. */
+    fun lineHeightPx(lineHeightPx: Float): Int = ceil(lineHeightPx.toDouble()).toInt()
+
     fun box(fm: FontMetricsPx, lineHeightPx: Float?, includeFontPadding: Boolean): RnLineBox {
         if (lineHeightPx != null && !lineHeightPx.isNaN()) {
-            val lineHeight = ceil(lineHeightPx.toDouble()).toInt()
+            val lineHeight = lineHeightPx(lineHeightPx)
             val leading = lineHeight - ((-fm.ascent) + fm.descent)
             val ascent = fm.ascent - ceil(leading / 2.0f).toInt()
             return RnLineBox(pitch = lineHeight, firstBaseline = -ascent, padTop = 0, padBottom = 0)
@@ -76,6 +79,42 @@ object RnTextRules {
         } else {
             RnLineBox(pitch = pitch, firstBaseline = -fm.ascent, padTop = 0, padBottom = 0)
         }
+    }
+}
+
+/**
+ * Font scale outside the text node. React Native has two font-scale paths on Android, and they disagree above 1.0:
+ * - Text: `PixelUtil.toPixelFromSP` uses `TypedValue.applyDimension(SP)`. On API 34+ that goes through the
+ *   platform `FontScaleConverter`, which is nonlinear (at 2.0, 20 sp is 34 dp, not 40 dp). [RnText] follows it.
+ * - JS layout: `useWindowDimensions().fontScale` is `Configuration.fontScale`, a linear factor. RN code that
+ *   predicts a text height as `lineHeight * fontScale` therefore gets more space than the text takes.
+ *
+ * Example: `useHeaderOffset` (src/components/hooks/useHeaderOffset.ts) is `52 + 23 + 20 * fontScale - 4` dp, and
+ * the feed list uses it as `paddingTop` and in `FeedFooter`. The tab text in the header is a real text node with
+ * lineHeight 20, so the list content starts [jsLineHeightExcessPx] below the measured header.
+ */
+object RnFontScale {
+    /** `lineHeightDp * PixelRatio.getFontScale()` in pixels: the JS prediction. */
+    fun jsPredictedPx(lineHeightDp: Float, density: Float, fontScale: Float): Float = lineHeightDp * density * fontScale
+
+    /**
+     * How much taller the JS prediction is than the real line box of a text with that line height.
+     * [scaledLineHeightPx] is `TypedValue.applyDimension(SP, lineHeightDp)`. Zero at font scale 1.0.
+     */
+    fun jsLineHeightExcessPx(lineHeightDp: Float, scaledLineHeightPx: Float, density: Float, fontScale: Float, maxFontScale: Float? = null): Float =
+        jsPredictedPx(lineHeightDp, density, fontScale) -
+            RnTextRules.lineHeightPx(RnTextRules.pixelFromSp(lineHeightDp, scaledLineHeightPx, density, maxFontScale))
+}
+
+/** [RnFontScale.jsLineHeightExcessPx] for the current configuration, in dp. */
+@Composable
+fun rememberJsLineHeightExcess(lineHeightDp: Float): androidx.compose.ui.unit.Dp {
+    val context = LocalContext.current
+    val density = LocalDensity.current.density
+    val fontScale = LocalConfiguration.current.fontScale
+    return remember(lineHeightDp, density, fontScale) {
+        val scaled = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, lineHeightDp, context.resources.displayMetrics)
+        androidx.compose.ui.unit.Dp(RnFontScale.jsLineHeightExcessPx(lineHeightDp, scaled, density, fontScale) / density)
     }
 }
 

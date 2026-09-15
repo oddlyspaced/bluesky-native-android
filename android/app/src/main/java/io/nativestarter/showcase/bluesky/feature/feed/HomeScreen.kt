@@ -73,6 +73,7 @@ import io.nativestarter.showcase.bluesky.designsystem.Radius
 import io.nativestarter.showcase.bluesky.designsystem.ShowcaseMark
 import io.nativestarter.showcase.bluesky.designsystem.Space
 import io.nativestarter.showcase.bluesky.designsystem.Txt
+import io.nativestarter.showcase.bluesky.designsystem.text.rememberJsLineHeightExcess
 import io.nativestarter.showcase.bluesky.designsystem.UserAvatar
 import io.nativestarter.showcase.bluesky.designsystem.alfText
 import io.nativestarter.showcase.bluesky.designsystem.feed.ErrorMessage
@@ -171,8 +172,11 @@ fun HomeScreen(
         if (endReached && state.isFetched) callbacks.onEndReached()
     }
 
+    // RN useHeaderOffset predicts the tab text as `20 * fontScale` (linear); the tab text itself scales nonlinearly.
+    val headerTextExcess = rememberJsLineHeightExcess(TAB_TEXT_LINE_HEIGHT_DP)
+    val headerOffset = headerHeightDp + headerTextExcess
     Box(modifier.fillMaxSize().background(theme.bg).testTag("homeScreen")) {
-        val contentTop = statusBarTop + headerHeightDp
+        val contentTop = statusBarTop + headerOffset
         if (state.selectedTab != 0) {
             NotInShowcase(state.feedTabs[state.selectedTab], Modifier.padding(top = contentTop))
         } else {
@@ -190,7 +194,7 @@ fun HomeScreen(
                     )
                 },
             ) {
-                FeedList(state, callbacks, listState, contentTop, headerHeightDp, currentAccountDid)
+                FeedList(state, callbacks, listState, contentTop, headerOffset, currentAccountDid)
             }
         }
         // Status bar area stays pinned; the header below it translates up and fades ((1 - mode)^2).
@@ -228,6 +232,9 @@ fun HomeScreen(
         }
     }
 }
+
+/** RN `useHeaderOffset` `normalLineHeight`: the tab bar text line height it predicts, in dp. */
+private const val TAB_TEXT_LINE_HEIGHT_DP = 20f
 
 @Composable
 private fun FeedList(
