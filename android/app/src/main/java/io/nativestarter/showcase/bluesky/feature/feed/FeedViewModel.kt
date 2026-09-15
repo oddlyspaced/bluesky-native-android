@@ -87,15 +87,29 @@ class FeedViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState())
 
+    private val preferencesLoaded = MutableStateFlow(false)
+    private val pinnedFeedsLoaded = MutableStateFlow(false)
+
+    /**
+     * RN Home.tsx renders `HomeScreenReady`, which logs `home:feedDisplayed` on focus, only when
+     * `preferences && pinnedFeedInfos && !isPinnedFeedsLoading`. After a failed load it stays false.
+     */
+    val homeReady: StateFlow<Boolean> = combine(preferencesLoaded, pinnedFeedsLoaded) { p, f -> p && f }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     init {
         viewModelScope.launch {
             runCatchingCancellable { repository.preferences() }.onSuccess {
                 preferencesCache?.put(it)
                 prefs.value = it.homeFeed
+                preferencesLoaded.value = true
             }
         }
         viewModelScope.launch {
-            runCatchingCancellable { HomeTabs.from(repository.pinnedFeeds()) }.onSuccess { tabs.value = it }
+            runCatchingCancellable { HomeTabs.from(repository.pinnedFeeds()) }.onSuccess {
+                tabs.value = it
+                pinnedFeedsLoaded.value = true
+            }
         }
         pager.refresh()
     }

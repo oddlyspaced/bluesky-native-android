@@ -79,6 +79,19 @@ class EventRulesTest {
     }
 
     @Test
+    fun homeIsReadyOnlyAfterPreferencesAndPinnedFeedsLoad() = runTest {
+        val repo = FakeBskyRepository()
+        val interactions = PostInteractions(repo, CoroutineScope(Dispatchers.Main), analytics) { 2 }
+        assertEquals(true, FeedViewModel(repo, interactions, analytics, "did:plc:alice").homeReady.value)
+        val failing = FakeBskyRepository().apply { failPreferences = true }
+        val failingInteractions = PostInteractions(failing, CoroutineScope(Dispatchers.Main), analytics) { 2 }
+        assertFalse(
+            "RN keeps HomeScreenReady unmounted without preferences, so home:feedDisplayed is not logged",
+            FeedViewModel(failing, failingInteractions, analytics, "did:plc:alice").homeReady.value,
+        )
+    }
+
+    @Test
     fun threadPreferencesKeepTheRawSortAndTreeFlag() {
         val none = UserPreferences.parse(Fixtures.text("getPreferences.json"))
         assertEquals("hotness", none.threadSortRaw)

@@ -55,13 +55,17 @@ fun HomeRoute(account: AccountScope, session: Session, navigator: AppNavigator) 
         factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did, account.postCache, account.preferences) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    // RN Home.tsx useFocusEffect: `home:feedDisplayed` with reason 'focus'.
-    LifecycleResumeEffect(Unit) {
-        analytics.metric(
-            "home:feedDisplayed",
-            mapOf("index" to state.selectedTab, "feedType" to "following", "feedUrl" to "following", "reason" to "focus"),
-        )
-        onPauseOrDispose { }
+    // RN Home.tsx `HomeScreenReady` useFocusEffect: `home:feedDisplayed` with reason 'focus'. RN mounts
+    // HomeScreenReady only after preferences and pinned feeds load, so the event waits for both.
+    val homeReady by vm.homeReady.collectAsStateWithLifecycle()
+    if (homeReady) {
+        LifecycleResumeEffect(Unit) {
+            analytics.metric(
+                "home:feedDisplayed",
+                mapOf("index" to state.selectedTab, "feedType" to "following", "feedUrl" to "following", "reason" to "focus"),
+            )
+            onPauseOrDispose { }
+        }
     }
     val softResets = remember(account) { account.softReset.resets.filter { it == Routes.HOME }.map { } }
     HomeScreen(

@@ -11,6 +11,6 @@
 {"name":"post:like","props":{"logContext":"FeedItem","doesPosterFollowLiker":true,"doesLikerFollowPoster":true,"feedDescriptor":"following"}}
 {"name":"post:repost","props":{"logContext":"FeedItem","feedDescriptor":"following"}}
 {"name":"post:clickthroughItem","props":{"logContext":"FeedItem","feedDescriptor":"following"}}
-{"name":"router:navigate","props":{"from":"Home"}}
 {"name":"post:view","props":{"isReply":false,"logContext":"Post","feedDescriptor":"following"}}
+{"name":"router:navigate","props":{"from":"Home"}}
 {"name":"post:view","props":{"isReply":true,"logContext":"PostThreadItem"}}
