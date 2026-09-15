@@ -12,6 +12,8 @@ import io.nativestarter.showcase.bluesky.core.network.PostCache
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostSource
 import io.nativestarter.showcase.bluesky.core.network.PostView
+import io.nativestarter.showcase.bluesky.core.network.PreferencesCache
+import io.nativestarter.showcase.bluesky.core.network.UserPreferences
 import io.nativestarter.showcase.bluesky.core.network.ThreadV2Response
 import io.nativestarter.showcase.bluesky.core.network.XrpcException
 import kotlinx.coroutines.Job
@@ -61,6 +63,8 @@ class ThreadViewModel(
     private val postCache: PostCache = PostCache(),
     /** RN `useUnstablePostSource(uri)`, consumed once when the screen opens. */
     private val source: PostSource? = null,
+    /** RN `usePreferencesQuery` data for the account, shared with the feed. */
+    private val preferencesCache: PreferencesCache = PreferencesCache(),
 ) : ViewModel() {
     private data class Query(
         /** Null until the thread preferences load (RN `isThreadPreferencesLoaded`). */
@@ -89,6 +93,10 @@ class ThreadViewModel(
 
     /** PostControls read `logContext` and the feed descriptor of the feed the thread was opened from. */
     private val context = InteractionContext(LOG_CONTEXT, source?.feedDescriptor)
+
+    /** RN `useThreadPreferences` `useState(serverPrefs)`: the preferences the screen had when it opened. */
+    private val preferencesAtOpen: UserPreferences? = preferencesCache.value
+    private var loggedPreferencesLoad = false
 
     val state: StateFlow<ThreadUiState> = combine(query, otherItemsVisible, otherReplies, window, interactions.shadows) { q, visible, other, w, shadows ->
         val isPlaceholderData = q.data == null && q.error == null
@@ -143,7 +151,9 @@ class ThreadViewModel(
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
             query.update { it.copy(isFetching = true) }
-            val sort = query.value.sort ?: runCatchingCancellable { repository.preferences().threadSort }
+            val sort = query.value.sort ?: runCatchingCancellable { repository.preferences() }
+                .onSuccess(::onPreferencesLoaded)
+                .map { it.threadSort }
                 .getOrDefault(UNKNOWN_SORT)
                 .also { loaded -> query.update { it.copy(sort = loaded) } }
             runCatchingCancellable { repository.postThreadV2(anchorUri, sort) }
@@ -155,6 +165,24 @@ class ThreadViewModel(
                 }
                 .onFailure { e -> query.update { it.copy(error = e, isFetching = false) } }
         }
+    }
+
+    /**
+     * RN `useThreadPreferences` (src/state/queries/preferences/useThreadPreferences.ts:50-71): `thread:preferences:load`
+     * once per screen, when server preferences arrive that differ from those the screen had at mount
+     * (`prevServerPrefs !== serverPrefs`). `usePreferencesQuery` uses `replaceEqualDeep`, so preferences already
+     * loaded by the feed, and an equal reload, log nothing. A failed load logs nothing (review N22).
+     * Props: the raw `sort` (with the "hotness" default) and `view` from `lab_treeViewEnabled`.
+     */
+    private fun onPreferencesLoaded(loaded: UserPreferences) {
+        preferencesCache.put(loaded)
+        val current = preferencesCache.value ?: return
+        if (loggedPreferencesLoad || current == preferencesAtOpen) return
+        loggedPreferencesLoad = true
+        analytics.metric(
+            "thread:preferences:load",
+            linkedMapOf("sort" to current.threadSortRaw, "view" to if (current.treeViewEnabled) "tree" else "linear"),
+        )
     }
 
     /** `ThreadItemShowOtherReplies`: `onPress()` then `thread:click:showOtherReplies`. */

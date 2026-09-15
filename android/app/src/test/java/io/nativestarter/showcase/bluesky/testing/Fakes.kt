@@ -100,7 +100,16 @@ class FakeBskyRepository(
 
     override suspend fun unreadNotificationCount(): Int = 1
     override suspend fun pinnedFeeds(): List<PinnedFeed> = pinned
-    override suspend fun preferences(): UserPreferences = UserPreferences.parse(Fixtures.text("getPreferences.json"))
+    /** Makes `getPreferences` fail. */
+    var failPreferences = false
+    /** Overrides the preferences fixture. */
+    var preferencesResponse: UserPreferences? = null
+
+    override suspend fun preferences(): UserPreferences {
+        calls += "preferences"
+        if (failPreferences) error("offline")
+        return preferencesResponse ?: UserPreferences.parse(Fixtures.text("getPreferences.json"))
+    }
 
     override suspend fun like(subject: StrongRef, via: StrongRef?): String =
         write("like:${subject.uri}:via=${via?.uri}") { "at://did:plc:me/app.bsky.feed.like/${next++}" }

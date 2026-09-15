@@ -10,10 +10,17 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -55,7 +62,6 @@ fun LazyListScope.postFeedItems(
     items(state.rows, key = { it.key }, contentType = { it::class }) { row ->
         when (row) {
             is PostFeedRow.SliceItemRow -> {
-                LaunchedEffect(row.key) { onPostSeen(row) }
                 PostFeedItem(
                     post = row.post,
                     actions = postActions(row),
@@ -89,6 +95,60 @@ fun LazyListScope.postFeedItems(
             state.showEndOfFeed -> Box(Modifier.heightIn(min = footerOffset)) { endOfFeedContent() }
             else -> Spacer(Modifier.height(footerOffset))
         }
+    }
+}
+
+/**
+ * RN `List` viewability for `onItemSeen` (src/view/com/util/List.tsx): `itemVisiblePercentThreshold: 40` and
+ * `minimumViewTime: 500`. `onViewableItemsChanged` reports the items in index order, so a screen of rows logs
+ * `post:view` top to bottom (review N6: `events.mjs --ordered`).
+ */
+object PostViewVisibility {
+    const val VISIBLE_FRACTION = 0.4f
+    const val MIN_VIEW_MS = 500L
+
+    /** One laid-out list item: its key, index, and offset and size along the list axis. */
+    data class Item(val key: Any, val index: Int, val offset: Int, val size: Int)
+
+    /** Keys of items at least [VISIBLE_FRACTION] inside the viewport, top to bottom. */
+    fun visibleKeys(items: List<Item>, viewportStart: Int, viewportEnd: Int): List<Any> = items
+        .filter { item ->
+            val visible = minOf(item.offset + item.size, viewportEnd) - maxOf(item.offset, viewportStart)
+            item.size > 0 && visible.toFloat() / item.size >= VISIBLE_FRACTION
+        }
+        .sortedBy { it.index }
+        .map { it.key }
+}
+
+/**
+ * Calls [onPostSeen] for each post row that stays visible for [PostViewVisibility.MIN_VIEW_MS], in list order.
+ * The view model logs each URI once.
+ */
+@Composable
+fun TrackPostViews(
+    listState: LazyListState,
+    rows: List<PostFeedRow>,
+    onPostSeen: (PostFeedRow.SliceItemRow) -> Unit,
+    enabled: Boolean = true,
+) {
+    val currentRows by rememberUpdatedState(rows)
+    val currentOnPostSeen by rememberUpdatedState(onPostSeen)
+    LaunchedEffect(listState, enabled) {
+        if (!enabled) return@LaunchedEffect
+        snapshotFlow {
+            val info = listState.layoutInfo
+            PostViewVisibility.visibleKeys(
+                info.visibleItemsInfo.map { PostViewVisibility.Item(it.key, it.index, it.offset, it.size) },
+                info.viewportStartOffset,
+                info.viewportEndOffset,
+            )
+        }
+            .distinctUntilChanged()
+            .collectLatest { keys ->
+                delay(PostViewVisibility.MIN_VIEW_MS)
+                val byKey = currentRows.filterIsInstance<PostFeedRow.SliceItemRow>().associateBy { it.key }
+                keys.forEach { key -> byKey[key]?.let(currentOnPostSeen) }
+            }
     }
 }
 

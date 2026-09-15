@@ -52,7 +52,7 @@ fun HomeRoute(account: AccountScope, session: Session, navigator: AppNavigator) 
     val uriHandler = LocalUriHandler.current
     val vm: FeedViewModel = viewModel(
         key = "feed-${session.did}",
-        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did, account.postCache) } },
+        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did, account.postCache, account.preferences) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     // RN Home.tsx useFocusEffect: `home:feedDisplayed` with reason 'focus'.
@@ -189,6 +189,7 @@ fun ThreadRoute(account: AccountScope, session: Session, uri: String, navigator:
                     userDid = session.did,
                     postCache = account.postCache,
                     source = account.postSources.consume(uri),
+                    preferencesCache = account.preferences,
                 )
             }
         },

@@ -12,6 +12,5 @@
 {"name":"post:repost","props":{"logContext":"FeedItem","feedDescriptor":"following"}}
 {"name":"post:clickthroughItem","props":{"logContext":"FeedItem","feedDescriptor":"following"}}
 {"name":"router:navigate","props":{"from":"Home"}}
-{"name":"thread:preferences:load","props":{"sort":"hotness","view":"linear"}}
 {"name":"post:view","props":{"isReply":false,"logContext":"Post","feedDescriptor":"following"}}
 {"name":"post:view","props":{"isReply":true,"logContext":"PostThreadItem"}}

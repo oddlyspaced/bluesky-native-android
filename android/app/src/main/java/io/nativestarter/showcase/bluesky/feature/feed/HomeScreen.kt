@@ -247,6 +247,7 @@ private fun FeedList(
 ) {
     // RN FeedFooter offset: max(headerOffset, 32) * 2 on native.
     val footerOffset = maxOf(headerHeight, Space._4xl) * 2
+    TrackPostViews(listState, state.rows, callbacks.onPostSeen)
     LazyColumn(
         Modifier.fillMaxSize().testTag("followingFeedPage-feed-flatlist"),
         state = listState,

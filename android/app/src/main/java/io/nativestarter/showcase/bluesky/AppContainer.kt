@@ -61,6 +61,9 @@ class AppContainer(
     val processStartElapsedMs: Long = Process.getStartElapsedRealtime()
     fun millisSinceProcessStart(): Long = SystemClock.elapsedRealtime() - processStartElapsedMs
 
+    /** RN `onNavigationReady` events, once per account key (the tree remounts under `key={currentAccount?.did}`). */
+    val navigationReady = io.nativestarter.showcase.bluesky.shell.NavigationReadyEvents(analytics, ::millisSinceProcessStart)
+
     private var account: AccountScope? = null
 
     /** The dependencies of one signed-in account. A new account gets a new scope with empty post state. */
@@ -91,6 +94,8 @@ class AccountScope(
     val postCache = PostCache()
     /** The feed each opened post came from (RN `setUnstablePostSource`). */
     val postSources = PostSources()
+    /** RN `usePreferencesQuery` data, shared by the feed and thread screens. */
+    val preferences = io.nativestarter.showcase.bluesky.core.network.PreferencesCache()
 
     fun loadOwnProfile() {
         scope.launch {

@@ -11,6 +11,7 @@ import io.nativestarter.showcase.bluesky.core.network.PinnedFeed
 import io.nativestarter.showcase.bluesky.core.network.PostCache
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostView
+import io.nativestarter.showcase.bluesky.core.network.PreferencesCache
 import io.nativestarter.showcase.bluesky.core.network.StrongRef
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -49,6 +50,8 @@ class FeedViewModel(
     private val userDid: String,
     /** Every loaded post, including reply parents and roots, can be a thread placeholder. */
     private val postCache: PostCache = PostCache(),
+    /** RN `usePreferencesQuery` data for the account; the thread screen reads what the feed loaded. */
+    private val preferencesCache: PreferencesCache? = null,
 ) : ViewModel() {
     private val prefs = MutableStateFlow(HomeFeedPrefs())
     private val tabs = MutableStateFlow(listOf("Following", HomeTabs.FEEDS_LINK))
@@ -86,7 +89,10 @@ class FeedViewModel(
 
     init {
         viewModelScope.launch {
-            runCatchingCancellable { repository.preferences() }.onSuccess { prefs.value = it.homeFeed }
+            runCatchingCancellable { repository.preferences() }.onSuccess {
+                preferencesCache?.put(it)
+                prefs.value = it.homeFeed
+            }
         }
         viewModelScope.launch {
             runCatchingCancellable { HomeTabs.from(repository.pinnedFeeds()) }.onSuccess { tabs.value = it }

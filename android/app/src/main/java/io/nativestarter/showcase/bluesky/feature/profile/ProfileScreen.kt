@@ -72,6 +72,7 @@ import io.nativestarter.showcase.bluesky.designsystem.pressable
 import io.nativestarter.showcase.bluesky.designsystem.ui.TabBar
 import io.nativestarter.showcase.bluesky.feature.feed.PostFeedRow
 import io.nativestarter.showcase.bluesky.feature.feed.postFeedItems
+import io.nativestarter.showcase.bluesky.feature.feed.TrackPostViews
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -158,6 +159,7 @@ private fun ProfileLoaded(
     LaunchedEffect(endReached, feed.rows.size) {
         if (endReached && feed.isFetched && selectedTab == 0) current.onEndReached()
     }
+    TrackPostViews(listState, feed.rows, { current.onPostSeen(it) }, enabled = state.selectedTab == 0)
 
     Box(Modifier.fillMaxSize().testTag("profileView")) {
         PullToRefreshBox(

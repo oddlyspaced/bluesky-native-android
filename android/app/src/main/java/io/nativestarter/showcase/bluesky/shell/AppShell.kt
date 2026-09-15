@@ -105,11 +105,9 @@ typealias Routes = io.nativestarter.showcase.bluesky.core.navigation.Routes
 fun BlueskyRoot(container: AppContainer) {
     val sessionState by container.sessionManager.state.collectAsStateWithLifecycle()
     val now by container.minuteTicker.now.collectAsStateWithLifecycle()
-    // RN NavigationContainer onReady: `router:navigate {}` then `init {initMs}`.
-    LaunchedEffect(Unit) {
-        container.analytics.metric("router:navigate")
-        container.analytics.metric("init", mapOf("initMs" to container.millisSinceProcessStart()))
-    }
+    // RN NavigationContainer onReady: `router:navigate {}` then `init {initMs}`, again on each account key change.
+    val accountKey = (sessionState as? SessionState.SignedIn)?.session?.did
+    LaunchedEffect(accountKey) { container.navigationReady.onAccountKey(accountKey) }
     ProvideAlfTheme {
         CompositionLocalProvider(
             LocalNow provides now,

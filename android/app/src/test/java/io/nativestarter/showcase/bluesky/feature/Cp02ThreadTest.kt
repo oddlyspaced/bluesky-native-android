@@ -8,6 +8,8 @@ import io.nativestarter.showcase.bluesky.core.network.PostRecord
 import io.nativestarter.showcase.bluesky.core.network.PostSource
 import io.nativestarter.showcase.bluesky.core.network.PostSources
 import io.nativestarter.showcase.bluesky.core.network.PostView
+import io.nativestarter.showcase.bluesky.core.network.PreferencesCache
+import io.nativestarter.showcase.bluesky.core.network.UserPreferences
 import io.nativestarter.showcase.bluesky.core.network.PostViewerState
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewBasic
 import io.nativestarter.showcase.bluesky.core.network.ReplyRef
@@ -241,7 +243,7 @@ class Cp02ThreadTest {
     fun threadLoadsWithThePreferredSortAndLogsTheAnchorView() = runTest {
         val vm = ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), PostSource("following", null))
         val s = vm.state.value
-        assertEquals("the preferences fixture has no threadViewPref, so RN normalizes to top", listOf("postThreadV2:top"), repo.calls)
+        assertEquals("the preferences fixture has no threadViewPref, so RN normalizes to top", listOf("postThreadV2:top"), repo.calls.filter { it.startsWith("postThread") })
         assertFalse(s.isPlaceholderData)
         assertNull(s.error)
         assertEquals(listOf("post(0) 3mvjvgylorj2e", "replyComposer", "post(1) 3mvjvgylsoj2e"), s.items.shape())
@@ -292,7 +294,7 @@ class Cp02ThreadTest {
         vm.showOtherReplies()
         assertTrue(repo.calls.contains("postThreadOtherV2"))
         assertEquals("post(1) other", vm.state.value.items.shape().last())
-        assertEquals(listOf("thread:click:showOtherReplies"), analytics.names().filter { it.startsWith("thread:") })
+        assertEquals(listOf("thread:click:showOtherReplies"), analytics.names().filter { it.startsWith("thread:click") })
     }
 
     @Test
@@ -325,6 +327,48 @@ class Cp02ThreadTest {
             listOf("repost:$ROOT:via=${via.uri}", "repost:${posts[1].uri}:via=null"),
             repo.calls.filter { it.startsWith("repost:") },
         )
+    }
+
+    @Test
+    fun preferencesLoadedByTheThreadLogOnceWithTheRawSort() = runTest {
+        val cache = PreferencesCache()
+        val vm = ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), PostSource("following", null), cache)
+        val load = analytics.events.filter { it.first == "thread:preferences:load" }
+        // The fixture has no threadViewPref: RN merges DEFAULT_THREAD_VIEW_PREFS, so sort is "hotness"; the request uses top.
+        assertEquals(listOf(mapOf<String, Any?>("sort" to "hotness", "view" to "linear")), load.map { it.second })
+        assertTrue(repo.calls.contains("postThreadV2:top"))
+        vm.retry()
+        assertEquals("once per screen", 1, analytics.events.count { it.first == "thread:preferences:load" })
+        assertNotNull(cache.value)
+    }
+
+    @Test
+    fun preferencesAlreadyLoadedByTheFeedLogNothing() = runTest {
+        val cache = PreferencesCache()
+        FeedViewModel(repo, interactions, analytics, me, PostCache(), cache)
+        assertNotNull(cache.value)
+        ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), null, cache)
+        // RN: useState(serverPrefs) starts with the cached object and replaceEqualDeep keeps it on reload.
+        assertFalse(analytics.names().contains("thread:preferences:load"))
+    }
+
+    @Test
+    fun changedPreferencesOnReloadLogTheNewValues() = runTest {
+        val cache = PreferencesCache().apply { put(UserPreferences()) }
+        repo.preferencesResponse = UserPreferences(threadSort = "newest", threadSortRaw = "newest", treeViewEnabled = true)
+        ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), null, cache)
+        assertEquals(
+            listOf(mapOf<String, Any?>("sort" to "newest", "view" to "tree")),
+            analytics.events.filter { it.first == "thread:preferences:load" }.map { it.second },
+        )
+        assertTrue(repo.calls.contains("postThreadV2:newest"))
+    }
+
+    @Test
+    fun failedPreferencesLogNothing() = runTest {
+        repo.failPreferences = true
+        ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), null, PreferencesCache())
+        assertFalse("review N22", analytics.names().contains("thread:preferences:load"))
     }
 
     @Test
