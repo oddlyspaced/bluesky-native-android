@@ -37,5 +37,7 @@ appId: ${APP_ID}
     visible:
       id: "feedItem-by-alice.test"
     timeout: 20000
+- runFlow:
+    file: wait-profile-counts.yml
 - waitForAnimationToEnd
 - takeScreenshot: profile

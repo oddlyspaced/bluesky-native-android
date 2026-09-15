@@ -21,6 +21,8 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: "No posts yet"
     timeout: 30000
+- runFlow:
+    file: wait-profile-counts.yml
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: profile

@@ -1,0 +1,62 @@
+appId: ${APP_ID}
+---
+# Seed race (PARITY.md): the AppView indexes the seeded follows asynchronously, so a profile loaded early shows
+# "1 follower" or "1 following". The seed gives alice.test 2 followers (bob, carla) and 2 follows.
+# Wait for both final counts, found by id and text. If the profile was loaded before indexing, pull to refresh
+# (RN Profile onRefresh refetches the profile) and wait again. Never masked.
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: "profileHeaderFollowersButton"
+        text: "2 followers"
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "profileHeaderFollowersButton"
+            text: "2 followers"
+          timeout: 8000
+          optional: true
+      - runFlow:
+          when:
+            notVisible:
+              id: "profileHeaderFollowersButton"
+              text: "2 followers"
+          commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 75%
+                duration: 600
+            - waitForAnimationToEnd:
+                timeout: 10000
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: "profileHeaderFollowsButton"
+        text: "2 following"
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: "profileHeaderFollowsButton"
+            text: "2 following"
+          timeout: 8000
+          optional: true
+      - runFlow:
+          when:
+            notVisible:
+              id: "profileHeaderFollowsButton"
+              text: "2 following"
+          commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 75%
+                duration: 600
+            - waitForAnimationToEnd:
+                timeout: 10000
+- assertVisible:
+    id: "profileHeaderFollowersButton"
+    text: "2 followers"
+- assertVisible:
+    id: "profileHeaderFollowsButton"
+    text: "2 following"
