@@ -2,61 +2,65 @@ appId: ${APP_ID}
 ---
 # Seed race (PARITY.md): the AppView indexes the seeded follows asynchronously, so a profile loaded early shows
 # "1 follower" or "1 following". The seed gives alice.test 2 followers (bob, carla) and 2 follows.
-# Wait for both final counts, found by id and text. If the profile was loaded before indexing, pull to refresh
-# (RN Profile onRefresh refetches the profile) and wait again. Never masked.
+# Wait for both final counts, then check each one by id and text. Never masked.
+# The label sits on the id node in RN (testID and accessibilityLabel on one view) and on a child of the id node in
+# Compose (testTag outer node, merged label inside), so the check accepts either structure.
+# If the profile loaded before indexing, pull to refresh (RN Profile onRefresh refetches the profile), up to 4 times.
 - repeat:
     times: 4
     while:
+      notVisible: "2 followers"
+    commands:
+      - extendedWaitUntil:
+          visible: "2 followers"
+          timeout: 8000
+          optional: true
+      - runFlow:
+          when:
+            notVisible: "2 followers"
+          commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 75%
+                duration: 600
+            - waitForAnimationToEnd:
+                timeout: 10000
+- repeat:
+    times: 4
+    while:
+      notVisible: "2 following"
+    commands:
+      - extendedWaitUntil:
+          visible: "2 following"
+          timeout: 8000
+          optional: true
+      - runFlow:
+          when:
+            notVisible: "2 following"
+          commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 75%
+                duration: 600
+            - waitForAnimationToEnd:
+                timeout: 10000
+- runFlow:
+    when:
       notVisible:
         id: "profileHeaderFollowersButton"
         text: "2 followers"
     commands:
-      - extendedWaitUntil:
-          visible:
+      - assertVisible:
+          text: "2 followers"
+          childOf:
             id: "profileHeaderFollowersButton"
-            text: "2 followers"
-          timeout: 8000
-          optional: true
-      - runFlow:
-          when:
-            notVisible:
-              id: "profileHeaderFollowersButton"
-              text: "2 followers"
-          commands:
-            - swipe:
-                start: 50%, 35%
-                end: 50%, 75%
-                duration: 600
-            - waitForAnimationToEnd:
-                timeout: 10000
-- repeat:
-    times: 4
-    while:
+- runFlow:
+    when:
       notVisible:
         id: "profileHeaderFollowsButton"
         text: "2 following"
     commands:
-      - extendedWaitUntil:
-          visible:
+      - assertVisible:
+          text: "2 following"
+          childOf:
             id: "profileHeaderFollowsButton"
-            text: "2 following"
-          timeout: 8000
-          optional: true
-      - runFlow:
-          when:
-            notVisible:
-              id: "profileHeaderFollowsButton"
-              text: "2 following"
-          commands:
-            - swipe:
-                start: 50%, 35%
-                end: 50%, 75%
-                duration: 600
-            - waitForAnimationToEnd:
-                timeout: 10000
-- assertVisible:
-    id: "profileHeaderFollowersButton"
-    text: "2 followers"
-- assertVisible:
-    id: "profileHeaderFollowsButton"
-    text: "2 following"
