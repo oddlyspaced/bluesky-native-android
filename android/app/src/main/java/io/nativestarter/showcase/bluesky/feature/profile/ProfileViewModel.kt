@@ -171,8 +171,7 @@ class ProfileViewModel(
     fun onPostSeen(row: PostFeedRow.SliceItemRow) {
         if (row.post.uri != row.slice.feedPostUri || !seenUris.add(row.post.uri)) return
         val rows = state.value.feed.rows
-        val index = rows.indexOfFirst { it.key == row.key }.coerceAtLeast(0)
-        val position = rows.take(index).count { it is PostFeedRow.SliceItemRow && it.indexInSlice == 0 }
+        val position = io.nativestarter.showcase.bluesky.feature.feed.PostViewPosition.of(rows, row)
         analytics.metric(
             "post:view",
             linkedMapOf(

@@ -91,3 +91,16 @@ fun LazyListScope.postFeedItems(
         }
     }
 }
+
+/**
+ * RN `PostFeed` `getPostPosition('sliceItem', slice.items[0]._reactKey)`: the number of root rows
+ * (`indexInSlice === 0`) before the first row of the post's slice. Every post of a slice therefore logs the
+ * slice's position, including a thread reply that is the slice's feed post.
+ */
+object PostViewPosition {
+    fun of(rows: List<PostFeedRow>, row: PostFeedRow.SliceItemRow): Int {
+        val first = rows.indexOfFirst { it is PostFeedRow.SliceItemRow && it.slice == row.slice && it.indexInSlice == 0 }
+        val index = if (first >= 0) first else rows.indexOfFirst { it.key == row.key }.coerceAtLeast(0)
+        return rows.take(index).count { it is PostFeedRow.SliceItemRow && it.indexInSlice == 0 }
+    }
+}

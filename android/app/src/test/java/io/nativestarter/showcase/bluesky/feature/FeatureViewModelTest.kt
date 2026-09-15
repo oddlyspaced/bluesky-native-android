@@ -80,7 +80,9 @@ class FeatureViewModelTest {
         vm.state.value.rows.filterIsInstance<PostFeedRow.SliceItemRow>().forEach(vm::onPostSeen)
         val views = analytics.events.filter { it.first == "post:view" }
         assertEquals("the thread root is not the slice's feed post; each URI logs once", 4, views.size)
-        assertEquals(listOf(1, 1, 2, 3), views.map { it.second["position"] })
+        // RN getPostPosition(slice.items[0]._reactKey): root rows before the slice's first row. The first slice is
+        // Thread root + Thread reply; its feed post is the reply, which still logs position 0.
+        assertEquals(listOf(0, 1, 2, 3), views.map { it.second["position"] })
         assertEquals(true, views.first().second["isReply"])
         assertEquals("following", views.first().second["feedDescriptor"])
     }
