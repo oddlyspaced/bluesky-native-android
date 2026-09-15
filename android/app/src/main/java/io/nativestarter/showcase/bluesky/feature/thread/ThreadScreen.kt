@@ -183,7 +183,7 @@ fun ThreadReplyItem(post: PostView, actions: PostActions, showTopBorder: Boolean
             UserAvatar(post.author.avatar, 42.dp)
             Column(Modifier.padding(start = Space.md).weight(1f)) {
                 PostMeta(post)
-                PostText(post)
+                PostText(post, actions)
                 PostControls(post, actions, big = false)
             }
         }

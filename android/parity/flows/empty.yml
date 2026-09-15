@@ -1,0 +1,27 @@
+appId: ${APP_ID}
+---
+# Accounts and follows only, no posts: the empty Following feed and the empty profile Posts tab.
+- runScript:
+    file: ../setupServer.js
+    env:
+      SERVER_PATH: "?users&follows"
+- runFlow:
+    file: setup-app.yml
+- tapOn:
+    id: "e2eSignInAlice"
+- extendedWaitUntil:
+    visible:
+      id: "homeScreen"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: shots/${PREFIX}-home
+- tapOn:
+    id: "bottomBarProfileBtn"
+- extendedWaitUntil:
+    visible:
+      id: "profileView"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: shots/${PREFIX}-profile

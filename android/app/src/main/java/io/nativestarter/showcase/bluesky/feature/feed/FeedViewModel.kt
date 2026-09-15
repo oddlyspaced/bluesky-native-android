@@ -2,77 +2,164 @@ package io.nativestarter.showcase.bluesky.feature.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.async
+import io.nativestarter.showcase.bluesky.core.analytics.Analytics
+import io.nativestarter.showcase.bluesky.core.analytics.InteractionContext
+import io.nativestarter.showcase.bluesky.core.common.runCatchingCancellable
+import io.nativestarter.showcase.bluesky.core.network.BskyRepository
+import io.nativestarter.showcase.bluesky.core.network.HomeFeedPrefs
+import io.nativestarter.showcase.bluesky.core.network.PinnedFeed
+import io.nativestarter.showcase.bluesky.core.network.PostInteractions
+import io.nativestarter.showcase.bluesky.core.network.PostView
+import io.nativestarter.showcase.bluesky.core.network.StrongRef
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import io.nativestarter.showcase.bluesky.core.network.BskyRepository
-import io.nativestarter.showcase.bluesky.core.network.PinnedFeed
-import io.nativestarter.showcase.bluesky.core.network.PostInteractions
-import io.nativestarter.showcase.bluesky.core.network.PostView
-import io.nativestarter.showcase.bluesky.core.network.withShadow
 
+/** What `PostFeed` renders for the Following feed. The `show*` rules are RN `PostFeed.tsx`. */
 data class FeedUiState(
-    val loading: Boolean = true,
-    val refreshing: Boolean = false,
     val feedTabs: List<String> = listOf("Following", HomeTabs.FEEDS_LINK),
     val selectedTab: Int = 0,
-    val slices: List<FeedSlice> = emptyList(),
-    /** The timeline has no next page: RN shows the Discover fallback header and FollowingEndOfFeed. */
-    val reachedEnd: Boolean = false,
-    val error: String? = null,
-)
+    val rows: List<PostFeedRow> = emptyList(),
+    val isFetched: Boolean = false,
+    val isFetching: Boolean = true,
+    val isRefreshing: Boolean = false,
+    val isFetchingNextPage: Boolean = false,
+    val hasNextPage: Boolean = false,
+    /** RN `isEmpty`: `!isFetching && !pages.some(page => page.slices.length)`. */
+    val isEmpty: Boolean = false,
+    val error: Throwable? = null,
+) {
+    val showLoading: Boolean get() = !isFetched
+    val showFirstLoadError: Boolean get() = error != null && isEmpty
+    val showEmpty: Boolean get() = isFetched && isEmpty && error == null
+    val showLoadMoreError: Boolean get() = error != null && !isEmpty
+    /** `shouldRenderEndOfFeed = !hasNextPage && !isEmpty && !isFetching && !isError`. */
+    val showEndOfFeed: Boolean get() = !hasNextPage && !isEmpty && !isFetching && error == null && isFetched
+}
 
-/** CP-01: the "Following" timeline. */
+/** CP-01: the "Following" timeline with RN tuners, pagination, states and events. */
 class FeedViewModel(
     private val repository: BskyRepository,
     private val interactions: PostInteractions,
+    private val analytics: Analytics,
+    private val userDid: String,
 ) : ViewModel() {
-    private val raw = MutableStateFlow(FeedUiState())
+    private val prefs = MutableStateFlow(HomeFeedPrefs())
+    private val tabs = MutableStateFlow(listOf("Following", HomeTabs.FEEDS_LINK))
+    private val selectedTab = MutableStateFlow(0)
+    private val source = HomeFeedSource { cursor -> repository.timeline(cursor) }
+    private val pager = FeedPager(
+        scope = viewModelScope,
+        fetch = source::fetch,
+        selectedCount = { items -> FeedTuner.following(prefs.value, userDid).tune(items).sumOf { it.items.size } },
+    )
+    private val seenUris = HashSet<String>()
 
-    val state: StateFlow<FeedUiState> = combine(raw, interactions.shadows) { s, shadows ->
-        s.copy(slices = s.slices.map { slice -> slice.copy(rows = slice.rows.map { it.copy(post = it.post.withShadow(shadows)) }) })
+    val state: StateFlow<FeedUiState> = combine(pager.state, prefs, tabs, selectedTab, interactions.shadows) { p, homePrefs, feedTabs, selected, shadows ->
+        val slices = FeedTuner.following(homePrefs, userDid).tune(p.items)
+        val rows = PostFeedRows.build(slices, withComposerPrompt = true).map { row ->
+            if (row is PostFeedRow.SliceItemRow) row.copy(post = interactions.apply(row.post, shadows)) else row
+        }
+        FeedUiState(
+            feedTabs = feedTabs,
+            selectedTab = selected,
+            rows = rows,
+            isFetched = p.isFetched,
+            isFetching = p.isFetching,
+            isRefreshing = p.isRefreshing,
+            isFetchingNextPage = p.isFetchingNextPage,
+            hasNextPage = p.hasNextPage,
+            isEmpty = !p.isFetching && slices.isEmpty(),
+            error = p.error,
+        )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState())
 
     init {
-        load(refresh = false)
-    }
-
-    fun refresh() = load(refresh = true)
-
-    fun selectTab(index: Int) = raw.update { it.copy(selectedTab = index) }
-
-    private fun load(refresh: Boolean) {
-        raw.update { it.copy(refreshing = refresh, error = null) }
         viewModelScope.launch {
-            val tabs = async { runCatching { HomeTabs.from(repository.pinnedFeeds()) }.getOrNull() }
-            runCatching { loadPages { cursor -> repository.timeline(cursor) } }
-                .onSuccess { loaded ->
-                    if (refresh) interactions.reset()
-                    raw.update {
-                        it.copy(
-                            loading = false,
-                            refreshing = false,
-                            slices = FeedSlices.build(loaded.items),
-                            reachedEnd = loaded.reachedEnd,
-                            feedTabs = tabs.await() ?: it.feedTabs,
-                        )
-                    }
-                }
-                .onFailure { e -> raw.update { it.copy(loading = false, refreshing = false, error = e.message) } }
+            runCatchingCancellable { repository.preferences() }.onSuccess { prefs.value = it.homeFeed }
         }
+        viewModelScope.launch {
+            runCatchingCancellable { HomeTabs.from(repository.pinnedFeeds()) }.onSuccess { tabs.value = it }
+        }
+        pager.refresh()
     }
 
-    fun toggleLike(post: PostView) {
-        viewModelScope.launch { interactions.toggleLike(post) }
+    fun selectTab(index: Int) {
+        selectedTab.value = index
     }
 
-    fun toggleRepost(post: PostView) {
-        viewModelScope.launch { interactions.toggleRepost(post) }
+    /** RN `feed:refresh`: reason `pull-to-refresh` (PostFeed `refreshFeed`) or `soft-reset` (FeedPage). */
+    fun refresh(reason: String) {
+        analytics.metric("feed:refresh", linkedMapOf("feedType" to FEED, "feedUrl" to FEED, "reason" to reason))
+        pager.refresh(isPullToRefresh = reason == REASON_PULL_TO_REFRESH)
+    }
+
+    /** Error banner "Retry": RN `refetch()` without an event. */
+    fun retry() = pager.refresh()
+
+    /** `LoadMoreRetryBtn`: RN `fetchNextPage()`. */
+    fun retryLoadMore() = pager.fetchNextPage(fromRetry = true)
+
+    /** RN `onEndReached`: does nothing while fetching, without a next page, or in error. */
+    fun onEndReached() {
+        if (!pager.canFetchNextPage()) return
+        analytics.metric(
+            "feed:endReached",
+            linkedMapOf("feedType" to FEED, "feedUrl" to FEED, "itemCount" to state.value.rows.size),
+        )
+        pager.fetchNextPage()
+    }
+
+    /** RN `onItemSeen`: `post:view` once per URI, only for the slice's feed post. */
+    fun onPostSeen(row: PostFeedRow.SliceItemRow) {
+        if (row.post.uri != row.slice.feedPostUri || !seenUris.add(row.post.uri)) return
+        val rows = state.value.rows
+        val index = rows.indexOfFirst { it.key == row.key }.coerceAtLeast(0)
+        val position = rows.take(index).count { it is PostFeedRow.SliceItemRow && it.indexInSlice == 0 }
+        analytics.metric(
+            "post:view",
+            linkedMapOf(
+                "uri" to row.post.uri,
+                "authorDid" to row.post.author.did,
+                "isReply" to (row.post.record.reply != null),
+                "logContext" to CONTEXT.logContext,
+                "feedDescriptor" to FEED,
+                "position" to position,
+            ),
+        )
+    }
+
+    fun onPostPressed(post: PostView) = analytics.metric("post:clickthroughItem", clickProps(post))
+    fun onAuthorPressed(post: PostView) = analytics.metric("post:clickthroughAuthor", clickProps(post))
+    fun onReplyPressed(post: PostView) = analytics.metric("post:clickReply", clickProps(post))
+    fun onComposerPressed() = analytics.metric("composerPrompt:press")
+
+    fun toggleLike(post: PostView, via: StrongRef?) = interactions.toggleLike(post, CONTEXT, via)
+    fun toggleRepost(post: PostView, via: StrongRef?) = interactions.toggleRepost(post, CONTEXT, via)
+
+    private fun clickProps(post: PostView) = linkedMapOf<String, Any?>(
+        "uri" to post.uri,
+        "authorDid" to post.author.did,
+        "logContext" to CONTEXT.logContext,
+        "feedDescriptor" to FEED,
+    )
+
+    companion object {
+        const val FEED = "following"
+        const val REASON_PULL_TO_REFRESH = "pull-to-refresh"
+        const val REASON_SOFT_RESET = "soft-reset"
+        val CONTEXT = InteractionContext(logContext = "FeedItem", feedDescriptor = FEED)
+
+        /** `viaRepost` (PostFeedItem.tsx): the repost reason `{uri, cid}` when both are set. */
+        fun viaOf(reason: FeedReason?): StrongRef? {
+            val repost = reason as? FeedReason.Repost ?: return null
+            val uri = repost.uri ?: return null
+            val cid = repost.cid ?: return null
+            return StrongRef(uri, cid)
+        }
     }
 }
 

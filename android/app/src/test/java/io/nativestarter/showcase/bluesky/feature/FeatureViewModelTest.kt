@@ -1,5 +1,16 @@
 package io.nativestarter.showcase.bluesky.feature
 
+import io.nativestarter.showcase.bluesky.core.analytics.RecordingAnalytics
+import io.nativestarter.showcase.bluesky.core.network.PinnedFeed
+import io.nativestarter.showcase.bluesky.core.network.PostInteractions
+import io.nativestarter.showcase.bluesky.feature.feed.FeedViewModel
+import io.nativestarter.showcase.bluesky.feature.feed.HomeTabs
+import io.nativestarter.showcase.bluesky.feature.feed.PostFeedRow
+import io.nativestarter.showcase.bluesky.feature.profile.PROFILE_TABS
+import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
+import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
+import io.nativestarter.showcase.bluesky.testing.FakeBskyRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -14,36 +25,23 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import io.nativestarter.showcase.bluesky.core.network.FeedResponse
-import io.nativestarter.showcase.bluesky.core.network.PinnedFeed
-import io.nativestarter.showcase.bluesky.core.network.PostInteractions
-import io.nativestarter.showcase.bluesky.feature.feed.FeedSlices
-import io.nativestarter.showcase.bluesky.feature.feed.FeedViewModel
-import io.nativestarter.showcase.bluesky.feature.feed.HomeTabs
-import io.nativestarter.showcase.bluesky.feature.profile.PROFILE_TABS
-import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
-import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
-import io.nativestarter.showcase.bluesky.testing.FakeBskyRepository
-import io.nativestarter.showcase.bluesky.testing.Fixtures
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeatureViewModelTest {
     private val repo = FakeBskyRepository()
-    private val interactions = PostInteractions(repo)
+    private val analytics = RecordingAnalytics()
+    private lateinit var interactions: PostInteractions
+    private val me = "did:plc:alice"
 
-    @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        interactions = PostInteractions(repo, CoroutineScope(Dispatchers.Main), analytics) { 2 }
+    }
+
     @After fun tearDown() = Dispatchers.resetMain()
 
-    @Test
-    fun feedSlicesPutReplyUnderRootAndDropDuplicateRoot() {
-        val slices = FeedSlices.build(Fixtures.decode<FeedResponse>("getTimeline.json").feed)
-        assertEquals(4, slices.size)
-        val thread = slices.first().rows
-        assertEquals(listOf("Thread root", "Thread reply"), thread.map { it.post.record.text })
-        assertTrue(thread[0].isThreadParent)
-        assertTrue(thread[1].isThreadChild)
-        assertEquals(listOf("carla.test", "bob.test", "alice.test"), slices.drop(1).map { it.rows.single().post.author.handle })
-    }
+    private fun feedVm() = FeedViewModel(repo, interactions, analytics, me)
 
     @Test
     fun homeTabsAddFeedsLinkOnlyWithoutCustomFeeds() {
@@ -54,56 +52,80 @@ class FeatureViewModelTest {
     }
 
     @Test
-    fun feedLoadsSlicesTabsAndEndOfFeed() = runTest {
-        val vm = FeedViewModel(repo, interactions)
-        val s = vm.state.value
-        assertFalse(s.loading)
+    fun feedBuildsRnRowsFallbackMarkerAndEndOfFeed() = runTest {
+        val s = feedVm().state.value
+        assertTrue(s.isFetched)
         assertNull(s.error)
-        assertEquals(4, s.slices.size)
-        assertEquals(listOf("Following", "Feeds ✨"), s.feedTabs)
-        assertTrue("page 2 is empty, so the feed has ended", s.reachedEnd)
-        assertEquals(listOf("timeline", "timeline:page2"), repo.calls.filter { it.startsWith("timeline") })
+        assertTrue(s.rows.first() is PostFeedRow.ComposerPrompt)
+        assertTrue("Following ran out on page 2, so the fallback marker follows the posts", s.rows.last() is PostFeedRow.FallbackMarker)
+        val posts = s.rows.filterIsInstance<PostFeedRow.SliceItemRow>()
+        assertEquals(listOf("Thread root", "Thread reply", "Post", "Post", "Post"), posts.map { it.post.record.text })
+        assertEquals(listOf("bob.test", "carla.test", "carla.test", "bob.test", "alice.test"), posts.map { it.post.author.handle })
+        assertTrue(s.showEndOfFeed)
+        assertFalse(s.showLoadMoreError)
+        assertFalse(s.showEmpty)
+        assertEquals("auto-pagination loads page 2 because 5 posts < 30", listOf("timeline", "timeline:page2"), repo.calls.filter { it.startsWith("timeline") })
     }
 
     @Test
-    fun loadPagesStopsAtEmptyPageAndCapsExtraPages() = runTest {
-        val first = Fixtures.decode<FeedResponse>("getTimeline.json")
-        val ended = io.nativestarter.showcase.bluesky.feature.feed.loadPages { c -> if (c == null) first else FeedResponse(emptyList(), null) }
-        assertTrue(ended.reachedEnd)
-        assertEquals(5, ended.items.size)
-
-        var fetches = 0
-        val endless = io.nativestarter.showcase.bluesky.feature.feed.loadPages(maxExtraPages = 2) { fetches++; first }
-        assertFalse(endless.reachedEnd)
-        assertEquals(3, fetches)
-    }
-
-    @Test
-    fun feedErrorState() = runTest {
+    fun feedFirstLoadErrorShowsTheBannerNotTheEndOfFeed() = runTest {
         repo.failReads = true
-        val s = FeedViewModel(repo, interactions).state.value
-        assertFalse(s.loading)
-        assertEquals("offline", s.error)
-        assertTrue(s.slices.isEmpty())
+        val s = feedVm().state.value
+        assertTrue(s.showFirstLoadError)
+        assertFalse(s.showEndOfFeed)
+        assertTrue(s.rows.isEmpty())
     }
 
     @Test
-    fun likeInFeedUpdatesEverySliceRowForThatPost() = runTest {
-        val vm = FeedViewModel(repo, interactions)
-        val root = vm.state.value.slices.first().rows.first().post
-        vm.toggleLike(root)
-        val updated = vm.state.value.slices.first().rows.first().post
+    fun postViewEventsUseRnPositions() = runTest {
+        val vm = feedVm()
+        vm.state.value.rows.filterIsInstance<PostFeedRow.SliceItemRow>().forEach(vm::onPostSeen)
+        vm.state.value.rows.filterIsInstance<PostFeedRow.SliceItemRow>().forEach(vm::onPostSeen)
+        val views = analytics.events.filter { it.first == "post:view" }
+        assertEquals("the thread root is not the slice's feed post; each URI logs once", 4, views.size)
+        assertEquals(listOf(1, 1, 2, 3), views.map { it.second["position"] })
+        assertEquals(true, views.first().second["isReply"])
+        assertEquals("following", views.first().second["feedDescriptor"])
+    }
+
+    @Test
+    fun refreshAndEndReachedEventsFollowRn() = runTest {
+        val vm = feedVm()
+        vm.onEndReached()
+        assertFalse("no next page, so no endReached event", analytics.names().contains("feed:endReached"))
+        vm.refresh(FeedViewModel.REASON_PULL_TO_REFRESH)
+        val refresh = analytics.events.single { it.first == "feed:refresh" }.second
+        assertEquals(mapOf("feedType" to "following", "feedUrl" to "following", "reason" to "pull-to-refresh"), refresh)
+        vm.onComposerPressed()
+        assertTrue(analytics.names().contains("composerPrompt:press"))
+    }
+
+    @Test
+    fun likeInFeedUpdatesTheRowAndLogsTheEvent() = runTest {
+        val feed = feedVm()
+        val root = feed.state.value.rows.filterIsInstance<PostFeedRow.SliceItemRow>().first().post
+        feed.toggleLike(root, null)
+        val updated = feed.state.value.rows.filterIsInstance<PostFeedRow.SliceItemRow>().first().post
         assertEquals(1, updated.likeCount)
         assertNotNull(updated.viewer.like)
+        assertTrue(analytics.names().contains("post:like"))
+        feed.toggleLike(updated, null)
+        val removed = feed.state.value.rows.filterIsInstance<PostFeedRow.SliceItemRow>().first().post
+        assertEquals("unlike after a confirmed like deletes it", 0, removed.likeCount)
+        assertTrue(repo.calls.any { it.startsWith("deleteLike:") })
     }
 
     @Test
-    fun likeIsSharedBetweenFeedAndThread() = runTest {
-        val feed = FeedViewModel(repo, interactions)
-        val thread = ThreadViewModel("at://root", repo, interactions)
-        val root = thread.state.value.anchor!!
-        feed.toggleLike(root)
-        assertEquals(1, thread.state.value.anchor!!.likeCount)
+    fun viaComesFromARepostReasonWithUriAndCid() {
+        val reason = io.nativestarter.showcase.bluesky.feature.feed.FeedReason.Repost(
+            by = io.nativestarter.showcase.bluesky.core.network.ProfileViewBasic("did:plc:bob", "bob.test"),
+            uri = "at://did:plc:bob/app.bsky.feed.repost/r",
+            cid = "rc",
+            indexedAt = null,
+        )
+        assertEquals("at://did:plc:bob/app.bsky.feed.repost/r", FeedViewModel.viaOf(reason)?.uri)
+        assertNull(FeedViewModel.viaOf(reason.copy(cid = null)))
+        assertNull(FeedViewModel.viaOf(io.nativestarter.showcase.bluesky.feature.feed.FeedReason.Pin))
     }
 
     @Test

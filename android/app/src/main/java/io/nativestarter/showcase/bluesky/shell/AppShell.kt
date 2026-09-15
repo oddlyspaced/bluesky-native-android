@@ -92,6 +92,13 @@ import io.nativestarter.showcase.bluesky.feature.profile.ProfileScreen
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
+import io.nativestarter.showcase.bluesky.feature.feed.HomeCallbacks
+import io.nativestarter.showcase.bluesky.designsystem.text.RichSegment
+import io.nativestarter.showcase.bluesky.designsystem.text.RichTextModel
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -264,6 +271,7 @@ private fun SignedInShell(account: AccountScope, session: Session) {
     }
 
     val openPost: (PostView) -> Unit = { nav.navigate(Routes.thread(it.uri)) }
+    LaunchedEffect(account) { account.loadOwnProfile() }
 
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -324,9 +332,10 @@ private fun NavHostController.selectTab(route: String) {
 @Composable
 private fun HomeRoute(account: AccountScope, session: Session, openPost: (PostView) -> Unit, nav: NavHostController) {
     val analytics = LocalAnalytics.current
+    val uriHandler = LocalUriHandler.current
     val vm: FeedViewModel = viewModel(
         key = "feed-${session.did}",
-        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions) } },
+        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     // RN Home.tsx useFocusEffect: `home:feedDisplayed` with reason 'focus'.
@@ -337,16 +346,58 @@ private fun HomeRoute(account: AccountScope, session: Session, openPost: (PostVi
         )
         onPauseOrDispose { }
     }
-    LaunchedEffect(account) {
-        account.softReset.resets.collect { if (it == Routes.HOME) vm.refresh() }
-    }
+    val softResets = remember(account) { account.softReset.resets.filter { it == Routes.HOME }.map { } }
     HomeScreen(
         state = state,
-        actions = PostActions(openPost, vm::toggleLike, vm::toggleRepost),
-        onRefresh = vm::refresh,
-        onSelectTab = vm::selectTab,
-        onNotInShowcase = { nav.navigate(Routes.notInShowcase(it)) },
+        softResets = softResets,
+        currentAccountDid = session.did,
+        callbacks = HomeCallbacks(
+            onRefresh = { vm.refresh(FeedViewModel.REASON_PULL_TO_REFRESH) },
+            onSelectTab = vm::selectTab,
+            onRequestSoftReset = { account.softReset.emit(Routes.HOME) },
+            onSoftReset = { vm.refresh(FeedViewModel.REASON_SOFT_RESET) },
+            onNotInShowcase = { nav.navigate(Routes.notInShowcase(it)) },
+            onEndReached = vm::onEndReached,
+            onRetry = vm::retry,
+            onRetryLoadMore = vm::retryLoadMore,
+            onPostSeen = vm::onPostSeen,
+            onComposerPressed = vm::onComposerPressed,
+            onOpenFullThread = { nav.navigate(Routes.thread(it)) },
+            postActions = { row ->
+                val via = FeedViewModel.viaOf(row.reason)
+                PostActions(
+                    onOpen = {
+                        vm.onPostPressed(it)
+                        openPost(it)
+                    },
+                    onToggleLike = { vm.toggleLike(it, via) },
+                    onToggleRepost = { vm.toggleRepost(it, via) },
+                    onOpenAuthor = {
+                        vm.onAuthorPressed(it)
+                        if (it.author.did == session.did) nav.selectTab(Routes.PROFILE) else nav.navigate(Routes.notInShowcase("Profile"))
+                    },
+                    // RN opens the composer, which is outside the slice.
+                    onReply = {
+                        vm.onReplyPressed(it)
+                        nav.navigate(Routes.notInShowcase("Reply"))
+                    },
+                    onRichText = { segment -> openRichText(segment, uriHandler, nav) },
+                    onOpenReposter = { nav.navigate(Routes.notInShowcase("Profile")) },
+                    onQuote = { nav.navigate(Routes.notInShowcase("Quote post")) },
+                )
+            },
+        ),
     )
+}
+
+/** RN RichText taps: links open through the proxy URL (`shouldProxyLinks`); mentions and tags open screens outside the slice. */
+private fun openRichText(segment: RichSegment, uriHandler: UriHandler, nav: NavHostController) {
+    when (segment) {
+        is RichSegment.Link -> runCatching { uriHandler.openUri(RichTextModel.proxiedUrl(segment.uri)) }
+        is RichSegment.Mention -> nav.navigate(Routes.notInShowcase("Profile"))
+        is RichSegment.Tag -> nav.navigate(Routes.notInShowcase("Hashtag"))
+        is RichSegment.Plain -> Unit
+    }
 }
 
 @Composable

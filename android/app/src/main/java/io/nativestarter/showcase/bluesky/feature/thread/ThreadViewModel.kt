@@ -13,7 +13,6 @@ import io.nativestarter.showcase.bluesky.core.network.BskyRepository
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.network.ThreadNode
-import io.nativestarter.showcase.bluesky.core.network.withShadow
 
 data class ThreadUiState(
     val loading: Boolean = true,
@@ -58,9 +57,9 @@ class ThreadViewModel(
 
     val state: StateFlow<ThreadUiState> = combine(raw, interactions.shadows) { s, shadows ->
         s.copy(
-            parents = s.parents.map { it.withShadow(shadows) },
-            anchor = s.anchor?.withShadow(shadows),
-            replies = s.replies.map { it.withShadow(shadows) },
+            parents = s.parents.map { interactions.apply(it, shadows) },
+            anchor = s.anchor?.let { interactions.apply(it, shadows) },
+            replies = s.replies.map { interactions.apply(it, shadows) },
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ThreadUiState())
 
@@ -87,11 +86,11 @@ class ThreadViewModel(
         }
     }
 
-    fun toggleLike(post: PostView) {
-        viewModelScope.launch { interactions.toggleLike(post) }
-    }
+    fun toggleLike(post: PostView) = interactions.toggleLike(post, CONTEXT)
 
-    fun toggleRepost(post: PostView) {
-        viewModelScope.launch { interactions.toggleRepost(post) }
+    fun toggleRepost(post: PostView) = interactions.toggleRepost(post, CONTEXT)
+
+    private companion object {
+        val CONTEXT = io.nativestarter.showcase.bluesky.core.analytics.InteractionContext("PostThreadItem", null)
     }
 }

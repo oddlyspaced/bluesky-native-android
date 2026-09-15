@@ -1,0 +1,36 @@
+appId: ${APP_ID}
+---
+# Same steps as capture-baseline.yml, for any app id and screenshot prefix (used for dark mode and font scale).
+- runScript:
+    file: ../setupServer.js
+    env:
+      SERVER_PATH: "?users&follows&posts&feeds&thread"
+- runFlow:
+    file: setup-app.yml
+- tapOn:
+    id: "e2eSignInAlice"
+- extendedWaitUntil:
+    visible:
+      id: "feedItem-by-alice.test"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: shots/${PREFIX}-home
+- scrollUntilVisible:
+    element: "Thread root"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "Thread root"
+- extendedWaitUntil:
+    visible: "Thread reply"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: shots/${PREFIX}-thread
+- back
+- tapOn:
+    id: "bottomBarProfileBtn"
+- extendedWaitUntil:
+    visible:
+      id: "profileView"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: shots/${PREFIX}-profile

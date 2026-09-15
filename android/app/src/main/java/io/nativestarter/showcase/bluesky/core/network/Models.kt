@@ -64,6 +64,8 @@ data class PostRecord(
     val reply: ReplyRef? = null,
     val facets: List<Facet> = emptyList(),
     val embed: JsonElement? = null,
+    /** Last, so positional `PostRecord(text)` keeps its meaning. */
+    @SerialName("\$type") val type: String? = null,
 )
 
 @Serializable
@@ -127,6 +129,20 @@ data class ThreadNode(
     val parent: ThreadNode? = null,
     val replies: List<ThreadNode> = emptyList(),
 )
+
+/** One item of `app.bsky.unspecced.getPostThreadV2`: depth < 0 parent, 0 anchor, > 0 reply. */
+@Serializable
+data class ThreadItemV2(val uri: String, val depth: Int, val value: JsonObject)
+
+@Serializable
+data class ThreadV2Response(
+    val thread: List<ThreadItemV2> = emptyList(),
+    val hasOtherReplies: Boolean = false,
+    val threadgate: JsonElement? = null,
+)
+
+@Serializable
+data class ThreadOtherV2Response(val thread: List<ThreadItemV2> = emptyList())
 
 @Serializable
 data class NotificationView(val uri: String, val reason: String, val isRead: Boolean)

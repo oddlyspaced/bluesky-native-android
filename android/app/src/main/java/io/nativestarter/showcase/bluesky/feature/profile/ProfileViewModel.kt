@@ -14,7 +14,6 @@ import io.nativestarter.showcase.bluesky.core.network.BskyRepository
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed
-import io.nativestarter.showcase.bluesky.core.network.withShadow
 import io.nativestarter.showcase.bluesky.feature.feed.FeedSlice
 import io.nativestarter.showcase.bluesky.feature.feed.FeedSlices
 import io.nativestarter.showcase.bluesky.feature.feed.loadPages
@@ -41,7 +40,7 @@ class ProfileViewModel(
     private val raw = MutableStateFlow(ProfileUiState())
 
     val state: StateFlow<ProfileUiState> = combine(raw, interactions.shadows) { s, shadows ->
-        s.copy(posts = s.posts.map { slice -> slice.copy(rows = slice.rows.map { it.copy(post = it.post.withShadow(shadows)) }) })
+        s.copy(posts = s.posts.map { slice -> slice.copy(rows = slice.rows.map { it.copy(post = interactions.apply(it.post, shadows)) }) })
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ProfileUiState())
 
     init {
@@ -75,11 +74,12 @@ class ProfileViewModel(
         }
     }
 
-    fun toggleLike(post: PostView) {
-        viewModelScope.launch { interactions.toggleLike(post) }
-    }
+    fun toggleLike(post: PostView) = interactions.toggleLike(post, CONTEXT)
 
-    fun toggleRepost(post: PostView) {
-        viewModelScope.launch { interactions.toggleRepost(post) }
+    fun toggleRepost(post: PostView) = interactions.toggleRepost(post, CONTEXT)
+
+    private companion object {
+        /** Profile feeds have no FeedFeedbackProvider in RN, so `feedDescriptor` is undefined. */
+        val CONTEXT = io.nativestarter.showcase.bluesky.core.analytics.InteractionContext("FeedItem", null)
     }
 }

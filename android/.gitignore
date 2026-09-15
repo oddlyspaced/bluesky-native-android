@@ -1,3 +1,6 @@
 # Local parity run output. Measured numbers live in PARITY.md.
 parity/diff/
 parity/noise/
+parity/logs/
+# Maestro writes screenshots relative to its working directory.
+shots/

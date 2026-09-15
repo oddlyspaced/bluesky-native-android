@@ -21,6 +21,11 @@ import io.nativestarter.showcase.bluesky.feature.feed.FeedRow
 import io.nativestarter.showcase.bluesky.feature.feed.FeedSlice
 import io.nativestarter.showcase.bluesky.feature.feed.FeedUiState
 import io.nativestarter.showcase.bluesky.feature.feed.HomeScreen
+import io.nativestarter.showcase.bluesky.feature.feed.HomeCallbacks
+import io.nativestarter.showcase.bluesky.feature.feed.PostFeedRows
+import io.nativestarter.showcase.bluesky.feature.feed.FeedTuner
+import io.nativestarter.showcase.bluesky.core.network.HomeFeedPrefs
+import io.nativestarter.showcase.bluesky.core.network.FeedViewPost
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileScreen
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileUiState
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
@@ -53,26 +58,34 @@ class ScreenTests {
 
     @Test
     fun homeFeedShowsRnTestTagsAndOpensThread() {
-        val root = post("bob.test", "Bob", "Thread root")
-        val reply = post("carla.test", "Carla", "Thread reply")
-        val state = FeedUiState(
-            loading = false,
-            slices = listOf(
-                FeedSlice("t", listOf(FeedRow(root, isThreadParent = true), FeedRow(reply, isThreadChild = true))),
-                FeedSlice("a", listOf(FeedRow(post("alice.test", "Alice", "Post")))),
-            ),
-            reachedEnd = true,
+        val feed = listOf(
+            FeedViewPost(post = post("bob.test", "Bob", "Thread root")),
+            FeedViewPost(post = post("carla.test", "Carla", "Thread reply")),
+            FeedViewPost(post = post("alice.test", "Alice", "Post")),
         )
-        rule.setContent { HomeScreen(state, actions, onRefresh = {}, onSelectTab = {}, onNotInShowcase = {}) }
+        val slices = FeedTuner.following(HomeFeedPrefs(), "did:plc:me").tune(feed)
+        val state = FeedUiState(rows = PostFeedRows.build(slices, withComposerPrompt = true), isFetched = true, isFetching = false)
+        rule.setContent { HomeScreen(state, HomeCallbacks(postActions = { actions })) }
 
         rule.onNodeWithTag("homeScreen").assertIsDisplayed()
         rule.onNodeWithTag("homeScreenFeedTabs").assertIsDisplayed()
         rule.onNodeWithTag("feedItem-by-bob.test").assertIsDisplayed()
         rule.onNodeWithTag("feedItem-by-carla.test").assertIsDisplayed()
         rule.onNodeWithTag("feedItem-by-alice.test").assertIsDisplayed()
-        rule.onNodeWithText("What's up?").assertIsDisplayed()
+        rule.onNodeWithText("What's up?", useUnmergedTree = true).assertIsDisplayed()
         rule.onNodeWithText("Thread root", useUnmergedTree = true).performClick()
         assertEquals(listOf("Thread root"), opened)
+    }
+
+    @Test
+    fun homeFirstLoadErrorShowsRetryBanner() {
+        var retried = 0
+        val state = FeedUiState(isFetched = true, isFetching = false, isEmpty = true, error = java.io.IOException("offline"))
+        rule.setContent { HomeScreen(state, HomeCallbacks(onRetry = { retried++ })) }
+        rule.onNodeWithTag("errorMessageView").assertIsDisplayed()
+        rule.onNodeWithText("Unable to connect. Please check your internet connection and try again.", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithTag("errorMessageTryAgainButton").performClick()
+        assertEquals(1, retried)
     }
 
     @Test

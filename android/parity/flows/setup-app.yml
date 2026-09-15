@@ -1,0 +1,10 @@
+appId: ${APP_ID}
+---
+# Fresh install state for either app (RN xyz.blueskyweb.app or native io.nativestarter.showcase.bluesky).
+- launchApp:
+    appId: ${APP_ID}
+    clearState: true
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 180000
+- waitForAnimationToEnd
