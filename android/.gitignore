@@ -4,3 +4,5 @@ parity/noise/
 parity/logs/
 # Maestro writes screenshots relative to its working directory.
 shots/
+# Pack capture output (run-pack.sh). Measured numbers live in PARITY.md.
+parity/out/

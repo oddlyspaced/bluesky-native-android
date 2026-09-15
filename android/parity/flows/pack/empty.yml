@@ -1,0 +1,26 @@
+appId: ${APP_ID}
+---
+# Accounts and follows only, no posts: the empty Following feed and the empty profile Posts tab.
+- runScript:
+    file: ../../setupServer.js
+    env:
+      SERVER_PATH: "?users&follows"
+- runFlow:
+    file: ../setup-app.yml
+- tapOn:
+    id: "e2eSignInAlice"
+- extendedWaitUntil:
+    visible: "You can also discover new Custom Feeds to follow."
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: home
+- tapOn:
+    id: "bottomBarProfileBtn"
+# Wait for the loaded Posts tab, not only the profile header: RN shows the header before the feed query ends.
+- extendedWaitUntil:
+    visible: "No posts yet"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: profile

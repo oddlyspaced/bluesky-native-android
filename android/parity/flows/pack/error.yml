@@ -1,0 +1,35 @@
+appId: ${APP_ID}
+---
+# Sign in, then reseed so the signed-in session and the loaded posts no longer exist on the server.
+# Open the cached thread and pull to refresh the feed, and capture what each app shows.
+- runScript:
+    file: ../../setupServer.js
+    env:
+      SERVER_PATH: "?users&follows&posts&feeds&thread"
+- runFlow:
+    file: ../setup-app.yml
+- tapOn:
+    id: "e2eSignInAlice"
+- extendedWaitUntil:
+    visible:
+      id: "feedItem-by-alice.test"
+    timeout: 60000
+- waitForAnimationToEnd
+- runScript:
+    file: ../../setupServer.js
+    env:
+      SERVER_PATH: "?users&follows&posts&feeds&thread"
+- tapOn: "Thread root"
+- extendedWaitUntil:
+    visible: "Error loading post"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: thread
+- back
+- swipe:
+    direction: DOWN
+    duration: 600
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: home

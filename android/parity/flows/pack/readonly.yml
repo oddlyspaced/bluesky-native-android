@@ -1,0 +1,41 @@
+appId: ${APP_ID}
+---
+# Pack capture flow (migration-pack check-parity capture.mjs) for home, thread and profile.
+# Run: node capture.mjs --flow readonly.yml --platform android --device emulator-5554 --label rn|native
+#        --out <dir> --env APP_ID=<app id>
+# Both apps write home.png, thread.png and profile.png, so diff.mjs pairs them by name.
+- runScript:
+    file: ../../setupServer.js
+    env:
+      SERVER_PATH: "?users&follows&posts&feeds&thread"
+- runFlow:
+    file: ../setup-app.yml
+- tapOn:
+    id: "e2eSignInAlice"
+- extendedWaitUntil:
+    visible:
+      id: "feedItem-by-alice.test"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: home
+- scrollUntilVisible:
+    element: "Thread root"
+    direction: DOWN
+    timeout: 20000
+- tapOn: "Thread root"
+# The anchor can show from the feed cache before the replies load, so wait for the reply row itself.
+- extendedWaitUntil:
+    visible:
+      id: "postThreadItem-by-carla.test"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: thread
+- back
+- tapOn:
+    id: "bottomBarProfileBtn"
+- extendedWaitUntil:
+    visible:
+      id: "feedItem-by-alice.test"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: profile

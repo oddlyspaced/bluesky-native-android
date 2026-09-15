@@ -1,0 +1,2003 @@
+{
+ "base": {
+  "home": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     1260,
+     290
+    ],
+    "minw": 30,
+    "reason": "header glyphs and placeholder mark (licence substitution)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1040,
+     470,
+     1250,
+     570
+    ],
+    "minw": 40,
+    "reason": "composer camera and image glyphs (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     640,
+     1250,
+     700
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     886,
+     1250,
+     946
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1157,
+     1250,
+     1217
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1428,
+     1250,
+     1488
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1699,
+     1250,
+     1759
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     780,
+     1130,
+     860
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     780,
+     1250,
+     860
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1026,
+     1130,
+     1106
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1026,
+     1250,
+     1106
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1297,
+     1130,
+     1377
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1297,
+     1250,
+     1377
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1568,
+     1130,
+     1648
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1568,
+     1250,
+     1648
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1839,
+     1130,
+     1919
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1839,
+     1250,
+     1919
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     40,
+     1980,
+     220,
+     2120
+    ],
+    "minw": 40,
+    "bg_x": 30,
+    "reason": "info glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "thread": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     170,
+     285
+    ],
+    "minw": 30,
+    "reason": "back glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1100,
+     160,
+     1260,
+     285
+    ],
+    "minw": 30,
+    "reason": "thread options glyph (Lucide substitute)"
+   },
+   {
+    "kind": "rect",
+    "box": [
+     30,
+     598,
+     580,
+     677
+    ],
+    "reason": "anchor date line (capture time) and its globe glyph"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     668,
+     1130,
+     755
+    ],
+    "minw": 40,
+    "right_x": 880,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     668,
+     1250,
+     755
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     822,
+     1250,
+     882
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     963,
+     1130,
+     1043
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     963,
+     1250,
+     1043
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "profile": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1010,
+     490,
+     1125,
+     580
+    ],
+    "minw": 12,
+    "bg_x": 1015,
+    "reason": "share glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1125,
+     490,
+     1245,
+     580
+    ],
+    "minw": 12,
+    "gap": 20,
+    "bg_x": 1240,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1127,
+     1250,
+     1187
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1268,
+     1130,
+     1348
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1268,
+     1250,
+     1348
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ]
+ },
+ "dark": {
+  "home": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     1260,
+     290
+    ],
+    "minw": 30,
+    "reason": "header glyphs and placeholder mark (licence substitution)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1040,
+     470,
+     1250,
+     570
+    ],
+    "minw": 40,
+    "reason": "composer camera and image glyphs (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     640,
+     1250,
+     700
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     886,
+     1250,
+     946
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1157,
+     1250,
+     1217
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1428,
+     1250,
+     1488
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1699,
+     1250,
+     1759
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     780,
+     1130,
+     860
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     780,
+     1250,
+     860
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1026,
+     1130,
+     1106
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1026,
+     1250,
+     1106
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1297,
+     1130,
+     1377
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1297,
+     1250,
+     1377
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1568,
+     1130,
+     1648
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1568,
+     1250,
+     1648
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1839,
+     1130,
+     1919
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1839,
+     1250,
+     1919
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     40,
+     1980,
+     220,
+     2120
+    ],
+    "minw": 40,
+    "bg_x": 30,
+    "reason": "info glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "thread": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     170,
+     285
+    ],
+    "minw": 30,
+    "reason": "back glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1100,
+     160,
+     1260,
+     285
+    ],
+    "minw": 30,
+    "reason": "thread options glyph (Lucide substitute)"
+   },
+   {
+    "kind": "rect",
+    "box": [
+     30,
+     598,
+     580,
+     677
+    ],
+    "reason": "anchor date line (capture time) and its globe glyph"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     668,
+     1130,
+     755
+    ],
+    "minw": 40,
+    "right_x": 880,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     668,
+     1250,
+     755
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     822,
+     1250,
+     882
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     963,
+     1130,
+     1043
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     963,
+     1250,
+     1043
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "profile": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1010,
+     490,
+     1125,
+     580
+    ],
+    "minw": 12,
+    "bg_x": 1015,
+    "reason": "share glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1125,
+     490,
+     1245,
+     580
+    ],
+    "minw": 12,
+    "gap": 20,
+    "bg_x": 1240,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1127,
+     1250,
+     1187
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1268,
+     1130,
+     1348
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1268,
+     1250,
+     1348
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ]
+ },
+ "interactions": {
+  "home": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     1260,
+     290
+    ],
+    "minw": 30,
+    "reason": "header glyphs and placeholder mark (licence substitution)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1040,
+     470,
+     1250,
+     570
+    ],
+    "minw": 40,
+    "reason": "composer camera and image glyphs (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     640,
+     1250,
+     700
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     886,
+     1250,
+     946
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1157,
+     1250,
+     1217
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1428,
+     1250,
+     1488
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1699,
+     1250,
+     1759
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     780,
+     1130,
+     860
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     780,
+     1250,
+     860
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1026,
+     1130,
+     1106
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1026,
+     1250,
+     1106
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1297,
+     1130,
+     1377
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1297,
+     1250,
+     1377
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1568,
+     1130,
+     1648
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1568,
+     1250,
+     1648
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1839,
+     1130,
+     1919
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1839,
+     1250,
+     1919
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     40,
+     1980,
+     220,
+     2120
+    ],
+    "minw": 40,
+    "bg_x": 30,
+    "reason": "info glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "thread": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     170,
+     285
+    ],
+    "minw": 30,
+    "reason": "back glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1100,
+     160,
+     1260,
+     285
+    ],
+    "minw": 30,
+    "reason": "thread options glyph (Lucide substitute)"
+   },
+   {
+    "kind": "rect",
+    "box": [
+     30,
+     598,
+     580,
+     677
+    ],
+    "reason": "anchor date line (capture time) and its globe glyph"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     805,
+     1130,
+     905
+    ],
+    "minw": 40
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     805,
+     1250,
+     905
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     955,
+     1250,
+     1040
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1100,
+     1130,
+     1195
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1100,
+     1250,
+     1195
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ]
+ },
+ "error": {
+  "home": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     1260,
+     290
+    ],
+    "minw": 30,
+    "reason": "header glyphs and placeholder mark (licence substitution)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1040,
+     470,
+     1250,
+     570
+    ],
+    "minw": 40,
+    "reason": "composer camera and image glyphs (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     640,
+     1250,
+     700
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     886,
+     1250,
+     946
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1157,
+     1250,
+     1217
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1428,
+     1250,
+     1488
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1699,
+     1250,
+     1759
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     780,
+     1130,
+     860
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     780,
+     1250,
+     860
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1026,
+     1130,
+     1106
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1026,
+     1250,
+     1106
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1297,
+     1130,
+     1377
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1297,
+     1250,
+     1377
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1568,
+     1130,
+     1648
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1568,
+     1250,
+     1648
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1839,
+     1130,
+     1919
+    ],
+    "minw": 36,
+    "right_x": 900,
+    "minw_right": 12
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1839,
+     1250,
+     1919
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     40,
+     1980,
+     220,
+     2120
+    ],
+    "minw": 40,
+    "bg_x": 30,
+    "reason": "info glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "thread": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     170,
+     285
+    ],
+    "minw": 30,
+    "reason": "back glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1100,
+     160,
+     1260,
+     285
+    ],
+    "minw": 30,
+    "reason": "thread options glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ]
+ },
+ "empty": {
+  "home": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     1260,
+     290
+    ],
+    "minw": 30,
+    "reason": "header glyphs and placeholder mark (licence substitution)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1040,
+     470,
+     1250,
+     570
+    ],
+    "minw": 40,
+    "reason": "composer camera and image glyphs (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     40,
+     650,
+     220,
+     775
+    ],
+    "minw": 40,
+    "bg_x": 30,
+    "reason": "info glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "profile": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1010,
+     490,
+     1125,
+     580
+    ],
+    "minw": 12,
+    "bg_x": 1015,
+    "reason": "share glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1125,
+     490,
+     1245,
+     580
+    ],
+    "minw": 12,
+    "gap": 20,
+    "bg_x": 1240,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     520,
+     1240,
+     760,
+     1395
+    ],
+    "minw": 40,
+    "bg_x": 30,
+    "reason": "empty-state square-pen glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ]
+ },
+ "font2": {
+  "home": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     1260,
+     290
+    ],
+    "minw": 30,
+    "reason": "header glyphs and placeholder mark (licence substitution)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1000,
+     515,
+     1260,
+     620
+    ],
+    "minw": 40,
+    "reason": "composer camera and image glyphs (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     700,
+     1250,
+     790
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1060,
+     1250,
+     1145
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1410,
+     1250,
+     1495
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1760,
+     1250,
+     1845
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     2110,
+     1250,
+     2195
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     925,
+     1130,
+     1005
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     925,
+     1250,
+     1005
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1265,
+     1130,
+     1345
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1265,
+     1250,
+     1345
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1615,
+     1130,
+     1695
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1615,
+     1250,
+     1695
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1965,
+     1130,
+     2045
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1965,
+     1250,
+     2045
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     2315,
+     1130,
+     2395
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     2315,
+     1250,
+     2395
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "profile": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1010,
+     470,
+     1125,
+     620
+    ],
+    "minw": 12,
+    "bg_x": 1015,
+    "reason": "share glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1125,
+     470,
+     1245,
+     620
+    ],
+    "minw": 12,
+    "gap": 20,
+    "bg_x": 1240,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1370,
+     1250,
+     1460
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1570,
+     1130,
+     1670
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1570,
+     1250,
+     1670
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1080,
+     2480,
+     1170,
+     2570
+    ],
+    "minw": 30,
+    "bg_x": 1124,
+    "reason": "compose FAB glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ],
+  "thread": [
+   {
+    "kind": "status"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     160,
+     170,
+     285
+    ],
+    "minw": 30,
+    "reason": "back glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1100,
+     160,
+     1260,
+     285
+    ],
+    "minw": 30,
+    "reason": "thread options glyph (Lucide substitute)"
+   },
+   {
+    "kind": "rect",
+    "box": [
+     30,
+     735,
+     900,
+     825
+    ],
+    "reason": "anchor date line (capture time); at font scale 2.0 it wraps above the who-can-reply line"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     30,
+     850,
+     105,
+     915
+    ],
+    "minw": 30,
+    "reason": "globe glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     925,
+     1130,
+     1035
+    ],
+    "minw": 40
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     925,
+     1250,
+     1035
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "tail",
+    "box": [
+     700,
+     1120,
+     1250,
+     1215
+    ],
+    "gap": 24
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     190,
+     1340,
+     1130,
+     1415
+    ],
+    "minw": 36
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     1130,
+     1340,
+     1250,
+     1415
+    ],
+    "minw": 12,
+    "gap": 20,
+    "reason": "more-options ellipsis glyph (Lucide substitute)"
+   },
+   {
+    "kind": "glyphs",
+    "box": [
+     20,
+     2715,
+     1260,
+     2800
+    ],
+    "minw": 30,
+    "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+   }
+  ]
+ }
+}

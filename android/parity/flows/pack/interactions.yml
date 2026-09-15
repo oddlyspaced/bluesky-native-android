@@ -1,0 +1,41 @@
+appId: ${APP_ID}
+---
+# Like and repost the first post (Thread root), then capture home and the thread with its stats row.
+- runScript:
+    file: ../../setupServer.js
+    env:
+      SERVER_PATH: "?users&follows&posts&feeds&thread"
+- runFlow:
+    file: ../setup-app.yml
+- tapOn:
+    id: "e2eSignInAlice"
+- extendedWaitUntil:
+    visible:
+      id: "feedItem-by-alice.test"
+    timeout: 60000
+- waitForAnimationToEnd
+- tapOn:
+    id: "likeBtn"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "likeCount"
+    timeout: 10000
+- tapOn:
+    id: "repostBtn"
+    index: 0
+- tapOn: "Repost"
+- extendedWaitUntil:
+    visible:
+      id: "repostCount"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: home
+- tapOn: "Thread root"
+# Wait for the reply row, not only the anchor: the anchor shows from the feed cache before the replies load.
+- extendedWaitUntil:
+    visible:
+      id: "postThreadItem-by-carla.test"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: thread

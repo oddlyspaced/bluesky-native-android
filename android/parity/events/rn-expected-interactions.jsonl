@@ -1,0 +1,17 @@
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":0}}
+{"name":"account:loggedIn","props":{"logContext":"LoginForm","withPassword":true}}
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":0}}
+{"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following","reason":"focus"}}
+{"name":"post:view","props":{"isReply":true,"logContext":"FeedItem","feedDescriptor":"following","position":0}}
+{"name":"post:view","props":{"isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":1}}
+{"name":"post:view","props":{"isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":2}}
+{"name":"post:view","props":{"isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":3}}
+{"name":"post:like","props":{"logContext":"FeedItem","doesPosterFollowLiker":true,"doesLikerFollowPoster":true,"feedDescriptor":"following"}}
+{"name":"post:repost","props":{"logContext":"FeedItem","feedDescriptor":"following"}}
+{"name":"post:clickthroughItem","props":{"logContext":"FeedItem","feedDescriptor":"following"}}
+{"name":"router:navigate","props":{"from":"Home"}}
+{"name":"thread:preferences:load","props":{"sort":"hotness","view":"linear"}}
+{"name":"post:view","props":{"isReply":false,"logContext":"Post","feedDescriptor":"following"}}
+{"name":"post:view","props":{"isReply":true,"logContext":"PostThreadItem"}}
