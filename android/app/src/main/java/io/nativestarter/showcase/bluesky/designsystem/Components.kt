@@ -47,19 +47,22 @@ import androidx.compose.ui.unit.isSpecified
 import kotlinx.coroutines.delay
 import java.time.Instant
 
-/** Current time for relative timestamps, re-read every minute like RN `useTickEveryMinute`. */
+/** RN `useTickEveryMinute()`: the value of the process [io.nativestarter.showcase.bluesky.core.common.MinuteTicker]. */
 val LocalNow = compositionLocalOf { Instant.now() }
 
+/**
+ * Port of RN `TimeElapsed` (src/view/com/util/TimeElapsed.tsx): `ago(timestamp, tick)`, recomputed only when the tick
+ * or the timestamp changes. The time is the tick, never `Date.now()` at render.
+ */
+object TimeElapsed {
+    fun text(timestamp: String, tick: Instant, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
+        TimeAgo.format(timestamp, tick, zone)
+}
+
 @Composable
-fun rememberMinuteTick(): Instant {
-    var now by remember { mutableStateOf(Instant.now()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(60_000)
-            now = Instant.now()
-        }
-    }
-    return now
+fun rememberTimeElapsed(timestamp: String): String {
+    val tick = LocalNow.current
+    return remember(timestamp, tick) { TimeElapsed.text(timestamp, tick) }
 }
 
 /** Icon from a VectorDrawable ported from RN assets/icons. RN icon sizes: sm 16, md 20, lg 24, xl 28. */

@@ -53,13 +53,11 @@ import io.nativestarter.showcase.bluesky.designsystem.FontSize
 import io.nativestarter.showcase.bluesky.designsystem.Hairline
 import io.nativestarter.showcase.bluesky.designsystem.LineHeight
 import io.nativestarter.showcase.bluesky.designsystem.LocalAlf
-import io.nativestarter.showcase.bluesky.designsystem.LocalNow
 import io.nativestarter.showcase.bluesky.designsystem.LocalToaster
 import io.nativestarter.showcase.bluesky.designsystem.Radius
 import io.nativestarter.showcase.bluesky.designsystem.Sanitize
 import io.nativestarter.showcase.bluesky.designsystem.Space
 import io.nativestarter.showcase.bluesky.designsystem.StatCount
-import io.nativestarter.showcase.bluesky.designsystem.TimeAgo
 import io.nativestarter.showcase.bluesky.designsystem.ToastType
 import io.nativestarter.showcase.bluesky.designsystem.Txt
 import io.nativestarter.showcase.bluesky.designsystem.UserAvatar
@@ -266,7 +264,6 @@ fun PostText(post: PostView, actions: PostActions, modifier: Modifier = Modifier
 @Composable
 fun PostMeta(post: PostView, modifier: Modifier = Modifier) {
     val theme = LocalAlf.current
-    val now = LocalNow.current
     val medium = alfText(FontSize.md, color = theme.textContrastMedium, leading = LineHeight.tight)
     // No BoxWithConstraints here: feed rows use IntrinsicSize.Min, and SubcomposeLayout has no intrinsics.
     Row(modifier.fillMaxWidth().padding(bottom = Space.xs), verticalAlignment = Alignment.Bottom) {
@@ -278,7 +275,7 @@ fun PostMeta(post: PostView, modifier: Modifier = Modifier) {
         )
         Txt(" " + Sanitize.handle(post.author.handle, "@"), medium, Modifier.weight(1f), maxLines = 1)
         Txt(
-            TimeAgo.format(post.indexedAt, now),
+            io.nativestarter.showcase.bluesky.designsystem.rememberTimeElapsed(post.indexedAt),
             medium,
             Modifier.padding(start = Space.xs),
             maxLines = 1,

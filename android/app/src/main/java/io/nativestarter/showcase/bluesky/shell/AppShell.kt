@@ -85,7 +85,6 @@ import io.nativestarter.showcase.bluesky.designsystem.UserAvatar
 import io.nativestarter.showcase.bluesky.designsystem.alfText
 import io.nativestarter.showcase.bluesky.designsystem.post.PostActions
 import io.nativestarter.showcase.bluesky.designsystem.pressable
-import io.nativestarter.showcase.bluesky.designsystem.rememberMinuteTick
 import io.nativestarter.showcase.bluesky.feature.feed.FeedViewModel
 import io.nativestarter.showcase.bluesky.feature.feed.HomeScreen
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileScreen
@@ -148,7 +147,7 @@ object Routes {
 @Composable
 fun BlueskyRoot(container: AppContainer) {
     val sessionState by container.sessionManager.state.collectAsStateWithLifecycle()
-    val now = rememberMinuteTick()
+    val now by container.minuteTicker.now.collectAsStateWithLifecycle()
     // RN NavigationContainer onReady: `router:navigate {}` then `init {initMs}`.
     LaunchedEffect(Unit) {
         container.analytics.metric("router:navigate")

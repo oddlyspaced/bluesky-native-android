@@ -50,6 +50,9 @@ class AppContainer(
     val sessionManager = SessionManager(client, store)
     val toaster = Toaster()
 
+    /** RN `TickEveryMinuteProvider`: one tick source for the process, started with the app (review P4). */
+    val minuteTicker = io.nativestarter.showcase.bluesky.core.common.MinuteTicker(CoroutineScope(SupervisorJob() + Dispatchers.Default))
+
     /** Process start in elapsed realtime, for the RN `init` event (`initMs`). */
     val processStartElapsedMs: Long = Process.getStartElapsedRealtime()
     fun millisSinceProcessStart(): Long = SystemClock.elapsedRealtime() - processStartElapsedMs
