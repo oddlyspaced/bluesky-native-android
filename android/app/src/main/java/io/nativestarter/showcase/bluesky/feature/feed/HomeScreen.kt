@@ -60,7 +60,10 @@ import io.nativestarter.showcase.bluesky.R
 import io.nativestarter.showcase.bluesky.core.common.ErrorText
 import io.nativestarter.showcase.bluesky.core.platform.HapticStrength
 import io.nativestarter.showcase.bluesky.core.platform.LocalHaptics
+import io.nativestarter.showcase.bluesky.designsystem.AlfButton
 import io.nativestarter.showcase.bluesky.designsystem.BskyIcon
+import io.nativestarter.showcase.bluesky.designsystem.ButtonColor
+import io.nativestarter.showcase.bluesky.designsystem.ButtonSize
 import io.nativestarter.showcase.bluesky.designsystem.FontSize
 import io.nativestarter.showcase.bluesky.designsystem.LocalAlf
 import io.nativestarter.showcase.bluesky.designsystem.NotInShowcase
@@ -241,57 +244,32 @@ private fun FeedList(
         state = listState,
         contentPadding = PaddingValues(top = contentTop),
     ) {
-        if (state.showLoading) {
-            items(8, key = { "loading-$it" }) { PostLoadingPlaceholder() }
-        } else if (state.showFirstLoadError) {
-            item(key = "error") { ErrorMessage(ErrorText.clean(state.error), callbacks.onRetry) }
-        } else if (state.showEmpty) {
-            item(key = "empty") { FollowingEmptyState(onFindAccounts = { callbacks.onNotInShowcase("Search") }, onDiscoverFeeds = { callbacks.onNotInShowcase("Feeds") }) }
-        }
-        items(state.rows, key = { it.key }, contentType = { it::class }) { row ->
-            when (row) {
-                PostFeedRow.ComposerPrompt -> ComposerPrompt(onClick = {
-                    callbacks.onComposerPressed()
-                    callbacks.onNotInShowcase("New post")
-                })
-                PostFeedRow.FallbackMarker -> DiscoverFallbackHeader()
-                is PostFeedRow.ViewFullThread -> ViewFullThreadRow(onPress = { callbacks.onOpenFullThread(row.uri) })
-                is PostFeedRow.SliceItemRow -> {
-                    LaunchedEffect(row.key) { callbacks.onPostSeen(row) }
-                    PostFeedItem(
-                        post = row.post,
-                        actions = callbacks.postActions(row),
-                        isThreadParent = row.isThreadParent,
-                        isThreadChild = row.isThreadChild,
-                        isThreadLastChild = row.isThreadLastChild,
-                        showTopBorder = !row.hideTopBorder,
-                        reason = row.reason,
-                        showReplyTo = row.showReplyTo,
-                        parentAuthor = row.parentAuthor,
-                        isParentBlocked = row.isParentBlocked,
-                        isParentNotFound = row.isParentNotFound,
-                        currentAccountDid = currentAccountDid,
-                    )
+        postFeedItems(
+            state = state,
+            footerOffset = footerOffset,
+            currentAccountDid = currentAccountDid,
+            onPostSeen = callbacks.onPostSeen,
+            onOpenFullThread = callbacks.onOpenFullThread,
+            onRetryLoadMore = callbacks.onRetryLoadMore,
+            postActions = callbacks.postActions,
+            errorContent = { ErrorMessage(ErrorText.clean(state.error), callbacks.onRetry) },
+            emptyContent = {
+                FollowingEmptyState(onFindAccounts = { callbacks.onNotInShowcase("Search") }, onDiscoverFeeds = { callbacks.onNotInShowcase("Feeds") })
+            },
+            endOfFeedContent = {
+                FollowingEndOfFeed(onFindAccounts = { callbacks.onNotInShowcase("Search") }, onDiscoverFeeds = { callbacks.onNotInShowcase("Feeds") })
+            },
+            extraRow = { row ->
+                when (row) {
+                    PostFeedRow.ComposerPrompt -> ComposerPrompt(onClick = {
+                        callbacks.onComposerPressed()
+                        callbacks.onNotInShowcase("New post")
+                    })
+                    PostFeedRow.FallbackMarker -> DiscoverFallbackHeader()
+                    else -> Unit
                 }
-            }
-        }
-        if (state.showLoadMoreError) {
-            item(key = "loadMoreError") {
-                LoadMoreRetryButton("There was an issue fetching posts. Tap here to try again.", callbacks.onRetryLoadMore)
-            }
-        }
-        item(key = "footer") {
-            when {
-                state.isFetchingNextPage -> Column(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(Modifier.size(24.dp), color = LocalAlf.current.textContrastMedium, strokeWidth = 2.dp)
-                    Spacer(Modifier.height(footerOffset))
-                }
-                state.showEndOfFeed -> Box(Modifier.heightIn(min = footerOffset)) {
-                    FollowingEndOfFeed(onFindAccounts = { callbacks.onNotInShowcase("Search") }, onDiscoverFeeds = { callbacks.onNotInShowcase("Feeds") })
-                }
-                else -> Spacer(Modifier.height(footerOffset))
-            }
-        }
+            },
+        )
     }
 }
 
@@ -430,23 +408,10 @@ private fun FollowingEmptyState(onFindAccounts: () -> Unit, onDiscoverFeeds: () 
     }
 }
 
-/** RN `Button color="secondary_inverted" size="large"`: contrast_900 pill, py 12, px 24, gap 6. */
+/** RN `Button color="secondary_inverted" size="large"` with a trailing chevron. */
 @Composable
 private fun InvertedButton(label: String, onClick: () -> Unit) {
-    val theme = LocalAlf.current
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(Radius.full))
-            .background(theme.invertedButtonBg)
-            .pressable(label, onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Large ButtonText: text_md font_medium; secondary_inverted text: t.atoms.text_inverted (contrast_0).
-        Txt(label, alfText(FontSize.md, FontWeight.Medium, theme.textInverted))
-        BskyIcon(R.drawable.ic_chevron_right, 16.dp, theme.textInverted, Modifier.width(16.dp))
-    }
+    AlfButton(label, onClick, size = ButtonSize.Large, color = ButtonColor.SecondaryInverted, iconEnd = R.drawable.ic_chevron_right)
 }
 
 @Suppress("unused")

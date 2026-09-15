@@ -232,11 +232,13 @@ fun ScreenHeader(
                 BskyIcon(io.nativestarter.showcase.bluesky.R.drawable.ic_arrow_left, 24.dp, Theme.textContrastMedium)
             }
             Spacer(Modifier.width(Space.sm))
+            // RN Layout.Header.TitleText: numberOfLines 2, maxFontSizeMultiplier 2 (review P13).
             Txt(
                 title,
                 alfText(FontSize.lg, FontWeight.SemiBold, leading = LineHeight.tight),
                 Modifier.weight(1f),
-                maxLines = 1,
+                maxLines = 2,
+                maxFontScale = 2f,
             )
             Spacer(Modifier.width(Space.sm))
             Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) { right() }

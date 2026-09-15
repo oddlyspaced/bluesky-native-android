@@ -93,6 +93,9 @@ import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadCallbacks
+import io.nativestarter.showcase.bluesky.designsystem.AlfButton
+import io.nativestarter.showcase.bluesky.designsystem.ButtonColor
+import io.nativestarter.showcase.bluesky.designsystem.ButtonSize
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileCallbacks
 import io.nativestarter.showcase.bluesky.core.network.PostSource
 import androidx.compose.ui.platform.LocalUriHandler
@@ -199,13 +202,26 @@ private fun SignedOutScreen(container: AppContainer) {
             Txt("Native showcase", alfText(FontSize._2xl, FontWeight.Bold), align = TextAlign.Center)
             Spacer(Modifier.weight(1f))
             Column(Modifier.fillMaxWidth().testTag("signinOrCreateAccount"), verticalArrangement = Arrangement.spacedBy(Space.md)) {
-                PillButton("createAccountButton", "Create account", theme.primary, Color.White) {
-                    message = "Create account: Not part of this showcase"
-                }
-                PillButton("signInButton", "Sign in", theme.bgContrast50, theme.textContrastMedium) {
-                    container.analytics.metric("splash:signInPressed")
-                    message = "Sign in form: Not part of this showcase. Debug builds sign in through the e2e control."
-                }
+                // RN SplashScreen: "Create account" primary large, "Sign in" secondary large.
+                AlfButton(
+                    "Create account",
+                    { message = "Create account: Not part of this showcase" },
+                    Modifier.fillMaxWidth(),
+                    size = ButtonSize.Large,
+                    color = ButtonColor.Primary,
+                    testTag = "createAccountButton",
+                )
+                AlfButton(
+                    "Sign in",
+                    {
+                        container.analytics.metric("splash:signInPressed")
+                        message = "Sign in form: Not part of this showcase. Debug builds sign in through the e2e control."
+                    },
+                    Modifier.fillMaxWidth(),
+                    size = ButtonSize.Large,
+                    color = ButtonColor.Secondary,
+                    testTag = "signInButton",
+                )
             }
             Txt(
                 message.orEmpty(),
@@ -221,22 +237,6 @@ private fun SignedOutScreen(container: AppContainer) {
                 Box(Modifier.size(1.dp).background(Color.Red).testTag("e2eSignInBob").pressable("Sign in as Bob") { signIn("bob.test") })
             }
         }
-    }
-}
-
-@Composable
-private fun PillButton(tag: String, label: String, bg: Color, fg: Color, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .testTag(tag)
-            .clip(RoundedCornerShape(Radius.full))
-            .background(bg)
-            .pressable(label, onClick)
-            .padding(vertical = 12.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Txt(label, alfText(FontSize.md, FontWeight.Medium, fg))
     }
 }
 

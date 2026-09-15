@@ -181,19 +181,3 @@ fun EmptyState(
         }
     }
 }
-
-/** A small rounded button (ALF `Button size="small"`), used by empty and error states. */
-@Composable
-fun SmallPillButton(label: String, background: Color, foreground: Color, onPress: () -> Unit, modifier: Modifier = Modifier, testTag: String? = null) {
-    Box(
-        modifier
-            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
-            .clip(RoundedCornerShape(Radius.full))
-            .background(background)
-            .pressable(label, onPress)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Txt(label, alfText(FontSize.sm, FontWeight.Medium, foreground))
-    }
-}

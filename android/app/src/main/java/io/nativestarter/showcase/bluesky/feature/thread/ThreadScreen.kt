@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -50,7 +52,9 @@ import io.nativestarter.showcase.bluesky.R
 import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.platform.HapticStrength
 import io.nativestarter.showcase.bluesky.core.platform.LocalHaptics
+import io.nativestarter.showcase.bluesky.designsystem.AlfButton
 import io.nativestarter.showcase.bluesky.designsystem.BskyIcon
+import io.nativestarter.showcase.bluesky.designsystem.ButtonColor
 import io.nativestarter.showcase.bluesky.designsystem.FontSize
 import io.nativestarter.showcase.bluesky.designsystem.Hairline
 import io.nativestarter.showcase.bluesky.designsystem.LineHeight
@@ -188,6 +192,7 @@ private fun ThreadList(state: ThreadUiState, callbacks: ThreadCallbacks, modifie
 }
 
 /** RN `ThreadItemAnchor`: parent reply line when not the root, large author block, text_lg body, details, big controls. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ThreadAnchor(post: PostView, actions: PostActions, modifier: Modifier = Modifier) {
     val theme = LocalAlf.current
@@ -230,13 +235,20 @@ fun ThreadAnchor(post: PostView, actions: PostActions, modifier: Modifier = Modi
                         onSegmentClick = actions.onRichText,
                     )
                 }
-                Row(
+                // RN ExpandedPostDetails: flex_row, align_center, flex_wrap, gap_sm. At large font scales
+                // "Everybody can reply" moves to its own line instead of wrapping inside the row.
+                FlowRow(
                     Modifier.padding(top = Space.md),
                     horizontalArrangement = Arrangement.spacedBy(Space.sm),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(Space.sm),
                 ) {
-                    Txt(NiceDate.dotSeparated(post.indexedAt), alfText(FontSize.sm, color = theme.textContrastMedium))
-                    if (post.record.reply == null) WhoCanReply()
+                    // Compose foundation 1.7 has no itemVerticalAlignment; align each item in its line instead.
+                    Txt(
+                        NiceDate.dotSeparated(post.indexedAt),
+                        alfText(FontSize.sm, color = theme.textContrastMedium),
+                        Modifier.align(Alignment.CenterVertically),
+                    )
+                    if (post.record.reply == null) WhoCanReply(Modifier.align(Alignment.CenterVertically))
                 }
                 EngagementCounts(post)
                 PostControls(
@@ -253,9 +265,9 @@ fun ThreadAnchor(post: PostView, actions: PostActions, modifier: Modifier = Modi
 
 /** RN `WhoCanReply` for a post without a threadgate: Earth icon + "Everybody can reply". */
 @Composable
-private fun WhoCanReply() {
+private fun WhoCanReply(modifier: Modifier = Modifier) {
     val theme = LocalAlf.current
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalAlignment = Alignment.CenterVertically) {
         BskyIcon(R.drawable.ic_earth, 16.dp, theme.textContrastMedium)
         Txt("Everybody can reply", alfText(FontSize.sm, color = theme.textContrastMedium, leading = LineHeight.tight))
     }
@@ -544,19 +556,7 @@ private fun ThreadError(error: ThreadErrorCopy, onRetry: () -> Unit, modifier: M
                     align = TextAlign.Center,
                 )
             }
-            // ALF Button small, solid, secondary_inverted: rounded_full, paddingVertical 8, paddingHorizontal 14, gap 5.
-            Row(
-                Modifier
-                    .clip(RoundedCornerShape(Radius.full))
-                    .background(theme.invertedButtonBg)
-                    .pressable("Retry", onRetry)
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Txt("Retry", alfText(FontSize.sm, FontWeight.Medium, theme.textInverted))
-                BskyIcon(R.drawable.ic_rotate_ccw, 16.dp, theme.textInverted)
-            }
+            AlfButton("Retry", onRetry, color = ButtonColor.SecondaryInverted, iconEnd = R.drawable.ic_rotate_ccw)
         }
     }
 }
