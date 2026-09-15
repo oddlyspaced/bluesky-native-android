@@ -82,7 +82,7 @@ fun Txt(
     BasicText(
         text = text,
         style = if (align != null) style.copy(textAlign = align) else style,
-        modifier = modifier,
+        modifier = if (style.lineHeightStyle == RnNaturalLineHeightStyle) modifier.rnTextBlockPadding() else modifier,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )

@@ -1,5 +1,7 @@
 package io.nativestarter.showcase.bluesky.designsystem
 
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -121,8 +123,8 @@ val Inter = FontFamily(
  * - fontSize token; a lineHeight multiplier becomes `Math.round(fontSize * lineHeight)`;
  *   without a multiplier no lineHeight is set on native (natural font metrics).
  * - Inter at the requested weight, `fontVariant: no-contextual` (fonts.ts), letterSpacing TRACKING = 0.
- * - Font padding stays off (Compose default). Measured: turning it on for all text raised the
- *   icon-masked diff on home from 5.12% to 9.24% (PARITY.md, iteration 3).
+ * - Line box without an explicit lineHeight: [RN_NATURAL_LINE_HEIGHT_EM]. It is the one place that
+ *   compensates for how React Native Android lays out Inter; screens never add tuned offsets (review A19).
  */
 fun alfText(
     size: androidx.compose.ui.unit.TextUnit = FontSize.sm,
@@ -135,6 +137,45 @@ fun alfText(
     fontWeight = weight,
     color = color,
     letterSpacing = 0.em,
-    lineHeight = if (leading != null) kotlin.math.round(size.value * leading).sp else androidx.compose.ui.unit.TextUnit.Unspecified,
+    lineHeight = if (leading != null) kotlin.math.round(size.value * leading).sp else (size.value * RN_NATURAL_LINE_HEIGHT_EM).sp,
     fontFeatureSettings = "calt 0",
+    // Compose trims the line height on the first and last line by default (Trim.Both), so a one-line text would
+    // get the font's natural height instead of its line height. RN Android makes the line height the line box.
+    lineHeightStyle = if (leading == null) RnNaturalLineHeightStyle else RnExplicitLineHeightStyle,
 )
+
+/** Marks a style that uses the RN natural line box. [Txt] adds [RN_TEXT_BLOCK_PADDING] around such text. */
+val RnNaturalLineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None,
+)
+
+/**
+ * Style for an explicit line height (ALF `leading_*`, or a numeric lineHeight): the line box equals the line height,
+ * with no RN text-block padding. It must differ from [RnNaturalLineHeightStyle] so [Txt] can tell them apart.
+ */
+val RnExplicitLineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Proportional,
+    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.None,
+)
+
+/**
+ * RN Android `Text` keeps `includeFontPadding = true`: the font padding is added once per text block, above the
+ * first line and below the last line, while lines inside the block keep the metric pitch
+ * ([RN_NATURAL_LINE_HEIGHT_EM]). Measured in the RN Android baseline: each feed post row, which has one natural
+ * single-line text, is 2 px (0.667 dp at density 3) taller than the same row built from the line pitch alone.
+ */
+val RN_TEXT_BLOCK_PADDING = 0.667.dp
+
+/** The RN font padding for a natural-line-height text block, split above and below. */
+fun Modifier.rnTextBlockPadding(): Modifier = this.padding(vertical = RN_TEXT_BLOCK_PADDING / 2)
+
+/**
+ * Line height of React Native Android `Text` with Inter when no lineHeight is set, as a multiple of the font size.
+ * Measured in the RN Android baseline (emulator-5554, density 3): the two lines of the 15 sp Discover notice are
+ * 55 px apart, so one line box is 18.333 dp, and 18.333 / 15 = 1.2222. RN sets no lineHeight on native
+ * (src/alf/typography.tsx `normalizeTextStyles`), so this applies to ALF and legacy text alike.
+ * Rejected alternatives, measured: `includeFontPadding = true` on every text (rows drifted +1.17 dp each) and
+ * 1.255 derived from post-row spacing (row pitch matched, but two-line text was 2 px too tall).
+ */
+const val RN_NATURAL_LINE_HEIGHT_EM = 1.2222f

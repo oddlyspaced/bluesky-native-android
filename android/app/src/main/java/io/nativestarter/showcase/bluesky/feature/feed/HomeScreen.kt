@@ -49,6 +49,7 @@ import io.nativestarter.showcase.bluesky.designsystem.alfText
 import io.nativestarter.showcase.bluesky.designsystem.post.PostActions
 import io.nativestarter.showcase.bluesky.designsystem.post.PostFeedItem
 import io.nativestarter.showcase.bluesky.designsystem.pressable
+import io.nativestarter.showcase.bluesky.designsystem.rnTextBlockPadding
 import io.nativestarter.showcase.bluesky.designsystem.ui.TabBar
 
 /** RN src/view/screens/Home.tsx with the "Following" feed page (CP-01). */
@@ -108,9 +109,8 @@ fun HomeScreen(
 /** RN `HomeHeaderLayoutMobile`: menu button, centred mark, feeds (#) button. The mark replaces the Bluesky logo. */
 @Composable
 private fun HomeHeader(onMenu: () -> Unit, onFeeds: () -> Unit) {
-    // Height tuned against the RN Android baseline: tab labels were 2.5px (0.8dp) higher at 48dp.
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 49.dp).padding(start = Space.sm, end = Space.sm, bottom = Space.xs),
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = Space.sm, end = Space.sm, bottom = Space.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(34.dp).testTag("viewHeaderDrawerBtn").pressable("Open drawer menu", onMenu), contentAlignment = Alignment.Center) {
@@ -123,7 +123,11 @@ private fun HomeHeader(onMenu: () -> Unit, onFeeds: () -> Unit) {
     }
 }
 
-/** RN `ComposerPrompt`: avatar 42, "What's up?", camera and image buttons. */
+/**
+ * RN `ComposerPrompt` (src/view/com/feeds/ComposerPrompt.tsx): row align_start, paddingLeft 18, paddingRight 15,
+ * native paddingTop/Bottom 10; avatar 42; an inner row flex_1, ml_md, height 40, align_center, justify_between
+ * with the text (text_md, contrast_medium, includeFontPadding false) and two 24 dp icon buttons, gap_md.
+ */
 @Composable
 private fun ComposerPrompt(onClick: () -> Unit) {
     Row(
@@ -131,15 +135,25 @@ private fun ComposerPrompt(onClick: () -> Unit) {
             .fillMaxWidth()
             .testTag("composerPrompt")
             .pressable("Compose new post", onClick)
-            // RN py_md (12). Measured offsets (text 6px low, row 4px tall) give 10 / 11 on this device.
-            .padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(start = 18.dp, end = 15.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.Top,
     ) {
         UserAvatar(null, 42.dp)
-        Txt("What's up?", alfText(FontSize.md, color = Theme.textContrastMedium), Modifier.padding(start = Space.md).weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
-            BskyIcon(R.drawable.ic_camera, 24.dp, Palette.contrast_300)
-            BskyIcon(R.drawable.ic_image, 24.dp, Palette.contrast_300)
+        Row(
+            Modifier.weight(1f).padding(start = Space.md).height(40.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // includeFontPadding false: the Compose natural line box, not the RN natural line height.
+            Txt(
+                "What's up?",
+                alfText(FontSize.md, color = Theme.textContrastMedium)
+                    .copy(lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified, lineHeightStyle = null),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
+                BskyIcon(R.drawable.ic_camera, 24.dp, Palette.contrast_300)
+                BskyIcon(R.drawable.ic_image, 24.dp, Palette.contrast_300)
+            }
         }
     }
 }
@@ -153,8 +167,7 @@ private fun ComposerPrompt(onClick: () -> Unit) {
 private fun DiscoverFallbackHeader() {
     Column(Modifier.fillMaxWidth().background(Theme.bgContrast25)) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(Palette.contrast_100))
-        // RN paddingVertical 12; legacy RN Text keeps font padding, so the row measures taller on device.
-        Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.width(68.dp).padding(start = 12.dp)) {
                 BskyIcon(R.drawable.ic_info, 36.dp, Palette.contrast_700)
             }
@@ -165,7 +178,7 @@ private fun DiscoverFallbackHeader() {
                     append(".")
                 },
                 style = alfText(15.sp),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).rnTextBlockPadding(),
             )
         }
     }
@@ -182,8 +195,7 @@ private fun FollowingEndOfFeed(onFindAccounts: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            // RN paddingTop 40 and a.mt_xl (20); +3 / +1.5 measured for RN font padding on legacy Text.
-            .padding(start = 30.dp, end = 30.dp, top = 43.dp, bottom = 80.dp),
+            .padding(start = 30.dp, end = 30.dp, top = 40.dp, bottom = 80.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Txt(
@@ -191,7 +203,7 @@ private fun FollowingEndOfFeed(onFindAccounts: () -> Unit) {
             xlMedium,
             align = TextAlign.Center,
         )
-        Spacer(Modifier.height(21.5.dp))
+        Spacer(Modifier.height(Space.xl))
         InvertedButton("Find accounts to follow", onFindAccounts)
         Txt(
             "You can also discover new Custom Feeds to follow.",
@@ -217,8 +229,7 @@ private fun InvertedButton(label: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Large ButtonText: text_md font_medium; secondary_inverted text: t.atoms.text_inverted (contrast_0).
-        // Measured RN large button height 43.4dp = 24 padding + 19.4 text line.
-        Txt(label, alfText(FontSize.md, FontWeight.Medium, Palette.contrast_0).copy(lineHeight = 19.4.sp))
+        Txt(label, alfText(FontSize.md, FontWeight.Medium, Palette.contrast_0))
         BskyIcon(R.drawable.ic_chevron_right, 16.dp, Palette.contrast_0, Modifier.width(16.dp))
     }
 }

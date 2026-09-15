@@ -127,7 +127,7 @@ private fun ProfileHeader(profile: io.nativestarter.showcase.bluesky.core.networ
                     .background(Theme.bgContrast25)
                     .testTag(if (profile.banner != null) "userBannerImage" else "userBannerFallback"),
             )
-            Column(Modifier.padding(start = Space.lg, end = Space.lg, top = Space.md, bottom = Space.md)) {
+            Column(Modifier.padding(start = Space.lg, end = Space.lg, top = Space.md, bottom = Space.sm)) {
                 Row(
                     Modifier.fillMaxWidth().padding(bottom = Space.sm),
                     horizontalArrangement = Arrangement.spacedBy(Space.xs, Alignment.End),

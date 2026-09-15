@@ -4,7 +4,8 @@
 #
 #   dynamic : status bar, relative time text, anchor timestamp        (always masked)
 #   logo    : header mark (licensing, accepted difference)             (always masked)
-#   icons   : UI glyph regions that use Lucide instead of upstream     (second measurement only)
+#   icons   : licensed-asset substitutions: Lucide glyph regions and the code-drawn fallback avatars
+#             (second measurement only; accepted licensing differences, ASSETS.md sections 2 and 3)
 #
 # Usage: ./compare.sh [fuzz]   (default fuzz 5%)
 # Output: one line per screen and mask set. `magick compare` exits 1 when images differ; that is not an error.
@@ -37,6 +38,12 @@ rectangle 200,1570 1250,1645
 rectangle 200,1840 1250,1915
 rectangle 60,1975 190,2115
 rectangle 860,2480 940,2570
+rectangle 44,450 190,596
+rectangle 44,630 190,785
+rectangle 44,880 190,1030
+rectangle 44,1150 190,1300
+rectangle 44,1420 190,1570
+rectangle 44,1690 190,1840
 rectangle 1070,2460 1180,2570
 $BOTTOM_BAR"
 
@@ -48,13 +55,17 @@ icons_thread="rectangle 30,180 140,270
 rectangle 1120,180 1250,270
 rectangle 480,600 570,675
 rectangle 30,670 1250,750
+rectangle 38,337 185,483
+rectangle 38,816 185,962
 rectangle 200,965 1250,1040
 $BOTTOM_BAR"
 
 dynamic_profile="$STATUS
 rectangle 1060,1120 1280,1195"
 logo_profile=""
-icons_profile="rectangle 1010,485 1250,590
+icons_profile="rectangle 26,307 316,598
+rectangle 44,1121 190,1268
+rectangle 1010,485 1250,590
 rectangle 200,1270 1250,1345
 rectangle 1070,2460 1180,2570
 $BOTTOM_BAR"
