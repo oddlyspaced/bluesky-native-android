@@ -1,5 +1,7 @@
 package io.nativestarter.showcase.bluesky.feature.thread
 
+import io.nativestarter.showcase.bluesky.designsystem.IconSize
+import io.nativestarter.showcase.bluesky.designsystem.AvatarSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -114,7 +116,7 @@ fun ThreadScreen(
     Box(modifier.fillMaxSize().background(theme.bg).testTag("postThreadScreen")) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             ScreenHeader("Post", callbacks.onBack) {
-                BskyIcon(R.drawable.ic_sliders, 24.dp, theme.textContrastMedium, Modifier.pressable("Thread options", callbacks.onThreadOptions))
+                BskyIcon(R.drawable.ic_sliders, IconSize.lg, theme.textContrastMedium, Modifier.pressable("Thread options", callbacks.onThreadOptions))
             }
             val error = state.error
             if (error != null) {
@@ -256,7 +258,7 @@ fun ThreadAnchor(post: PostView, actions: PostActions, modifier: Modifier = Modi
                     actions,
                     big = true,
                     // `marginLeft: -5` so the first icon lines up with the text.
-                    modifier = Modifier.negativeStart(5.dp).padding(bottom = Space._2xs),
+                    modifier = Modifier.negativeStart(ThreadLayout.controlsOffset).padding(bottom = Space._2xs),
                 )
             }
         }
@@ -268,7 +270,7 @@ fun ThreadAnchor(post: PostView, actions: PostActions, modifier: Modifier = Modi
 private fun WhoCanReply(modifier: Modifier = Modifier) {
     val theme = LocalAlf.current
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalAlignment = Alignment.CenterVertically) {
-        BskyIcon(R.drawable.ic_earth, 16.dp, theme.textContrastMedium)
+        BskyIcon(R.drawable.ic_earth, IconSize.sm, theme.textContrastMedium)
         Txt("Everybody can reply", alfText(FontSize.sm, color = theme.textContrastMedium, leading = LineHeight.tight))
     }
 }
@@ -356,7 +358,7 @@ private fun ThreadItemPostTombstone(blocked: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.width(AVI_WIDTH), contentAlignment = Alignment.Center) {
-                BskyIcon(if (blocked) R.drawable.ic_person_x else R.drawable.ic_trash, 20.dp, theme.textContrastMedium)
+                BskyIcon(if (blocked) R.drawable.ic_person_x else R.drawable.ic_trash, IconSize.md, theme.textContrastMedium)
             }
             Txt(
                 if (blocked) "Post blocked" else "Post not found",
@@ -381,7 +383,7 @@ private fun ThreadItemShowOtherReplies(onPress: () -> Unit) {
                 Modifier.padding(end = Space.xs).size(26.dp).clip(CircleShape).background(theme.bgContrast25),
                 contentAlignment = Alignment.Center,
             ) {
-                BskyIcon(R.drawable.ic_eye_off, 16.dp, theme.textContrastMedium)
+                BskyIcon(R.drawable.ic_eye_off, IconSize.sm, theme.textContrastMedium)
             }
             Txt(
                 "Show more replies",
@@ -433,7 +435,7 @@ private fun ThreadItemReadMoreUp(onPress: () -> Unit) {
     Column(Modifier.fillMaxWidth().pressable("Continue thread", onPress).padding(top = OUTER_SPACE).padding(horizontal = OUTER_SPACE)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Space.md), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.width(AVI_WIDTH), contentAlignment = Alignment.Center) {
-                BskyIcon(R.drawable.ic_circle_arrow_up, 24.dp, theme.textContrastLow)
+                BskyIcon(R.drawable.ic_circle_arrow_up, IconSize.lg, theme.textContrastLow)
             }
             Txt("Continue thread...", alfText(FontSize.sm, color = theme.textContrastMedium))
         }
@@ -480,14 +482,14 @@ private fun PostControlsSkeleton(big: Boolean) {
         Row(Modifier.weight(1f)) {
             Row(Modifier.widthIn(max = 320.dp).fillMaxWidth()) {
                 repeat(3) { index ->
-                    Box(Modifier.weight(1f).then(if (index == 0) Modifier.negativeStart(4.dp) else Modifier).padding(4.dp)) {
+                    Box(Modifier.weight(1f).then(if (index == 0) Modifier.negativeStart(4.dp) else Modifier).padding(Space.xs)) {
                         SkeletonPill(size)
                     }
                 }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(if (big) Space.sm else Space.xs)) {
-            repeat(3) { Box(Modifier.padding(4.dp)) { SkeletonCircle(size, blend = true) } }
+            repeat(3) { Box(Modifier.padding(Space.xs)) { SkeletonCircle(size, blend = true) } }
         }
     }
 }
@@ -595,7 +597,7 @@ private fun MobileComposePrompt(avatar: String?, onPress: () -> Unit, modifier: 
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            UserAvatar(avatar, 24.dp)
+            UserAvatar(avatar, AvatarSize.composePrompt)
             Txt("Write your reply", alfText(FontSize.md, color = theme.textContrastMedium))
         }
     }
@@ -612,4 +614,9 @@ fun Modifier.negativeStart(amount: Dp): Modifier = layout { measurable, constrai
     val placeable = measurable.measure(widened)
     val width = (placeable.width - extra).coerceAtLeast(0)
     layout(width, placeable.height) { placeable.place(-extra, 0) }
+}
+
+/** RN `ThreadItemAnchor` PostControls style: `{marginLeft: -5}` (no ALF token). */
+private object ThreadLayout {
+    val controlsOffset = 5.dp
 }

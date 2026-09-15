@@ -82,6 +82,28 @@ object Space {
     val _5xl = 40.dp
 }
 
+/** ALF icon sizes (src/components/icons/common.tsx `sizes`). */
+object IconSize {
+    val xs = 12.dp
+    val sm = 16.dp
+    val md = 20.dp
+    val lg = 24.dp
+    val xl = 28.dp
+    val _2xl = 32.dp
+    val _3xl = 48.dp
+}
+
+/** Avatar sizes used by the slice's RN components. */
+object AvatarSize {
+    /** `PostFeedItem`, `ComposerPrompt`, `ThreadItemAnchor`: `size={42}`; thread `LINEAR_AVI_WIDTH`. */
+    val feed = 42.dp
+    /** Profile `GrowableAvatar`: 90 dp avatar inside a 94 dp ring. */
+    val profile = 90.dp
+    val profileRing = 94.dp
+    /** `ThreadComposePrompt`: `size={24}`. */
+    val composePrompt = 24.dp
+}
+
 object Radius {
     val _2xs = 2.dp
     val xs = 4.dp

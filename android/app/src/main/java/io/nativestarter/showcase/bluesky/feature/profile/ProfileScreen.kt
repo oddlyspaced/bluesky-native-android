@@ -1,5 +1,7 @@
 package io.nativestarter.showcase.bluesky.feature.profile
 
+import io.nativestarter.showcase.bluesky.designsystem.IconSize
+import io.nativestarter.showcase.bluesky.designsystem.AvatarSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -181,7 +183,7 @@ private fun ProfileLoaded(
                 if (state.selectedTab == 0) {
                     postFeedItems(
                         state = feed,
-                        footerOffset = maxOf(headerHeight, 32.dp) * 2,
+                        footerOffset = maxOf(headerHeight, Space._4xl) * 2,
                         currentAccountDid = currentAccountDid,
                         onPostSeen = { current.onPostSeen(it) },
                         onOpenFullThread = { current.onOpenFullThread(it) },
@@ -189,7 +191,7 @@ private fun ProfileLoaded(
                         postActions = { current.postActions(it) },
                         errorContent = {
                             if (state.isPostsHidden) {
-                                EmptyState(R.drawable.ic_warning, "Posts hidden", Modifier.padding(vertical = 40.dp), iconSize = 32.dp)
+                                EmptyState(R.drawable.ic_warning, "Posts hidden", Modifier.padding(vertical = Space._5xl), iconSize = 32.dp)
                             } else {
                                 ErrorMessage(ErrorText.clean(feed.error), current.onRetry)
                             }
@@ -307,7 +309,7 @@ private fun ProfileHeader(profile: ProfileViewDetailed, onNotInShowcase: (String
                 .testTag("profileHeaderAviButton"),
             contentAlignment = Alignment.Center,
         ) {
-            UserAvatar(profile.avatar, 90.dp)
+            UserAvatar(profile.avatar, AvatarSize.profile)
         }
     }
 }
@@ -388,7 +390,7 @@ private fun ProfileErrorScreen(copy: ProfileErrorCopy, onRetry: () -> Unit, onBa
                     Modifier.size(50.dp).clip(CircleShape).background(theme.palette.contrast(950)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    BskyIcon(R.drawable.ic_warning, 24.dp, theme.textInverted)
+                    BskyIcon(R.drawable.ic_warning, IconSize.lg, theme.textInverted)
                 }
             }
             Txt(copy.title, alfText(FontSize._2xl, FontWeight.Bold), Modifier.fillMaxWidth().padding(bottom = Space.md), align = TextAlign.Center)

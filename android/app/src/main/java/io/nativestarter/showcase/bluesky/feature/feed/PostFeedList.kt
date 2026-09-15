@@ -1,5 +1,6 @@
 package io.nativestarter.showcase.bluesky.feature.feed
 
+import io.nativestarter.showcase.bluesky.designsystem.Space
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -81,7 +82,7 @@ fun LazyListScope.postFeedItems(
     }
     item(key = "footer") {
         when {
-            state.isFetchingNextPage -> Column(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            state.isFetchingNextPage -> Column(Modifier.fillMaxWidth().padding(top = Space.xl), horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(Modifier.size(24.dp), color = LocalAlf.current.textContrastMedium, strokeWidth = 2.dp)
                 Spacer(Modifier.height(footerOffset))
             }

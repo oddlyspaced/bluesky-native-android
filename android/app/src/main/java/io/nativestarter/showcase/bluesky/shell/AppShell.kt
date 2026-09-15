@@ -1,5 +1,6 @@
 package io.nativestarter.showcase.bluesky.shell
 
+import io.nativestarter.showcase.bluesky.designsystem.IconSize
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.key
@@ -398,7 +399,7 @@ fun BottomBar(
                 hint = UnreadPolicy.hint(badge),
                 onClick = { onSelect(Routes.NOTIFICATIONS) },
             ) {
-                BskyIcon(if (selected == Routes.NOTIFICATIONS) R.drawable.ic_bell_filled else R.drawable.ic_bell, 28.dp, theme.text)
+                BskyIcon(if (selected == Routes.NOTIFICATIONS) R.drawable.ic_bell_filled else R.drawable.ic_bell, IconSize.xl, theme.text)
             }
             BarButton("bottomBarProfileBtn", "Profile", Modifier.weight(1f), onClick = { onSelect(Routes.PROFILE) }) {
                 val atProfile = selected == Routes.PROFILE
@@ -432,14 +433,14 @@ private fun BarButton(
             .then(if (hint.isNotEmpty()) Modifier.semantics { stateDescription = hint } else Modifier)
             .pressable(label, onClick),
     ) {
-        Box(Modifier.fillMaxWidth().padding(top = 13.dp, bottom = 4.dp), contentAlignment = Alignment.Center) { icon() }
+        Box(Modifier.fillMaxWidth().padding(top = BottomBarLayout.itemPaddingTop, bottom = Space.xs), contentAlignment = Alignment.Center) { icon() }
         if (badge != null) {
             Box(
                 Modifier
                     .offset(x = maxWidth * 0.52f, y = 8.dp)
                     .clip(RoundedCornerShape(Radius.full))
                     .background(theme.primary)
-                    .padding(start = 5.dp, end = 5.dp, top = 1.dp, bottom = 2.dp)
+                    .padding(start = BottomBarLayout.badgePaddingHorizontal, end = BottomBarLayout.badgePaddingHorizontal, top = BottomBarLayout.badgePaddingTop, bottom = Space._2xs)
                     .semantics { contentDescription = "" },
             ) {
                 Txt(
@@ -450,4 +451,11 @@ private fun BarButton(
             }
         }
     }
+}
+
+/** RN `BottomBarStyles` literals with no ALF space token: ctrl paddingTop 13; notificationCount paddingHorizontal 5, paddingTop 1. */
+private object BottomBarLayout {
+    val itemPaddingTop = 13.dp
+    val badgePaddingHorizontal = 5.dp
+    val badgePaddingTop = 1.dp
 }

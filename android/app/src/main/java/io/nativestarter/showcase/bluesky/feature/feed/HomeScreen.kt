@@ -1,5 +1,7 @@
 package io.nativestarter.showcase.bluesky.feature.feed
 
+import io.nativestarter.showcase.bluesky.designsystem.IconSize
+import io.nativestarter.showcase.bluesky.designsystem.AvatarSize
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -237,7 +239,7 @@ private fun FeedList(
     currentAccountDid: String?,
 ) {
     // RN FeedFooter offset: max(headerOffset, 32) * 2 on native.
-    val footerOffset = maxOf(headerHeight, 32.dp) * 2
+    val footerOffset = maxOf(headerHeight, Space._4xl) * 2
     LazyColumn(
         Modifier.fillMaxSize().testTag("followingFeedPage-feed-flatlist"),
         state = listState,
@@ -282,7 +284,7 @@ private fun HomeHeader(onMenu: () -> Unit, onMark: () -> Unit, onFeeds: () -> Un
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(34.dp).testTag("viewHeaderDrawerBtn").pressable("Open drawer menu", onMenu), contentAlignment = Alignment.Center) {
-            BskyIcon(R.drawable.ic_bars3, 24.dp, theme.textContrastMedium)
+            BskyIcon(R.drawable.ic_bars3, IconSize.lg, theme.textContrastMedium)
         }
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             ShowcaseMark(
@@ -294,7 +296,7 @@ private fun HomeHeader(onMenu: () -> Unit, onMark: () -> Unit, onFeeds: () -> Un
             )
         }
         Box(Modifier.size(34.dp).testTag("viewHeaderHomeFeedPrefsBtn").pressable("View your feeds and explore more", onFeeds), contentAlignment = Alignment.Center) {
-            BskyIcon(R.drawable.ic_hashtag, 24.dp, theme.textContrastMedium)
+            BskyIcon(R.drawable.ic_hashtag, IconSize.lg, theme.textContrastMedium)
         }
     }
 }
@@ -312,10 +314,10 @@ private fun ComposerPrompt(onClick: () -> Unit) {
             .fillMaxWidth()
             .testTag("composerPrompt")
             .pressable("Compose new post", onClick)
-            .padding(start = 18.dp, end = 15.dp, top = 10.dp, bottom = 10.dp),
+            .padding(start = ComposerPromptLayout.paddingStart, end = ComposerPromptLayout.paddingEnd, top = ComposerPromptLayout.paddingVertical, bottom = ComposerPromptLayout.paddingVertical),
         verticalAlignment = Alignment.Top,
     ) {
-        UserAvatar(null, 42.dp)
+        UserAvatar(null, AvatarSize.feed)
         Row(
             Modifier.weight(1f).padding(start = Space.md).height(40.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -324,8 +326,8 @@ private fun ComposerPrompt(onClick: () -> Unit) {
             // ALF Text with includeFontPadding false; leading_snug still applies.
             Txt("What's up?", alfText(FontSize.md, color = theme.textContrastMedium, includeFontPadding = false))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
-                BskyIcon(R.drawable.ic_camera, 24.dp, theme.palette.contrast(300), Modifier.pressable("Open camera", onClick))
-                BskyIcon(R.drawable.ic_image, 24.dp, theme.palette.contrast(300), Modifier.pressable("Add image", onClick))
+                BskyIcon(R.drawable.ic_camera, IconSize.lg, theme.palette.contrast(300), Modifier.pressable("Open camera", onClick))
+                BskyIcon(R.drawable.ic_image, IconSize.lg, theme.palette.contrast(300), Modifier.pressable("Add image", onClick))
             }
         }
     }
@@ -341,8 +343,8 @@ private fun DiscoverFallbackHeader() {
     val theme = LocalAlf.current
     Column(Modifier.fillMaxWidth().background(theme.bgContrast25)) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(theme.borderContrastLow))
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.width(68.dp).padding(start = 12.dp)) {
+        Row(Modifier.padding(horizontal = Space.md, vertical = Space.md), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(68.dp).padding(start = Space.md)) {
                 BskyIcon(R.drawable.ic_info, 36.dp, theme.textContrastMedium)
             }
             io.nativestarter.showcase.bluesky.designsystem.text.RnText(
@@ -371,13 +373,13 @@ private fun FollowingEndOfFeed(onFindAccounts: () -> Unit, onDiscoverFeeds: () -
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = minHeight)
-                .padding(start = 30.dp, end = 30.dp, top = 40.dp, bottom = 80.dp),
+                .padding(start = EndOfFeedLayout.paddingHorizontal, end = EndOfFeedLayout.paddingHorizontal, top = Space._5xl, bottom = EndOfFeedLayout.paddingBottom),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Txt("You've reached the end of your feed! Find some more accounts to follow.", xlMedium, align = TextAlign.Center)
             Spacer(Modifier.height(Space.xl))
             InvertedButton("Find accounts to follow", onFindAccounts)
-            Txt("You can also discover new Custom Feeds to follow.", xlMedium, Modifier.padding(top = 20.dp), align = TextAlign.Center)
+            Txt("You can also discover new Custom Feeds to follow.", xlMedium, Modifier.padding(top = Space.xl), align = TextAlign.Center)
             Spacer(Modifier.height(Space.md))
             InvertedButton("Discover new custom feeds", onDiscoverFeeds)
         }
@@ -390,14 +392,14 @@ private fun FollowingEmptyState(onFindAccounts: () -> Unit, onDiscoverFeeds: () 
     val theme = LocalAlf.current
     val xlMedium = io.nativestarter.showcase.bluesky.designsystem.legacyText(17.sp, FontWeight.SemiBold)
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 40.dp).widthIn(max = 460.dp).testTag("followingEmptyState"),
+        Modifier.fillMaxWidth().padding(horizontal = EndOfFeedLayout.paddingHorizontal, vertical = Space._5xl).widthIn(max = 460.dp).testTag("followingEmptyState"),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        BskyIcon(R.drawable.ic_search, 62.dp, theme.text, Modifier.padding(bottom = 16.dp))
+        BskyIcon(R.drawable.ic_search, 62.dp, theme.text, Modifier.padding(bottom = Space.lg))
         Txt("Your following feed is empty! Follow more users to see what's happening.", xlMedium, align = TextAlign.Center)
         Spacer(Modifier.height(Space.xl))
         InvertedButton("Find accounts to follow", onFindAccounts)
-        Txt("You can also discover new Custom Feeds to follow.", xlMedium, Modifier.padding(top = 20.dp), align = TextAlign.Center)
+        Txt("You can also discover new Custom Feeds to follow.", xlMedium, Modifier.padding(top = Space.xl), align = TextAlign.Center)
         Spacer(Modifier.height(Space.md))
         InvertedButton("Discover new custom feeds", onDiscoverFeeds)
     }
@@ -411,3 +413,16 @@ private fun InvertedButton(label: String, onClick: () -> Unit) {
 
 @Suppress("unused")
 private fun Float.px(): Int = roundToInt()
+
+/** RN `ComposerPrompt` style literals with no ALF space token: paddingLeft 18, paddingRight 15, native paddingTop/Bottom 10. */
+private object ComposerPromptLayout {
+    val paddingStart = 18.dp
+    val paddingEnd = 15.dp
+    val paddingVertical = 10.dp
+}
+
+/** RN `FollowingEndOfFeed` / `FollowingEmptyState` styles: paddingHorizontal 30, paddingBottom 80 (no ALF token). */
+private object EndOfFeedLayout {
+    val paddingHorizontal = 30.dp
+    val paddingBottom = 80.dp
+}
