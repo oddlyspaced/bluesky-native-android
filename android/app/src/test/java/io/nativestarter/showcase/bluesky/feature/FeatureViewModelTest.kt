@@ -8,7 +8,6 @@ import io.nativestarter.showcase.bluesky.feature.feed.HomeTabs
 import io.nativestarter.showcase.bluesky.feature.feed.PostFeedRow
 import io.nativestarter.showcase.bluesky.feature.profile.PROFILE_TABS
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
-import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
 import io.nativestarter.showcase.bluesky.testing.FakeBskyRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -126,14 +125,6 @@ class FeatureViewModelTest {
         assertEquals("at://did:plc:bob/app.bsky.feed.repost/r", FeedViewModel.viaOf(reason)?.uri)
         assertNull(FeedViewModel.viaOf(reason.copy(cid = null)))
         assertNull(FeedViewModel.viaOf(io.nativestarter.showcase.bluesky.feature.feed.FeedReason.Pin))
-    }
-
-    @Test
-    fun threadFlattensAnchorAndReplies() = runTest {
-        val s = ThreadViewModel("at://root", repo, interactions).state.value
-        assertEquals("Thread root", s.anchor?.record?.text)
-        assertTrue(s.parents.isEmpty())
-        assertEquals(listOf("carla.test"), s.replies.map { it.author.handle })
     }
 
     @Test

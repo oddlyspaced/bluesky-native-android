@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -110,7 +111,40 @@ fun resolveTextStyle(style: TextStyle, align: TextAlign? = null, maxFontScale: F
 /** RN `a.border_t` / `a.border_b`: StyleSheet.hairlineWidth. */
 @Composable
 fun Hairline(color: Color = Theme.borderContrastLow, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(Dp.Hairline).background(color))
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(hairlineWidth())
+            .drawBehind {
+                val stroke = size.height + RN_ANDROID_HAIRLINE_OVERDRAW_PX
+                drawRect(
+                    color,
+                    alpha = RN_ANDROID_HAIRLINE_COVERAGE,
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - stroke),
+                    size = androidx.compose.ui.geometry.Size(size.width, stroke),
+                )
+            },
+    )
+}
+
+/**
+ * RN Android draws a `StyleSheet.hairlineWidth` border (1 px at density 3) as an anti-aliased stroke on a pixel edge:
+ * two rows at half coverage. Measured on the RN Android baselines: every border on home, thread and profile is 2 px
+ * tall in (238, 241, 245), which is contrast_100 (#DCE2EA) at 50 % over white, and the content after a border moves
+ * by 1 px. Here the border reserves 1 px, draws one more pixel over the previous sibling, and uses half alpha.
+ */
+private const val RN_ANDROID_HAIRLINE_OVERDRAW_PX = 1f
+private const val RN_ANDROID_HAIRLINE_COVERAGE = 0.5f
+
+/**
+ * RN `StyleSheet.hairlineWidth` (react-native Libraries/StyleSheet/StyleSheet.js): `PixelRatio.roundToNearestPixel(0.4)`,
+ * or one physical pixel when that rounds to zero. `Dp.Hairline` is zero-sized in a layout, so it cannot stand in for it.
+ */
+@Composable
+fun hairlineWidth(): Dp {
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val pixels = kotlin.math.round(0.4f * density).coerceAtLeast(1f)
+    return (pixels / density).dp
 }
 
 /** Press handling without Material ripple; RN `Pressable` has no ripple on these controls. */

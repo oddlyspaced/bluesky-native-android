@@ -9,6 +9,8 @@ import io.nativestarter.showcase.bluesky.core.analytics.JsonlEventLog
 import io.nativestarter.showcase.bluesky.core.analytics.NoopAnalytics
 import io.nativestarter.showcase.bluesky.core.common.runCatchingCancellable
 import io.nativestarter.showcase.bluesky.core.network.BskyRepository
+import io.nativestarter.showcase.bluesky.core.network.PostCache
+import io.nativestarter.showcase.bluesky.core.network.PostSources
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed
 import io.nativestarter.showcase.bluesky.core.network.XrpcBskyRepository
@@ -78,6 +80,10 @@ class AccountScope(
     val ownProfile: StateFlow<ProfileViewDetailed?> = _ownProfile.asStateFlow()
     val interactions = PostInteractions(repository, scope, analytics) { _ownProfile.value?.followersCount }
     val softReset = SoftResetBus()
+    /** Loaded posts, for thread placeholders (RN `getThreadPlaceholder`). */
+    val postCache = PostCache()
+    /** The feed each opened post came from (RN `setUnstablePostSource`). */
+    val postSources = PostSources()
 
     fun loadOwnProfile() {
         scope.launch {

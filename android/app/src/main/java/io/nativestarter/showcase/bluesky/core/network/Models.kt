@@ -118,18 +118,6 @@ data class FeedViewPost(
 @Serializable
 data class FeedResponse(val feed: List<FeedViewPost>, val cursor: String? = null)
 
-@Serializable
-data class ThreadResponse(val thread: ThreadNode)
-
-/** `app.bsky.feed.defs#threadViewPost`, or a not-found / blocked stub that has no [post]. */
-@Serializable
-data class ThreadNode(
-    @SerialName("\$type") val type: String? = null,
-    val post: PostView? = null,
-    val parent: ThreadNode? = null,
-    val replies: List<ThreadNode> = emptyList(),
-)
-
 /** One item of `app.bsky.unspecced.getPostThreadV2`: depth < 0 parent, 0 anchor, > 0 reply. */
 @Serializable
 data class ThreadItemV2(val uri: String, val depth: Int, val value: JsonObject)

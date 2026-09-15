@@ -8,6 +8,7 @@ import io.nativestarter.showcase.bluesky.core.common.runCatchingCancellable
 import io.nativestarter.showcase.bluesky.core.network.BskyRepository
 import io.nativestarter.showcase.bluesky.core.network.HomeFeedPrefs
 import io.nativestarter.showcase.bluesky.core.network.PinnedFeed
+import io.nativestarter.showcase.bluesky.core.network.PostCache
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.network.StrongRef
@@ -46,6 +47,8 @@ class FeedViewModel(
     private val interactions: PostInteractions,
     private val analytics: Analytics,
     private val userDid: String,
+    /** Every loaded post, including reply parents and roots, can be a thread placeholder. */
+    private val postCache: PostCache = PostCache(),
 ) : ViewModel() {
     private val prefs = MutableStateFlow(HomeFeedPrefs())
     private val tabs = MutableStateFlow(listOf("Following", HomeTabs.FEEDS_LINK))
@@ -53,7 +56,11 @@ class FeedViewModel(
     private val source = HomeFeedSource { cursor -> repository.timeline(cursor) }
     private val pager = FeedPager(
         scope = viewModelScope,
-        fetch = source::fetch,
+        fetch = { cursor ->
+            source.fetch(cursor).also { page ->
+                postCache.put(page.items.flatMap { listOfNotNull(it.post, PostRefs.postView(it.reply?.parent), PostRefs.postView(it.reply?.root)) })
+            }
+        },
         selectedCount = { items -> FeedTuner.following(prefs.value, userDid).tune(items).sumOf { it.items.size } },
     )
     private val seenUris = HashSet<String>()

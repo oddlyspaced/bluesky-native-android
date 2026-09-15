@@ -35,11 +35,14 @@ class FixtureDecodingTest {
     }
 
     @Test
-    fun thread() {
-        val thread = Fixtures.decode<ThreadResponse>("getPostThread.json").thread
-        assertEquals("Thread root", thread.post?.record?.text)
-        assertEquals(1, thread.replies.size)
-        assertEquals("carla.test", thread.replies.single().post?.author?.handle)
+    fun threadV2() {
+        val thread = Fixtures.decode<ThreadV2Response>("getPostThreadV2.json")
+        assertEquals(listOf(0, 1), thread.thread.map { it.depth })
+        assertFalse(thread.hasOtherReplies)
+        val items = io.nativestarter.showcase.bluesky.feature.thread.ThreadTraversal.parse(thread.thread)
+        assertEquals("Thread root", items[0].post?.record?.text)
+        assertEquals("carla.test", items[1].post?.author?.handle)
+        assertTrue(items[0].opThread)
     }
 
     @Test

@@ -30,6 +30,11 @@ import io.nativestarter.showcase.bluesky.feature.profile.ProfileScreen
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileUiState
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadUiState
+import io.nativestarter.showcase.bluesky.feature.thread.ThreadCallbacks
+import io.nativestarter.showcase.bluesky.feature.thread.ThreadErrorCopy
+import io.nativestarter.showcase.bluesky.feature.thread.ThreadItem
+import io.nativestarter.showcase.bluesky.feature.thread.ThreadPostUi
+import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
 import io.nativestarter.showcase.bluesky.shell.BottomBar
 import io.nativestarter.showcase.bluesky.shell.Routes
 
@@ -89,10 +94,22 @@ class ScreenTests {
     }
 
     @Test
-    fun threadShowsAnchorRepliesAndLikes() {
+    fun threadShowsAnchorRepliesComposePromptAndLikes() {
         val anchor = post("bob.test", "Bob", "Thread root")
-        val state = ThreadUiState(loading = false, anchor = anchor, replies = listOf(post("carla.test", "Carla", "Thread reply")))
-        rule.setContent { ThreadScreen(state, actions, onBack = {}, onRefresh = {}) }
+        val reply = post("carla.test", "Carla", "Thread reply")
+        val state = ThreadUiState(
+            items = listOf(
+                ThreadItem.Post(anchor.uri, 0, anchor, ui = ThreadPostUi(isAnchor = true)),
+                ThreadItem.ReplyComposer,
+                ThreadItem.Post(reply.uri, 1, reply, ui = ThreadPostUi(indent = 1, isLastChild = true)),
+            ),
+            anchor = anchor,
+            isFetching = false,
+            isPlaceholderData = false,
+            deferParents = false,
+        )
+        var replied = 0
+        rule.setContent { ThreadScreen(state, ThreadCallbacks(onReplyToAnchor = { replied++ }, postActions = { actions })) }
 
         rule.onNodeWithTag("postThreadItem-by-bob.test").assertIsDisplayed()
         rule.onNodeWithTag("postThreadItem-by-carla.test").assertIsDisplayed()
@@ -100,6 +117,38 @@ class ScreenTests {
         rule.onNodeWithText("Post").assertIsDisplayed()
         rule.onAllNodes(hasTestTag("likeBtn"), useUnmergedTree = true)[0].performClick()
         assertEquals(listOf("Thread root"), liked)
+        rule.onNodeWithText("Write your reply", useUnmergedTree = true).performClick()
+        assertEquals(1, replied)
+    }
+
+    @Test
+    fun threadErrorRetries() {
+        var retried = 0
+        val state = ThreadUiState(
+            error = ThreadErrorCopy("Error loading post", ThreadViewModel.DEFAULT_MESSAGE),
+            isFetching = false,
+            isPlaceholderData = false,
+        )
+        rule.setContent { ThreadScreen(state, ThreadCallbacks(onRetry = { retried++ })) }
+        rule.onNodeWithText("Error loading post", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithText(ThreadViewModel.DEFAULT_MESSAGE, useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithText("Retry", useUnmergedTree = true).performClick()
+        assertEquals(1, retried)
+    }
+
+    @Test
+    fun threadTombstoneAndShowMoreReplies() {
+        var shown = 0
+        val state = ThreadUiState(
+            items = listOf(ThreadItem.NotFound("at://did:plc:x/app.bsky.feed.post/gone", 0), ThreadItem.ShowOtherReplies),
+            isFetching = false,
+            isPlaceholderData = false,
+            deferParents = false,
+        )
+        rule.setContent { ThreadScreen(state, ThreadCallbacks(onShowOtherReplies = { shown++ })) }
+        rule.onNodeWithText("Post not found", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithText("Show more replies", useUnmergedTree = true).performClick()
+        assertEquals(1, shown)
     }
 
     @Test

@@ -9,9 +9,7 @@ import io.nativestarter.showcase.bluesky.core.network.PostViewerState
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewBasic
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed
 import io.nativestarter.showcase.bluesky.core.network.StrongRef
-import io.nativestarter.showcase.bluesky.core.network.ThreadNode
 import io.nativestarter.showcase.bluesky.core.network.ThreadOtherV2Response
-import io.nativestarter.showcase.bluesky.core.network.ThreadResponse
 import io.nativestarter.showcase.bluesky.core.network.ThreadV2Response
 import io.nativestarter.showcase.bluesky.core.network.UserPreferences
 import io.nativestarter.showcase.bluesky.core.network.XrpcJson
@@ -54,6 +52,11 @@ class FakeBskyRepository(
     var failReads = false
     var gate: CompletableDeferred<Unit>? = null
     var threadV2: String = "getPostThreadV2.json"
+    /** Overrides [threadV2] with a built response. */
+    var threadV2Response: ThreadV2Response? = null
+    var otherV2Response: ThreadOtherV2Response? = null
+    /** Holds thread reads open, so a test can see the placeholder state. */
+    var readGate: CompletableDeferred<Unit>? = null
     val calls = mutableListOf<String>()
     private var next = 0
     private var writes = 0
@@ -71,22 +74,17 @@ class FakeBskyRepository(
         return Fixtures.decode(if (cursor == null) "getAuthorFeed.json" else "getAuthorFeedPage2.json")
     }
 
-    override suspend fun postThread(uri: String): ThreadNode {
-        calls += "postThread"
-        if (failReads) error("offline")
-        return Fixtures.decode<ThreadResponse>("getPostThread.json").thread
-    }
-
     override suspend fun postThreadV2(anchor: String, sort: String): ThreadV2Response {
         calls += "postThreadV2:$sort"
+        readGate?.await()
         if (failReads) error("offline")
-        return Fixtures.decode(threadV2)
+        return threadV2Response ?: Fixtures.decode(threadV2)
     }
 
     override suspend fun postThreadOtherV2(anchor: String): ThreadOtherV2Response {
         calls += "postThreadOtherV2"
         if (failReads) error("offline")
-        return Fixtures.decode("getPostThreadOtherV2.json")
+        return otherV2Response ?: Fixtures.decode("getPostThreadOtherV2.json")
     }
 
     override suspend fun profile(actor: String): ProfileViewDetailed {

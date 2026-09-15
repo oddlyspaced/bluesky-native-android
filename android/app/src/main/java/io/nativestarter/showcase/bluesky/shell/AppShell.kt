@@ -92,6 +92,8 @@ import io.nativestarter.showcase.bluesky.feature.profile.ProfileScreen
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
+import io.nativestarter.showcase.bluesky.feature.thread.ThreadCallbacks
+import io.nativestarter.showcase.bluesky.core.network.PostSource
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import io.nativestarter.showcase.bluesky.feature.feed.HomeCallbacks
@@ -283,7 +285,7 @@ private fun SignedInShell(account: AccountScope, session: Session) {
                 composable(Routes.PROFILE) { ProfileRoute(account, session, openPost) }
                 composable(Routes.THREAD) { entry ->
                     val uri = Uri.decode(entry.arguments?.getString("uri").orEmpty())
-                    ThreadRoute(account, uri, openPost, onBack = { nav.popBackStack() })
+                    ThreadRoute(account, session, uri, nav, openPost)
                 }
                 composable(Routes.NOT_IN_SHOWCASE) { entry ->
                     val title = Uri.decode(entry.arguments?.getString("title").orEmpty())
@@ -335,7 +337,7 @@ private fun HomeRoute(account: AccountScope, session: Session, openPost: (PostVi
     val uriHandler = LocalUriHandler.current
     val vm: FeedViewModel = viewModel(
         key = "feed-${session.did}",
-        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did) } },
+        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did, account.postCache) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
     // RN Home.tsx useFocusEffect: `home:feedDisplayed` with reason 'focus'.
@@ -368,6 +370,8 @@ private fun HomeRoute(account: AccountScope, session: Session, openPost: (PostVi
                 PostActions(
                     onOpen = {
                         vm.onPostPressed(it)
+                        // RN PostFeedItem `onBeforePress`: stash the source feed for the thread (setUnstablePostSource).
+                        account.postSources.set(it.uri, PostSource(feedDescriptor = "following", via = via))
                         openPost(it)
                     },
                     onToggleLike = { vm.toggleLike(it, via) },
@@ -419,17 +423,60 @@ private fun ProfileRoute(account: AccountScope, session: Session, openPost: (Pos
 }
 
 @Composable
-private fun ThreadRoute(account: AccountScope, uri: String, openPost: (PostView) -> Unit, onBack: () -> Unit) {
+private fun ThreadRoute(account: AccountScope, session: Session, uri: String, nav: NavHostController, openPost: (PostView) -> Unit) {
+    val uriHandler = LocalUriHandler.current
     val vm: ThreadViewModel = viewModel(
         key = "thread-$uri",
-        factory = viewModelFactory { initializer { ThreadViewModel(uri, account.repository, account.interactions) } },
+        factory = viewModelFactory {
+            initializer {
+                ThreadViewModel(
+                    anchorUri = uri,
+                    repository = account.repository,
+                    interactions = account.interactions,
+                    analytics = account.analytics,
+                    userDid = session.did,
+                    postCache = account.postCache,
+                    source = account.postSources.consume(uri),
+                )
+            }
+        },
     )
     val state by vm.state.collectAsStateWithLifecycle()
+    val ownProfile by account.ownProfile.collectAsStateWithLifecycle()
     ThreadScreen(
         state = state,
-        actions = PostActions(onOpen = { if (it.uri != uri) openPost(it) }, onToggleLike = vm::toggleLike, onToggleRepost = vm::toggleRepost),
-        onBack = onBack,
-        onRefresh = vm::refresh,
+        ownAvatar = ownProfile?.avatar,
+        callbacks = ThreadCallbacks(
+            onBack = { nav.popBackStack() },
+            onThreadOptions = { nav.navigate(Routes.notInShowcase("Thread options")) },
+            onRetry = vm::retry,
+            onShowOtherReplies = vm::showOtherReplies,
+            onOpenThread = { nav.navigate(Routes.thread(it)) },
+            onAnchorLaidOut = vm::onAnchorLaidOut,
+            onStartReached = vm::onStartReached,
+            onEndReached = vm::onEndReached,
+            onItemSeen = vm::onItemSeen,
+            // The composer is outside the slice.
+            onReplyToAnchor = { nav.navigate(Routes.notInShowcase("Reply")) },
+            postActions = { item ->
+                PostActions(
+                    onOpen = { if (it.uri != uri) openPost(it) },
+                    onToggleLike = vm::toggleLike,
+                    onToggleRepost = vm::toggleRepost,
+                    onOpenAuthor = {
+                        if (item.depth == 0) vm.onAnchorAuthorPressed(it)
+                        if (it.author.did == session.did) nav.selectTab(Routes.PROFILE) else nav.navigate(Routes.notInShowcase("Profile"))
+                    },
+                    onReply = {
+                        vm.onReplyPressed(it)
+                        nav.navigate(Routes.notInShowcase("Reply"))
+                    },
+                    onRichText = { segment -> openRichText(segment, uriHandler, nav) },
+                    onOpenReposter = { nav.navigate(Routes.notInShowcase("Profile")) },
+                    onQuote = { nav.navigate(Routes.notInShowcase("Quote post")) },
+                )
+            },
+        ),
     )
 }
 

@@ -15,7 +15,6 @@ import java.time.Instant
 interface BskyRepository {
     suspend fun timeline(cursor: String? = null): FeedResponse
     suspend fun authorFeed(actor: String, cursor: String? = null): FeedResponse
-    suspend fun postThread(uri: String): ThreadNode
 
     /** RN `usePostThread` (src/state/queries/usePostThread): linear view, `branchingFactor` 1, `below` 10. */
     suspend fun postThreadV2(anchor: String, sort: String): ThreadV2Response
@@ -72,10 +71,6 @@ class XrpcBskyRepository(
                 s.accessJwt,
             ),
         )
-    }
-
-    override suspend fun postThread(uri: String): ThreadNode = session.authed(accountDid) { s ->
-        decode<ThreadResponse>(client.query("app.bsky.feed.getPostThread", mapOf("uri" to uri), s.accessJwt)).thread
     }
 
     override suspend fun postThreadV2(anchor: String, sort: String): ThreadV2Response = session.authed(accountDid) { s ->
