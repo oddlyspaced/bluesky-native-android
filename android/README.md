@@ -111,7 +111,7 @@ Last measured results (emulator-5554, Android 16):
 |---|---|
 | JVM tests | 79 tests, 0 failures |
 | Compose UI and Keystore tests | 10 tests, 0 failures |
-| Release smoke | Not run yet |
+| Release smoke | `assembleRelease` passed; installed and launched: "Create account" and "Sign in" present, `e2eSignInAlice` and `e2eSignInBob` absent, not debuggable |
 
 The instrumented tests need Espresso 3.7.0 and the matching AndroidX Test libraries. The Espresso version brought in by `ui-test-junit4` calls `InputManager.getInstance`, which Android 16 removed.
 
