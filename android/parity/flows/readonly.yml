@@ -20,8 +20,10 @@ appId: ${APP_ID}
     direction: DOWN
     timeout: 20000
 - tapOn: "Thread root"
+# "Thread reply" is also on the home feed, so wait for the thread anchor, which only the thread screen has.
 - extendedWaitUntil:
-    visible: "Thread reply"
+    visible:
+      id: "postThreadItem-by-bob.test"
     timeout: 20000
 - waitForAnimationToEnd
 - takeScreenshot: shots/${PREFIX}-thread

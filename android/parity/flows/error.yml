@@ -20,6 +20,11 @@ appId: ${APP_ID}
     env:
       SERVER_PATH: "?users&follows&posts&feeds&thread"
 - tapOn: "Thread root"
+# Wait for the thread error; optional, so the screenshot records what the app shows if it never appears.
+- extendedWaitUntil:
+    visible: "Error loading post"
+    timeout: 20000
+    optional: true
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: shots/${PREFIX}-thread

@@ -8,6 +8,11 @@
 #             (second measurement only; accepted licensing differences, ASSETS.md sections 2 and 3)
 #
 # Usage: ./compare.sh [fuzz]   (default fuzz 5%)
+#   STATE=<state> compares android-<state>-<screen>.png with shots/native-android-<state>-<screen>.png
+#   (interactions, dark, font2, empty, error). The masks are the default-state rectangles; in states with a
+#   different layout (font2, empty, error) they do not follow the moved content.
+#   SCREENS="home thread" limits the screens. A screen without both images is reported as skipped.
+#   RN_STATE=<name> reads android-<name>-<screen>.png for RN instead (for example dark-r2 for a re-captured baseline).
 # Output: one line per screen and mask set. `magick compare` exits 1 when images differ; that is not an error.
 set -u
 cd "$(dirname "$0")"
@@ -77,7 +82,11 @@ mask() { # in out rects
 }
 
 total=$((1280 * 2856))
-for s in home thread profile; do
+SUFFIX="${STATE:+$STATE-}"
+for s in ${SCREENS:-home thread profile}; do
+  RN_SUFFIX="${RN_STATE:+$RN_STATE-}"; RN_SUFFIX="${RN_SUFFIX:-$SUFFIX}"
+  rn_img="$RN/android-$RN_SUFFIX$s.png"; native_img="$NATIVE/native-android-$SUFFIX$s.png"
+  if [ ! -e "$rn_img" ] || [ ! -e "$native_img" ]; then echo "${SUFFIX}$s | skipped: missing $([ -e "$rn_img" ] || echo "$rn_img ")$([ -e "$native_img" ] || echo "$native_img")"; continue; fi
   dyn_var="dynamic_$s"; logo_var="logo_$s"; icon_var="icons_$s"
   base="${!dyn_var}
 ${!logo_var}"
@@ -85,11 +94,11 @@ ${!logo_var}"
 ${!icon_var}"
   for set in base full; do
     rects="${!set}"
-    mask "$RN/android-$s.png" "$OUT/rn-$s-$set.png" "$rects"
-    mask "$NATIVE/native-android-$s.png" "$OUT/native-$s-$set.png" "$rects"
-    px=$(magick compare -metric AE -fuzz "$FUZZ" "$OUT/rn-$s-$set.png" "$OUT/native-$s-$set.png" "$OUT/diff-$s-$set.png" 2>&1 >/dev/null | cut -d' ' -f1)
+    mask "$rn_img" "$OUT/rn-$SUFFIX$s-$set.png" "$rects"
+    mask "$native_img" "$OUT/native-$SUFFIX$s-$set.png" "$rects"
+    px=$(magick compare -metric AE -fuzz "$FUZZ" "$OUT/rn-$SUFFIX$s-$set.png" "$OUT/native-$SUFFIX$s-$set.png" "$OUT/diff-$SUFFIX$s-$set.png" 2>&1 >/dev/null | cut -d' ' -f1)
     label=$([ "$set" = base ] && echo "dynamic+logo masked" || echo "dynamic+logo+icons masked")
     pct=$(python3 -c "print(f'{100*$px/$total:.2f}')")
-    echo "$s | $label | fuzz $FUZZ | $px px | $pct%"
+    echo "${SUFFIX}$s | $label | fuzz $FUZZ | $px px | $pct%"
   done
 done

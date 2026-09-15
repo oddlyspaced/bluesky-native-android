@@ -6,6 +6,7 @@
 #   native: capture-states.sh io.nativestarter.showcase.bluesky native-android
 # Each flow holds /tmp/bsky-seed.lock for its seed and capture. Device settings are always reset on exit.
 # RN files are copied as android-<state>-<screen>.png and never overwrite an existing file.
+# RUN=<tag> saves them as android-<state>-<tag>-<screen>.png instead, for a re-capture next to an older baseline.
 set -uo pipefail
 cd "$(dirname "$0")"
 APP_ID=$1; PREFIX=$2; DEST=${3:-}; shift $(( $# >= 3 ? 3 : $# ))
@@ -53,7 +54,7 @@ if [ -n "$DEST" ]; then
   for f in shots/$PREFIX-*.png; do
     [ -e "$f" ] || continue
     base=$(basename "$f" .png); rest=${base#$PREFIX-}; state=${rest%%-*}; screen=${rest#*-}
-    target="$DEST/android-$state-$screen.png"
+    target="$DEST/android-$state${RUN:+-$RUN}-$screen.png"
     if [ -e "$target" ]; then echo "kept existing $target"; else cp "$f" "$target"; echo "saved $target"; fi
   done
 fi
