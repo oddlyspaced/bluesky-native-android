@@ -460,7 +460,7 @@ private fun ControlButton(
         if (count > 0) {
             Txt(
                 StatCount.format(count),
-                alfText(if (big) FontSize.md else FontSize.sm, if (active) FontWeight.SemiBold else FontWeight.Normal, color),
+                alfText(if (big) FontSize.md else FontSize.sm, if (active) FontWeight.SemiBold else FontWeight.Normal, color, includeFontPadding = false),
                 if (countTag != null) Modifier.testTag(countTag) else Modifier,
             )
         }

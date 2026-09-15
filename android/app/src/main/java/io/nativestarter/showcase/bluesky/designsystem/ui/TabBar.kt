@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.nativestarter.showcase.bluesky.designsystem.FontSize
 import io.nativestarter.showcase.bluesky.designsystem.Palette
-import io.nativestarter.showcase.bluesky.designsystem.RnExplicitLineHeightStyle
 import io.nativestarter.showcase.bluesky.designsystem.Theme
 import io.nativestarter.showcase.bluesky.designsystem.Txt
 import io.nativestarter.showcase.bluesky.designsystem.alfText
@@ -141,7 +140,7 @@ private fun TabItem(item: String, index: Int, isSelected: Boolean, testTag: Stri
             Txt(
                 item,
                 // itemText lineHeight 20: an explicit line height. The line box is 20 dp, with no RN text-block padding.
-                alfText(FontSize.md, FontWeight.SemiBold).copy(lineHeight = 20.sp, lineHeightStyle = RnExplicitLineHeightStyle),
+                alfText(FontSize.md, FontWeight.SemiBold).copy(lineHeight = 20.sp),
                 Modifier
                     .alpha(if (isSelected) 1f else 0.7f)
                     .testTag("$testTag-$item")

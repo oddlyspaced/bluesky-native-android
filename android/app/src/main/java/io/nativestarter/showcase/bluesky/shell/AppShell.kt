@@ -613,8 +613,7 @@ private fun BarButton(
             ) {
                 Txt(
                     badge,
-                    alfText(12.sp, FontWeight.SemiBold, Color.White)
-                        .copy(lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified, lineHeightStyle = null),
+                    alfText(12.sp, FontWeight.SemiBold, Color.White, includeFontPadding = false),
                     maxFontScale = 1.5f,
                 )
             }

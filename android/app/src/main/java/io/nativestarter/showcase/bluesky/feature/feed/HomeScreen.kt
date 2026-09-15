@@ -81,7 +81,6 @@ import io.nativestarter.showcase.bluesky.designsystem.post.PostActions
 import io.nativestarter.showcase.bluesky.designsystem.post.PostFeedItem
 import io.nativestarter.showcase.bluesky.designsystem.pressable
 import io.nativestarter.showcase.bluesky.designsystem.resolveTextStyle
-import io.nativestarter.showcase.bluesky.designsystem.rnTextBlockPadding
 import io.nativestarter.showcase.bluesky.designsystem.ui.TabBar
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -322,12 +321,8 @@ private fun ComposerPrompt(onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            // includeFontPadding false: the Compose natural line box, not the RN natural line height.
-            Txt(
-                "What's up?",
-                alfText(FontSize.md, color = theme.textContrastMedium)
-                    .copy(lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified, lineHeightStyle = null),
-            )
+            // ALF Text with includeFontPadding false; leading_snug still applies.
+            Txt("What's up?", alfText(FontSize.md, color = theme.textContrastMedium, includeFontPadding = false))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
                 BskyIcon(R.drawable.ic_camera, 24.dp, theme.palette.contrast(300), Modifier.pressable("Open camera", onClick))
                 BskyIcon(R.drawable.ic_image, 24.dp, theme.palette.contrast(300), Modifier.pressable("Add image", onClick))
@@ -350,14 +345,14 @@ private fun DiscoverFallbackHeader() {
             Box(Modifier.width(68.dp).padding(start = 12.dp)) {
                 BskyIcon(R.drawable.ic_info, 36.dp, theme.textContrastMedium)
             }
-            BasicText(
+            io.nativestarter.showcase.bluesky.designsystem.text.RnText(
                 buildAnnotatedString {
                     append("We ran out of posts from your follows. Here's the latest from ")
                     withStyle(SpanStyle(color = theme.textLink, fontWeight = FontWeight.SemiBold)) { append("Discover") }
                     append(".")
                 },
-                style = resolveTextStyle(alfText(15.sp)),
-                modifier = Modifier.weight(1f).rnTextBlockPadding(),
+                style = resolveTextStyle(io.nativestarter.showcase.bluesky.designsystem.legacyText(15.sp)),
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -369,7 +364,7 @@ private fun FollowingEndOfFeed(onFindAccounts: () -> Unit, onDiscoverFeeds: () -
     val theme = LocalAlf.current
     val minHeight = (LocalConfiguration.current.screenHeightDp * 0.75f).dp
     // Legacy Text type "xl-medium": fontSize 17, fontWeight semiBold (src/lib/themes.ts).
-    val xlMedium = alfText(17.sp, FontWeight.SemiBold)
+    val xlMedium = io.nativestarter.showcase.bluesky.designsystem.legacyText(17.sp, FontWeight.SemiBold)
     Column {
         Box(Modifier.fillMaxWidth().height(1.dp).background(theme.borderContrastLow))
         Column(
@@ -393,7 +388,7 @@ private fun FollowingEndOfFeed(onFindAccounts: () -> Unit, onDiscoverFeeds: () -
 @Composable
 private fun FollowingEmptyState(onFindAccounts: () -> Unit, onDiscoverFeeds: () -> Unit) {
     val theme = LocalAlf.current
-    val xlMedium = alfText(17.sp, FontWeight.SemiBold)
+    val xlMedium = io.nativestarter.showcase.bluesky.designsystem.legacyText(17.sp, FontWeight.SemiBold)
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 30.dp, vertical = 40.dp).widthIn(max = 460.dp).testTag("followingEmptyState"),
         horizontalAlignment = Alignment.CenterHorizontally,

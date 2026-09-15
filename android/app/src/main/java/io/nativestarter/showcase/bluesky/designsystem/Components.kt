@@ -83,28 +83,21 @@ fun Txt(
     /** RN `maxFontSizeMultiplier`: caps system font scaling for this text (for example 2 for header titles). */
     maxFontScale: Float? = null,
 ) {
-    BasicText(
-        text = text,
-        style = resolveTextStyle(style, align, maxFontScale),
-        modifier = if (style.lineHeightStyle == RnNaturalLineHeightStyle) modifier.rnTextBlockPadding() else modifier,
+    io.nativestarter.showcase.bluesky.designsystem.text.RnText(
+        text = androidx.compose.ui.text.AnnotatedString(text),
+        style = resolveTextStyle(style, align),
+        modifier = modifier,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
+        maxFontScale = maxFontScale,
     )
 }
 
-/** Resolves an unspecified color to the theme text atom and applies an RN `maxFontSizeMultiplier` cap. */
+/** Resolves an unspecified color to the theme text atom. The RN `maxFontSizeMultiplier` cap is applied by `RnText`. */
 @Composable
-fun resolveTextStyle(style: TextStyle, align: TextAlign? = null, maxFontScale: Float? = null): TextStyle {
+fun resolveTextStyle(style: TextStyle, align: TextAlign? = null): TextStyle {
     var resolved = if (style.color == Color.Unspecified) style.copy(color = LocalAlf.current.text) else style
     if (align != null) resolved = resolved.copy(textAlign = align)
-    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
-    if (maxFontScale != null && fontScale > maxFontScale) {
-        val factor = maxFontScale / fontScale
-        resolved = resolved.copy(
-            fontSize = resolved.fontSize * factor,
-            lineHeight = if (resolved.lineHeight.isSpecified) resolved.lineHeight * factor else resolved.lineHeight,
-        )
-    }
     return resolved
 }
 

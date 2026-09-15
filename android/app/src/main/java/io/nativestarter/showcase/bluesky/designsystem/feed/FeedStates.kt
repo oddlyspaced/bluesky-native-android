@@ -124,7 +124,7 @@ fun LoadMoreRetryButton(label: String, onPress: () -> Unit, modifier: Modifier =
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BskyIcon(R.drawable.ic_rotate_ccw, 18.dp, theme.textContrastMedium)
-        Txt(label, alfText(FontSize.md, color = theme.textContrastMedium), Modifier.weight(1f))
+        Txt(label, io.nativestarter.showcase.bluesky.designsystem.legacyText(FontSize.md, color = theme.textContrastMedium), Modifier.weight(1f))
     }
 }
 

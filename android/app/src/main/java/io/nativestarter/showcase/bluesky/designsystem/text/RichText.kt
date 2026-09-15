@@ -14,9 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import io.nativestarter.showcase.bluesky.core.network.Facet
 import io.nativestarter.showcase.bluesky.designsystem.LocalAlf
-import io.nativestarter.showcase.bluesky.designsystem.RnNaturalLineHeightStyle
 import io.nativestarter.showcase.bluesky.designsystem.resolveTextStyle
-import io.nativestarter.showcase.bluesky.designsystem.rnTextBlockPadding
 
 /**
  * RN `RichText` (src/components/RichText.tsx) on native: links, mentions and tags in `text_link` colour with no
@@ -57,11 +55,10 @@ fun RichText(
     } else {
         style
     }
-    BasicText(
+    RnText(
         text = annotated,
         style = resolveTextStyle(base),
-        modifier = (if (style.lineHeightStyle == RnNaturalLineHeightStyle) modifier.rnTextBlockPadding() else modifier)
-            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
+        modifier = modifier.then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )
