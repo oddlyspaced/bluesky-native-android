@@ -20,7 +20,8 @@ class KeystoreSessionStoreTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
-    fun saveLoadClearRoundTrip() = runBlocking {
+    // JUnit 4 needs a void test method; runBlocking would otherwise return the last expression (Boolean).
+    fun saveLoadClearRoundTrip(): Unit = runBlocking {
         val file = File(context.filesDir, "datastore/test-${UUID.randomUUID()}.preferences_pb")
         val dataStore = PreferenceDataStoreFactory.create(produceFile = { file })
         val store = KeystoreSessionStore(context, keyAlias = "test-session-key", dataStore = dataStore)

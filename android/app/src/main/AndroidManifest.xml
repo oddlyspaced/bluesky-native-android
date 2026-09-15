@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- expo-haptics adds VIBRATE to the RN app; the native Haptics service needs the same permission. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".BlueskyApp"

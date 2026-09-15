@@ -64,13 +64,14 @@ fun TabBar(
     modifier: Modifier = Modifier,
 ) {
     // RN `outerBottomBorder`: absolute at top 100%, hairline, bg_contrast_100. It sits below the bar and adds no height.
+    val borderColor = Palette.contrast_100
     Column(
         modifier
             .fillMaxWidth()
             .background(Theme.bg)
             .drawWithContent {
                 drawContent()
-                drawRect(Palette.contrast_100, topLeft = Offset(0f, size.height), size = Size(size.width, 1f))
+                drawRect(borderColor, topLeft = Offset(0f, size.height), size = Size(size.width, 1f))
             }
             .testTag(testTag),
     ) {
@@ -120,6 +121,7 @@ private fun FlexGrowRow(modifier: Modifier, content: @Composable () -> Unit) {
 @Composable
 private fun TabItem(item: String, index: Int, isSelected: Boolean, testTag: String, onSelect: (Int) -> Unit) {
     val density = LocalDensity.current
+    val indicatorColor = Palette.primary_500
     var textWidthPx by remember(item) { mutableIntStateOf(0) }
     var itemWidthPx by remember(item) { mutableIntStateOf(0) }
     // getScaleX: min(max(45, textWidth), itemWidth - 2 * CONTENT_PADDING).
@@ -159,7 +161,7 @@ private fun TabItem(item: String, index: Int, isSelected: Boolean, testTag: Stri
                             val w = indicatorWidth.coerceAtLeast(0.dp).toPx()
                             val h = INDICATOR_HEIGHT.toPx()
                             drawRect(
-                                Palette.primary_500,
+                                indicatorColor,
                                 topLeft = Offset((size.width - w) / 2f, size.height - h),
                                 size = Size(w, h),
                             )

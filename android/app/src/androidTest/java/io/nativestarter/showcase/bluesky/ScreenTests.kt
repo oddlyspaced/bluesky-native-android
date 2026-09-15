@@ -114,7 +114,7 @@ class ScreenTests {
     @Test
     fun bottomBarHasRnTestTagsAndBadge() {
         val selected = mutableListOf<String>()
-        rule.setContent { BottomBar(selected = Routes.HOME, unread = 1, onSelect = { selected += it }) }
+        rule.setContent { BottomBar(selected = Routes.HOME, badge = "1", onSelect = { selected += it }) }
         listOf("bottomBarHomeBtn", "bottomBarSearchBtn", "bottomBarMessagesBtn", "bottomBarNotificationsBtn", "bottomBarProfileBtn")
             .forEach { rule.onNodeWithTag(it).assertIsDisplayed() }
         rule.onNodeWithText("1", useUnmergedTree = true).assertIsDisplayed()

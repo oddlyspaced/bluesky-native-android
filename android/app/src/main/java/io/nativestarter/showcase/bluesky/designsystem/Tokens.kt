@@ -1,5 +1,6 @@
 package io.nativestarter.showcase.bluesky.designsystem
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.graphics.Color
@@ -13,8 +14,8 @@ import androidx.compose.ui.unit.sp
 import io.nativestarter.showcase.bluesky.R
 
 /**
- * ALF light theme tokens, copied from @bsky.app/alf (DEFAULT_PALETTE, tokens.js) as used by
- * bluesky-social-app src/alf/themes.ts and tokens.ts. Values are exact; do not round.
+ * Palette steps of the current ALF theme (light, dark or dim), read from [LocalAlf]. Kept for existing call sites;
+ * new code reads semantic atoms from `LocalAlf.current` instead.
  */
 object Palette {
     val white = Color(0xFFFFFFFF)
@@ -22,48 +23,50 @@ object Palette {
     val pink = Color(0xFFEC4899)
     val like = pink
 
-    val contrast_0 = Color(0xFFFFFFFF)
-    val contrast_25 = Color(0xFFF9FAFB)
-    val contrast_50 = Color(0xFFEFF2F6)
-    val contrast_100 = Color(0xFFDCE2EA)
-    val contrast_200 = Color(0xFFC0CAD8)
-    val contrast_300 = Color(0xFFA5B2C5)
-    val contrast_400 = Color(0xFF8798B0)
-    val contrast_500 = Color(0xFF667B99)
-    val contrast_600 = Color(0xFF526580)
-    val contrast_700 = Color(0xFF405168)
-    val contrast_800 = Color(0xFF313F54)
-    val contrast_900 = Color(0xFF232E3E)
-    val contrast_950 = Color(0xFF19222E)
-    val contrast_975 = Color(0xFF111822)
-    val contrast_1000 = Color(0xFF000000)
+    val contrast_0: Color @Composable get() = LocalAlf.current.palette.contrast(0)
+    val contrast_25: Color @Composable get() = LocalAlf.current.palette.contrast(25)
+    val contrast_50: Color @Composable get() = LocalAlf.current.palette.contrast(50)
+    val contrast_100: Color @Composable get() = LocalAlf.current.palette.contrast(100)
+    val contrast_200: Color @Composable get() = LocalAlf.current.palette.contrast(200)
+    val contrast_300: Color @Composable get() = LocalAlf.current.palette.contrast(300)
+    val contrast_400: Color @Composable get() = LocalAlf.current.palette.contrast(400)
+    val contrast_500: Color @Composable get() = LocalAlf.current.palette.contrast(500)
+    val contrast_600: Color @Composable get() = LocalAlf.current.palette.contrast(600)
+    val contrast_700: Color @Composable get() = LocalAlf.current.palette.contrast(700)
+    val contrast_800: Color @Composable get() = LocalAlf.current.palette.contrast(800)
+    val contrast_900: Color @Composable get() = LocalAlf.current.palette.contrast(900)
+    val contrast_950: Color @Composable get() = LocalAlf.current.palette.contrast(950)
+    val contrast_975: Color @Composable get() = LocalAlf.current.palette.contrast(975)
+    val contrast_1000: Color @Composable get() = LocalAlf.current.palette.contrast(1000)
 
-    val primary_25 = Color(0xFFF5F9FF)
-    val primary_50 = Color(0xFFE5F0FF)
-    val primary_100 = Color(0xFFCCE1FF)
-    val primary_500 = Color(0xFF006AFF)
-    val primary_600 = Color(0xFF0059D6)
+    val primary_25: Color @Composable get() = LocalAlf.current.palette.primary(25)
+    val primary_50: Color @Composable get() = LocalAlf.current.palette.primary(50)
+    val primary_100: Color @Composable get() = LocalAlf.current.palette.primary(100)
+    val primary_500: Color @Composable get() = LocalAlf.current.palette.primary(500)
+    val primary_600: Color @Composable get() = LocalAlf.current.palette.primary(600)
 
-    val positive_600 = Color(0xFF04904A)
-    val negative_500 = Color(0xFFE91646)
+    val positive_500: Color @Composable get() = LocalAlf.current.palette.positive(500)
+    val positive_600: Color @Composable get() = LocalAlf.current.palette.positive(600)
+    val negative_500: Color @Composable get() = LocalAlf.current.palette.negative(500)
 
-    /** Fallback avatar disc colour (the RN fallback avatar uses #0070FF). */
+    /** Fallback avatar disc colour (the RN fallback avatar uses #0070FF). Theme independent. */
     val defaultAvatar = Color(0xFF0070FF)
     /** Brand blue for the placeholder header mark. A colour only; no Bluesky mark is drawn. */
     val brandBlue = Color(0xFF1185FE)
 }
 
-/** Semantic atoms from alf themes.js (light). */
+/** Semantic atoms of the current ALF theme ([AlfTheme]). */
 object Theme {
-    val text = Palette.contrast_1000
-    val textContrastLow = Palette.contrast_400
-    val textContrastMedium = Palette.contrast_700
-    val textContrastHigh = Palette.contrast_900
-    val bg = Palette.contrast_0
-    val bgContrast25 = Palette.contrast_25
-    val bgContrast50 = Palette.contrast_50
-    val borderContrastLow = Palette.contrast_100
-    val borderContrastMedium = Palette.contrast_200
+    val text: Color @Composable get() = LocalAlf.current.text
+    val textContrastLow: Color @Composable get() = LocalAlf.current.textContrastLow
+    val textContrastMedium: Color @Composable get() = LocalAlf.current.textContrastMedium
+    val textContrastHigh: Color @Composable get() = LocalAlf.current.textContrastHigh
+    val textLink: Color @Composable get() = LocalAlf.current.textLink
+    val bg: Color @Composable get() = LocalAlf.current.bg
+    val bgContrast25: Color @Composable get() = LocalAlf.current.bgContrast25
+    val bgContrast50: Color @Composable get() = LocalAlf.current.bgContrast50
+    val borderContrastLow: Color @Composable get() = LocalAlf.current.borderContrastLow
+    val borderContrastMedium: Color @Composable get() = LocalAlf.current.borderContrastMedium
 }
 
 object Space {
@@ -129,7 +132,8 @@ val Inter = FontFamily(
 fun alfText(
     size: androidx.compose.ui.unit.TextUnit = FontSize.sm,
     weight: FontWeight = FontWeight.Normal,
-    color: Color = Theme.text,
+    /** Unspecified resolves to the theme `text` atom in [Txt]. */
+    color: Color = Color.Unspecified,
     leading: Float? = null,
 ): TextStyle = TextStyle(
     fontFamily = Inter,

@@ -20,8 +20,8 @@ val XrpcJson = Json {
 }
 
 /** An XRPC call that returned a non-2xx status. [error] is the lexicon error name, for example `ExpiredToken`. */
-class XrpcException(val status: Int, val error: String?, message: String?) :
-    IOException("XRPC $status ${error ?: ""}: ${message ?: ""}")
+class XrpcException(val status: Int, val error: String?, val serverMessage: String?) :
+    IOException("XRPC $status ${error ?: ""}: ${serverMessage ?: ""}")
 
 /**
  * Minimal XRPC transport over OkHttp.

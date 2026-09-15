@@ -3,6 +3,7 @@ package io.nativestarter.showcase.bluesky.core.network
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 /** Subset of the AT Protocol lexicons this slice reads. Unknown fields are ignored by [XrpcJson]. */
 
@@ -18,12 +19,30 @@ data class SessionResponse(
 )
 
 @Serializable
+data class ProfileViewerState(
+    val following: String? = null,
+    val followedBy: String? = null,
+    val blocking: String? = null,
+    val blockedBy: Boolean = false,
+    val muted: Boolean = false,
+    val blockingByList: JsonElement? = null,
+)
+
+@Serializable
 data class ProfileViewBasic(
     val did: String,
     val handle: String,
     val displayName: String? = null,
     val avatar: String? = null,
+    val viewer: ProfileViewerState? = null,
 )
+
+@Serializable
+data class ByteSlice(val byteStart: Int, val byteEnd: Int)
+
+/** `app.bsky.richtext.facet`: a UTF-8 byte range with link, mention or tag features. */
+@Serializable
+data class Facet(val index: ByteSlice, val features: List<JsonObject> = emptyList())
 
 @Serializable
 data class ProfileViewDetailed(
@@ -43,6 +62,8 @@ data class PostRecord(
     val text: String = "",
     val createdAt: String? = null,
     val reply: ReplyRef? = null,
+    val facets: List<Facet> = emptyList(),
+    val embed: JsonElement? = null,
 )
 
 @Serializable
@@ -56,6 +77,9 @@ data class PostViewerState(
     val like: String? = null,
     val repost: String? = null,
     val bookmarked: Boolean = false,
+    val threadMuted: Boolean = false,
+    val replyDisabled: Boolean = false,
+    val embeddingDisabled: Boolean = false,
 )
 
 @Serializable
@@ -71,11 +95,16 @@ data class PostView(
     val bookmarkCount: Int = 0,
     val indexedAt: String,
     val viewer: PostViewerState = PostViewerState(),
+    val embed: JsonElement? = null,
 )
 
-/** `app.bsky.feed.defs#replyRef`; root and parent may be a blocked or missing post, which this slice skips. */
+/** `app.bsky.feed.defs#replyRef`: root and parent are a postView, notFoundPost or blockedPost. */
 @Serializable
-data class FeedReplyRef(val root: JsonElement? = null, val parent: JsonElement? = null)
+data class FeedReplyRef(
+    val root: JsonElement? = null,
+    val parent: JsonElement? = null,
+    val grandparentAuthor: ProfileViewBasic? = null,
+)
 
 @Serializable
 data class FeedViewPost(
