@@ -155,11 +155,18 @@ fun ViewFullThreadRow(onPress: () -> Unit, modifier: Modifier = Modifier) {
 
 /** RN `EmptyState` (src/view/com/util/EmptyState.tsx): icon, message and an optional button. */
 @Composable
-fun EmptyState(icon: Int, message: String, modifier: Modifier = Modifier, button: (@Composable () -> Unit)? = null) {
+fun EmptyState(
+    icon: Int,
+    message: String,
+    modifier: Modifier = Modifier,
+    button: (@Composable () -> Unit)? = null,
+    /** ALF icon size: `3xl` (48) by default, `2xl` (32) for "Posts hidden". */
+    iconSize: androidx.compose.ui.unit.Dp = 48.dp,
+) {
     val theme = LocalAlf.current
     Column(modifier.fillMaxWidth().testTag("emptyState"), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.padding(top = Space._5xl).size(64.dp), contentAlignment = Alignment.Center) {
-            BskyIcon(icon, 48.dp, theme.textContrastLow)
+            BskyIcon(icon, iconSize, theme.textContrastLow)
         }
         Txt(
             message,

@@ -17,8 +17,6 @@ import io.nativestarter.showcase.bluesky.core.network.PostViewerState
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewBasic
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed
 import io.nativestarter.showcase.bluesky.designsystem.post.PostActions
-import io.nativestarter.showcase.bluesky.feature.feed.FeedRow
-import io.nativestarter.showcase.bluesky.feature.feed.FeedSlice
 import io.nativestarter.showcase.bluesky.feature.feed.FeedUiState
 import io.nativestarter.showcase.bluesky.feature.feed.HomeScreen
 import io.nativestarter.showcase.bluesky.feature.feed.HomeCallbacks
@@ -28,6 +26,8 @@ import io.nativestarter.showcase.bluesky.core.network.HomeFeedPrefs
 import io.nativestarter.showcase.bluesky.core.network.FeedViewPost
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileScreen
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileUiState
+import io.nativestarter.showcase.bluesky.feature.profile.ProfileCallbacks
+import io.nativestarter.showcase.bluesky.feature.profile.ProfileErrorCopy
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadUiState
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadCallbacks
@@ -151,26 +151,56 @@ class ScreenTests {
         assertEquals(1, shown)
     }
 
-    @Test
-    fun profileShowsHeaderAndPostsTab() {
-        val profile = ProfileViewDetailed(
-            did = "did:plc:alice", handle = "alice.test", displayName = "Alice", description = "Test user 1",
-            followersCount = 2, followsCount = 2, postsCount = 1,
-        )
-        val state = ProfileUiState(
-            loading = false,
-            profile = profile,
-            posts = listOf(FeedSlice("p", listOf(FeedRow(post("alice.test", "Alice", "Post"))))),
-            reachedEnd = true,
-        )
-        rule.setContent { ProfileScreen(state, actions, onRefresh = {}, onSelectTab = {}) }
+    private val aliceProfile = ProfileViewDetailed(
+        did = "did:plc:alice", handle = "alice.test", displayName = "Alice", description = "Test user 1",
+        followersCount = 2, followsCount = 2, postsCount = 1,
+    )
 
+    @Test
+    fun profileShowsHeaderPostsTabAndEndOfFeed() {
+        val slices = FeedTuner.author().tune(listOf(FeedViewPost(post = post("alice.test", "Alice", "Post"))))
+        val state = ProfileUiState(
+            profile = aliceProfile,
+            isProfileLoading = false,
+            feed = FeedUiState(rows = PostFeedRows.build(slices, withComposerPrompt = false), isFetched = true, isFetching = false),
+        )
+        rule.setContent { ProfileScreen(state, ProfileCallbacks(postActions = { actions }), currentAccountDid = "did:plc:alice") }
+
+        rule.onNodeWithTag("profileScreen").assertIsDisplayed()
         rule.onNodeWithTag("profileView").assertIsDisplayed()
+        rule.onNodeWithTag("postsFeed-flatlist").assertIsDisplayed()
         rule.onNodeWithTag("profileHeaderDisplayName", useUnmergedTree = true).assertIsDisplayed()
         rule.onNodeWithTag("profileHeaderEditProfileButton").assertIsDisplayed()
         rule.onNodeWithTag("profileHeaderDescription", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithTag("profileHeaderFollowersButton").assertIsDisplayed()
         rule.onNodeWithText("Starter Packs", useUnmergedTree = true).assertExists()
         rule.onNodeWithTag("feedItem-by-alice.test").assertIsDisplayed()
+        rule.onNodeWithText("End of feed", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun profileErrorScreenRetries() {
+        var retried = 0
+        val state = ProfileUiState(isProfileLoading = false, profileError = ProfileErrorCopy("Not Found", "Profile not found"))
+        rule.setContent { ProfileScreen(state, ProfileCallbacks(onRetryProfile = { retried++ })) }
+        rule.onNodeWithTag("profileErrorScreen").assertIsDisplayed()
+        rule.onNodeWithText("Not Found", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithTag("errorScreenTryAgainButton").performClick()
+        assertEquals(1, retried)
+    }
+
+    @Test
+    fun profileEmptyPostsOffersWriteAPost() {
+        val opened = mutableListOf<String>()
+        val state = ProfileUiState(
+            profile = aliceProfile,
+            isProfileLoading = false,
+            feed = FeedUiState(isFetched = true, isFetching = false, isEmpty = true),
+        )
+        rule.setContent { ProfileScreen(state, ProfileCallbacks(onNotInShowcase = { opened += it }), currentAccountDid = "did:plc:alice") }
+        rule.onNodeWithText("No posts yet", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithText("Write a post", useUnmergedTree = true).performClick()
+        assertEquals(listOf("New post"), opened)
     }
 
     @Test

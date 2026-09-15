@@ -93,6 +93,7 @@ import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
 import io.nativestarter.showcase.bluesky.feature.thread.ThreadCallbacks
+import io.nativestarter.showcase.bluesky.feature.profile.ProfileCallbacks
 import io.nativestarter.showcase.bluesky.core.network.PostSource
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
@@ -282,7 +283,7 @@ private fun SignedInShell(account: AccountScope, session: Session) {
                 composable(Routes.SEARCH) { NotInShowcase("Search") }
                 composable(Routes.MESSAGES) { NotInShowcase("Chat") }
                 composable(Routes.NOTIFICATIONS) { NotInShowcase("Notifications") }
-                composable(Routes.PROFILE) { ProfileRoute(account, session, openPost) }
+                composable(Routes.PROFILE) { ProfileRoute(account, session, openPost, nav) }
                 composable(Routes.THREAD) { entry ->
                     val uri = Uri.decode(entry.arguments?.getString("uri").orEmpty())
                     ThreadRoute(account, session, uri, nav, openPost)
@@ -405,20 +406,67 @@ private fun openRichText(segment: RichSegment, uriHandler: UriHandler, nav: NavH
 }
 
 @Composable
-private fun ProfileRoute(account: AccountScope, session: Session, openPost: (PostView) -> Unit) {
+private fun ProfileRoute(account: AccountScope, session: Session, openPost: (PostView) -> Unit, nav: NavHostController) {
+    val uriHandler = LocalUriHandler.current
     val vm: ProfileViewModel = viewModel(
         key = "profile-${session.did}",
-        factory = viewModelFactory { initializer { ProfileViewModel(session.did, account.repository, account.interactions) } },
+        factory = viewModelFactory {
+            initializer {
+                ProfileViewModel(
+                    actorDid = session.did,
+                    repository = account.repository,
+                    interactions = account.interactions,
+                    analytics = account.analytics,
+                    postCache = account.postCache,
+                    onProfileLoaded = account::setOwnProfile,
+                )
+            }
+        },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    LaunchedEffect(account) {
-        account.softReset.resets.collect { if (it == Routes.PROFILE) vm.refresh() }
-    }
+    // RN Profile `listenSoftReset`: scroll the current section to the top and truncate its feed.
+    val softResets = remember(account) { account.softReset.resets.filter { it == Routes.PROFILE }.map { } }
     ProfileScreen(
         state = state,
-        actions = PostActions(openPost, vm::toggleLike, vm::toggleRepost),
-        onRefresh = vm::refresh,
-        onSelectTab = vm::selectTab,
+        softResets = softResets,
+        currentAccountDid = session.did,
+        callbacks = ProfileCallbacks(
+            onRefresh = vm::refresh,
+            onSoftReset = vm::softReset,
+            onSelectTab = vm::selectTab,
+            onBack = { nav.popBackStack() },
+            onRetryProfile = vm::retryProfile,
+            onRetry = vm::retry,
+            onRetryLoadMore = vm::retryLoadMore,
+            onEndReached = vm::onEndReached,
+            onPostSeen = vm::onPostSeen,
+            onOpenFullThread = { nav.navigate(Routes.thread(it)) },
+            onNotInShowcase = { nav.navigate(Routes.notInShowcase(it)) },
+            postActions = { row ->
+                val via = FeedViewModel.viaOf(row.reason)
+                PostActions(
+                    onOpen = {
+                        vm.onPostPressed(it)
+                        // The profile feed has no feed source info, so the thread gets no feed descriptor.
+                        account.postSources.set(it.uri, PostSource(feedDescriptor = null, via = via))
+                        openPost(it)
+                    },
+                    onToggleLike = { vm.toggleLike(it, via) },
+                    onToggleRepost = { vm.toggleRepost(it, via) },
+                    onOpenAuthor = {
+                        vm.onAuthorPressed(it)
+                        if (it.author.did != session.did) nav.navigate(Routes.notInShowcase("Profile"))
+                    },
+                    onReply = {
+                        vm.onReplyPressed(it)
+                        nav.navigate(Routes.notInShowcase("Reply"))
+                    },
+                    onRichText = { segment -> openRichText(segment, uriHandler, nav) },
+                    onOpenReposter = { nav.navigate(Routes.notInShowcase("Profile")) },
+                    onQuote = { nav.navigate(Routes.notInShowcase("Quote post")) },
+                )
+            },
+        ),
     )
 }
 

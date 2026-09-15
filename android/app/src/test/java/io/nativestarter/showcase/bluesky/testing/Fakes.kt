@@ -52,6 +52,9 @@ class FakeBskyRepository(
     var failReads = false
     var gate: CompletableDeferred<Unit>? = null
     var threadV2: String = "getPostThreadV2.json"
+    /** Overrides the author feed fixtures with a built response or an error. */
+    var authorFeedResponse: FeedResponse? = null
+    var authorFeedError: Throwable? = null
     /** Overrides [threadV2] with a built response. */
     var threadV2Response: ThreadV2Response? = null
     var otherV2Response: ThreadOtherV2Response? = null
@@ -71,6 +74,8 @@ class FakeBskyRepository(
     override suspend fun authorFeed(actor: String, cursor: String?): FeedResponse {
         calls += if (cursor == null) "authorFeed:$actor" else "authorFeed:$actor:page2"
         if (failReads) error("offline")
+        authorFeedError?.let { throw it }
+        authorFeedResponse?.let { return it }
         return Fixtures.decode(if (cursor == null) "getAuthorFeed.json" else "getAuthorFeedPage2.json")
     }
 

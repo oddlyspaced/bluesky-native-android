@@ -1,105 +1,262 @@
 package io.nativestarter.showcase.bluesky.feature.profile
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsTopHeight
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.nativestarter.showcase.bluesky.R
+import io.nativestarter.showcase.bluesky.core.common.ErrorText
+import io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed
 import io.nativestarter.showcase.bluesky.designsystem.BskyIcon
 import io.nativestarter.showcase.bluesky.designsystem.FontSize
 import io.nativestarter.showcase.bluesky.designsystem.Hairline
 import io.nativestarter.showcase.bluesky.designsystem.LineHeight
-import io.nativestarter.showcase.bluesky.designsystem.Palette
+import io.nativestarter.showcase.bluesky.designsystem.LocalAlf
 import io.nativestarter.showcase.bluesky.designsystem.Radius
+import io.nativestarter.showcase.bluesky.designsystem.Sanitize
+import io.nativestarter.showcase.bluesky.designsystem.ScreenHeader
 import io.nativestarter.showcase.bluesky.designsystem.Space
-import io.nativestarter.showcase.bluesky.designsystem.Theme
+import io.nativestarter.showcase.bluesky.designsystem.StatCount
 import io.nativestarter.showcase.bluesky.designsystem.Txt
 import io.nativestarter.showcase.bluesky.designsystem.UserAvatar
 import io.nativestarter.showcase.bluesky.designsystem.alfText
+import io.nativestarter.showcase.bluesky.designsystem.feed.EmptyState
+import io.nativestarter.showcase.bluesky.designsystem.feed.ErrorMessage
+import io.nativestarter.showcase.bluesky.designsystem.feed.LoadMoreRetryButton
+import io.nativestarter.showcase.bluesky.designsystem.feed.PostLoadingPlaceholder
+import io.nativestarter.showcase.bluesky.designsystem.feed.SmallPillButton
+import io.nativestarter.showcase.bluesky.designsystem.feed.ViewFullThreadRow
 import io.nativestarter.showcase.bluesky.designsystem.post.PostActions
 import io.nativestarter.showcase.bluesky.designsystem.post.PostFeedItem
 import io.nativestarter.showcase.bluesky.designsystem.pressable
 import io.nativestarter.showcase.bluesky.designsystem.ui.TabBar
+import io.nativestarter.showcase.bluesky.feature.feed.PostFeedRow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 
-/** RN src/view/screens/Profile.tsx + screens/Profile/Header for the signed-in user's own profile (CP-03). */
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+/** Everything the profile screen reports back. Defaults do nothing, so UI tests pass only what they check. */
+data class ProfileCallbacks(
+    val onRefresh: () -> Unit = {},
+    /** A soft reset or a press on the selected Posts tab reached this screen. */
+    val onSoftReset: () -> Unit = {},
+    val onSelectTab: (Int) -> Unit = {},
+    val onBack: () -> Unit = {},
+    val onRetryProfile: () -> Unit = {},
+    val onRetry: () -> Unit = {},
+    val onRetryLoadMore: () -> Unit = {},
+    val onEndReached: () -> Unit = {},
+    val onPostSeen: (PostFeedRow.SliceItemRow) -> Unit = {},
+    val onOpenFullThread: (String) -> Unit = {},
+    val onNotInShowcase: (String) -> Unit = {},
+    val postActions: (PostFeedRow.SliceItemRow) -> PostActions = { PostActions({}, {}, {}) },
+)
+
+/**
+ * RN `ProfileScreen` (src/view/screens/Profile.tsx) for the signed-in user's own profile (CP-03):
+ * `ProfileHeaderLoading` while the profile loads, `ErrorScreen` when it fails, otherwise the header, the section tabs
+ * and the Posts `PostFeed` with RN loading, error, empty, load-more error and end-of-feed rows.
+ */
 @Composable
 fun ProfileScreen(
     state: ProfileUiState,
-    actions: PostActions,
-    onRefresh: () -> Unit,
-    onSelectTab: (Int) -> Unit,
+    callbacks: ProfileCallbacks,
     modifier: Modifier = Modifier,
+    softResets: Flow<Unit> = emptyFlow(),
+    currentAccountDid: String? = null,
 ) {
-    Box(modifier.fillMaxSize().background(Theme.bg).testTag("profileView")) {
-        PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
-            LazyColumn(Modifier.fillMaxSize().testTag("postsFeed")) {
-                state.profile?.let { profile ->
-                    item(key = "header") { ProfileHeader(profile) }
-                    stickyHeader(key = "tabs") {
+    val theme = LocalAlf.current
+    Box(modifier.fillMaxSize().background(theme.bg).testTag("profileScreen")) {
+        val profile = state.profile
+        val error = state.profileError
+        when {
+            error != null -> ProfileErrorScreen(error, callbacks.onRetryProfile, callbacks.onBack)
+            profile == null -> ProfileHeaderLoading()
+            else -> ProfileLoaded(profile, state, callbacks, softResets, isMe = profile.did == currentAccountDid, currentAccountDid)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+private fun ProfileLoaded(
+    profile: ProfileViewDetailed,
+    state: ProfileUiState,
+    callbacks: ProfileCallbacks,
+    softResets: Flow<Unit>,
+    isMe: Boolean,
+    currentAccountDid: String?,
+) {
+    val theme = LocalAlf.current
+    val current by rememberUpdatedState(callbacks)
+    val selectedTab by rememberUpdatedState(state.selectedTab)
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val feed = state.feed
+    var headerPx by remember { mutableIntStateOf(0) }
+    var tabsPx by remember { mutableIntStateOf(0) }
+    // RN PagerWithHeader `headerHeight`: the profile header plus the tab bar.
+    val headerHeight = with(LocalDensity.current) { (headerPx + tabsPx).toDp() }
+
+    fun scrollSectionToTop() {
+        if (selectedTab != 0) return
+        scope.launch { listState.animateScrollToItem(0) }
+        current.onSoftReset()
+    }
+    LaunchedEffect(softResets) { softResets.collect { scrollSectionToTop() } }
+
+    val endReached by remember(listState) {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull() ?: return@derivedStateOf false
+            // PostFeed onEndReachedThreshold 2: within two viewport lengths of the end.
+            val viewport = (info.viewportEndOffset - info.viewportStartOffset).coerceAtLeast(1)
+            (info.totalItemsCount - 1 - last.index) * last.size <= viewport * 2
+        }
+    }
+    LaunchedEffect(endReached, feed.rows.size) {
+        if (endReached && feed.isFetched && selectedTab == 0) current.onEndReached()
+    }
+
+    Box(Modifier.fillMaxSize().testTag("profileView")) {
+        PullToRefreshBox(
+            isRefreshing = feed.isRefreshing,
+            onRefresh = current.onRefresh,
+            modifier = Modifier.fillMaxSize().testTag("postsFeed"),
+        ) {
+            LazyColumn(Modifier.fillMaxSize().testTag("postsFeed-flatlist"), state = listState) {
+                item(key = "header") {
+                    ProfileHeader(profile, current.onNotInShowcase, Modifier.onSizeChanged { headerPx = it.height })
+                }
+                stickyHeader(key = "tabs") {
+                    Box(Modifier.onSizeChanged { tabsPx = it.height }) {
                         TabBar(
                             items = PROFILE_TABS,
                             selected = state.selectedTab,
-                            onSelect = onSelectTab,
+                            onSelect = { index -> if (index == state.selectedTab) scrollSectionToTop() else current.onSelectTab(index) },
                             centered = false,
                             testTag = "profilePager",
                         )
                     }
                 }
                 if (state.selectedTab == 0) {
-                    state.posts.forEach { slice ->
-                        items(slice.rows, key = { slice.key + it.post.uri }) { row ->
-                            PostFeedItem(
-                                row.post,
-                                actions,
-                                isThreadParent = row.isThreadParent,
-                                isThreadChild = row.isThreadChild,
-                                showTopBorder = slice.rows.first() == row && state.posts.first() != slice,
+                    when {
+                        feed.showLoading -> items(8, key = { "loading-$it" }) { PostLoadingPlaceholder() }
+                        feed.showFirstLoadError -> item(key = "error") {
+                            if (state.isPostsHidden) {
+                                EmptyState(R.drawable.ic_warning, "Posts hidden", Modifier.padding(vertical = 40.dp), iconSize = 32.dp)
+                            } else {
+                                ErrorMessage(ErrorText.clean(feed.error), current.onRetry)
+                            }
+                        }
+                        feed.showEmpty -> item(key = "empty") {
+                            EmptyState(
+                                R.drawable.ic_edit_big,
+                                "No posts yet",
+                                button = if (isMe) {
+                                    { SmallPillButton("Write a post", theme.primary, Color.White, { current.onNotInShowcase("New post") }) }
+                                } else {
+                                    null
+                                },
                             )
                         }
                     }
-                    if (!state.loading && state.error == null && state.reachedEnd) {
-                        item(key = "footer") { EndOfFeed() }
+                    items(feed.rows, key = { it.key }, contentType = { it::class }) { row ->
+                        when (row) {
+                            is PostFeedRow.SliceItemRow -> {
+                                LaunchedEffect(row.key) { current.onPostSeen(row) }
+                                PostFeedItem(
+                                    post = row.post,
+                                    actions = current.postActions(row),
+                                    isThreadParent = row.isThreadParent,
+                                    isThreadChild = row.isThreadChild,
+                                    isThreadLastChild = row.isThreadLastChild,
+                                    showTopBorder = !row.hideTopBorder,
+                                    reason = row.reason,
+                                    showReplyTo = row.showReplyTo,
+                                    parentAuthor = row.parentAuthor,
+                                    isParentBlocked = row.isParentBlocked,
+                                    isParentNotFound = row.isParentNotFound,
+                                    currentAccountDid = currentAccountDid,
+                                )
+                            }
+                            is PostFeedRow.ViewFullThread -> ViewFullThreadRow(onPress = { current.onOpenFullThread(row.uri) })
+                            // Author feeds have no composer prompt and no Discover fallback.
+                            PostFeedRow.ComposerPrompt, PostFeedRow.FallbackMarker -> Unit
+                        }
+                    }
+                    if (feed.showLoadMoreError) {
+                        item(key = "loadMoreError") {
+                            LoadMoreRetryButton("There was an issue fetching posts. Tap here to try again.", current.onRetryLoadMore)
+                        }
+                    }
+                    item(key = "footer") {
+                        // RN FeedFooter offset: max(headerOffset, 32) * 2 on native.
+                        val offset = maxOf(headerHeight, 32.dp) * 2
+                        when {
+                            feed.isFetchingNextPage -> Column(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(Modifier.size(24.dp), color = theme.textContrastMedium, strokeWidth = 2.dp)
+                                Spacer(Modifier.height(offset))
+                            }
+                            feed.showEndOfFeed -> Box(Modifier.heightIn(min = offset)) { ProfileEndOfFeed() }
+                            else -> Spacer(Modifier.height(offset))
+                        }
                     }
                 } else {
                     item(key = "notInShowcase") {
                         Txt(
                             "${PROFILE_TABS[state.selectedTab]}: Not part of this showcase",
-                            alfText(FontSize.md, color = Theme.textContrastMedium),
+                            alfText(FontSize.md, color = theme.textContrastMedium),
                             Modifier.fillMaxWidth().padding(vertical = Space._5xl),
                             align = TextAlign.Center,
                         )
-                    }
-                }
-                state.error?.let { err ->
-                    item(key = "error") {
-                        Txt(err, alfText(FontSize.md, color = Theme.textContrastMedium), Modifier.padding(Space.lg))
                     }
                 }
             }
@@ -114,17 +271,22 @@ fun ProfileScreen(
     }
 }
 
-/** RN ProfileHeaderStandard inside ProfileHeaderShell. */
+/**
+ * RN `ProfileHeaderStandard` inside `ProfileHeaderShell`. The description is plain text: RN detects links and
+ * mentions in it client-side (`RichText.detectFacets`), which this slice does not port.
+ */
 @Composable
-private fun ProfileHeader(profile: io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed) {
-    Box(Modifier.fillMaxWidth().background(Theme.bg)) {
+private fun ProfileHeader(profile: ProfileViewDetailed, onNotInShowcase: (String) -> Unit, modifier: Modifier = Modifier) {
+    val theme = LocalAlf.current
+    Box(modifier.fillMaxWidth().background(theme.bg)) {
         Column {
             // Shell: banner height 150; userBannerFallback is bg_contrast_25 when there is no banner.
             Box(
                 Modifier
                     .fillMaxWidth()
                     .height(150.dp)
-                    .background(Theme.bgContrast25)
+                    .background(theme.bgContrast25)
+                    .semantics { contentDescription = if (profile.banner != null) "View profile banner" else "Profile banner placeholder" }
                     .testTag(if (profile.banner != null) "userBannerImage" else "userBannerFallback"),
             )
             Column(Modifier.padding(start = Space.lg, end = Space.lg, top = Space.md, bottom = Space.sm)) {
@@ -132,14 +294,14 @@ private fun ProfileHeader(profile: io.nativestarter.showcase.bluesky.core.networ
                     Modifier.fillMaxWidth().padding(bottom = Space.sm),
                     horizontalArrangement = Arrangement.spacedBy(Space.xs, Alignment.End),
                 ) {
-                    SmallButton("profileHeaderEditProfileButton", "Edit profile") {
-                        Txt("Edit Profile", alfText(FontSize.sm, FontWeight.Medium, Palette.contrast_700))
+                    SmallButton("profileHeaderEditProfileButton", "Edit profile", onClick = { onNotInShowcase("Edit profile") }) {
+                        Txt("Edit Profile", alfText(FontSize.sm, FontWeight.Medium, theme.textContrastMedium))
                     }
-                    SmallButton("profileHeaderShareButton", "Invite friends", square = true) {
-                        BskyIcon(R.drawable.ic_share, 16.dp, Palette.contrast_700)
+                    SmallButton("profileHeaderShareButton", "Invite friends", square = true, onClick = { onNotInShowcase("Invite friends") }) {
+                        BskyIcon(R.drawable.ic_share, 16.dp, theme.textContrastMedium)
                     }
-                    SmallButton("profileHeaderDropdownBtn", "More options", square = true) {
-                        BskyIcon(R.drawable.ic_dots, 16.dp, Palette.contrast_700)
+                    SmallButton("profileHeaderDropdownBtn", "More options", square = true, onClick = { onNotInShowcase("More options") }) {
+                        BskyIcon(R.drawable.ic_dots, 16.dp, theme.textContrastMedium)
                     }
                 }
                 Column(
@@ -147,14 +309,17 @@ private fun ProfileHeader(profile: io.nativestarter.showcase.bluesky.core.networ
                     verticalArrangement = Arrangement.spacedBy(Space.xs),
                 ) {
                     Txt(
-                        profile.displayName?.takeIf { it.isNotBlank() } ?: profile.handle,
+                        Sanitize.displayNameOrHandle(profile.displayName, profile.handle),
                         alfText(FontSize._3xl, FontWeight.Bold, leading = LineHeight.tight),
                         Modifier.testTag("profileHeaderDisplayName"),
                     )
-                    Txt("@${profile.handle}", alfText(FontSize.md, color = Theme.textContrastMedium, leading = LineHeight.snug))
+                    Txt(
+                        Sanitize.handle(profile.handle, "@"),
+                        alfText(FontSize.md, color = theme.textContrastMedium, leading = LineHeight.snug),
+                    )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(Space.md)) {
-                    Metrics(profile)
+                    Metrics(profile, onNotInShowcase)
                     profile.description?.takeIf { it.isNotBlank() }?.let {
                         Txt(it, alfText(FontSize.md), Modifier.testTag("profileHeaderDescription"))
                     }
@@ -167,7 +332,11 @@ private fun ProfileHeader(profile: io.nativestarter.showcase.bluesky.core.networ
                 .offset(x = 10.dp, y = 104.dp)
                 .size(94.dp)
                 .clip(CircleShape)
-                .background(Theme.bg)
+                .background(theme.bg)
+                .semantics {
+                    contentDescription = "View ${profile.handle}'s avatar"
+                    role = Role.Image
+                }
                 .testTag("profileHeaderAviButton"),
             contentAlignment = Alignment.Center,
         ) {
@@ -176,51 +345,121 @@ private fun ProfileHeader(profile: io.nativestarter.showcase.bluesky.core.networ
     }
 }
 
-/** RN Metrics.tsx: "{n} followers  {n} following  {n} posts". */
+/** RN Metrics.tsx: followers and following links (labels "{n} followers", "{n} following") and the post count. */
 @Composable
-private fun Metrics(profile: io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-        Metric("profileHeaderFollowersButton", profile.followersCount, if (profile.followersCount == 1) "follower" else "followers")
-        Metric("profileHeaderFollowsButton", profile.followsCount, "following")
-        Metric(null, profile.postsCount, if (profile.postsCount == 1) "post" else "posts")
+private fun Metrics(profile: ProfileViewDetailed, onNotInShowcase: (String) -> Unit) {
+    val followers = if (profile.followersCount == 1) "follower" else "followers"
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.sm), verticalAlignment = Alignment.CenterVertically) {
+        Metric("profileHeaderFollowersButton", "${profile.followersCount} $followers", profile.followersCount, followers) { onNotInShowcase("Followers") }
+        Metric("profileHeaderFollowsButton", "${profile.followsCount} following", profile.followsCount, "following") { onNotInShowcase("Following") }
+        Metric(null, null, profile.postsCount, if (profile.postsCount == 1) "post" else "posts", null)
     }
 }
 
 @Composable
-private fun Metric(tag: String?, count: Int, label: String) {
-    Row(if (tag != null) Modifier.testTag(tag) else Modifier) {
-        Txt("$count ", alfText(FontSize.md, FontWeight.SemiBold))
-        Txt(label, alfText(FontSize.md, color = Theme.textContrastMedium))
+private fun Metric(tag: String?, label: String?, count: Int, noun: String, onClick: (() -> Unit)?) {
+    val theme = LocalAlf.current
+    var modifier: Modifier = if (tag != null) Modifier.testTag(tag) else Modifier
+    if (onClick != null) modifier = modifier.pressable(label, onClick)
+    Row(modifier) {
+        Txt("${StatCount.format(count)} ", alfText(FontSize.md, FontWeight.SemiBold))
+        Txt(noun, alfText(FontSize.md, color = theme.textContrastMedium))
     }
 }
 
 /** RN `Button size="small" color="secondary"`: bg contrast_50, rounded_full, 33dp tall. */
 @Composable
-private fun SmallButton(tag: String, label: String, square: Boolean = false, content: @Composable () -> Unit) {
+private fun SmallButton(tag: String, label: String, square: Boolean = false, onClick: () -> Unit, content: @Composable () -> Unit) {
+    val theme = LocalAlf.current
     Box(
         Modifier
             .testTag(tag)
             .height(33.dp)
             .then(if (square) Modifier.size(33.dp) else Modifier)
             .clip(RoundedCornerShape(Radius.full))
-            .background(Palette.contrast_50)
-            .pressable(label) {}
+            .background(theme.bgContrast50)
+            .pressable(label, onClick)
             // Button size small: paddingVertical 8, paddingHorizontal 14 (src/components/Button.tsx).
             .padding(horizontal = if (square) 0.dp else 14.dp),
         contentAlignment = Alignment.Center,
     ) { content() }
 }
 
-/** RN screens/Profile/Sections/Feed.tsx footer. */
+/** RN `ProfileEndOfFeed` (screens/Profile/Sections/Feed.tsx): py_5xl, border_t, centred contrast-medium text. */
 @Composable
-private fun EndOfFeed() {
-    Column {
+private fun ProfileEndOfFeed() {
+    val theme = LocalAlf.current
+    Column(Modifier.fillMaxWidth()) {
         Hairline()
         Txt(
             "End of feed",
-            alfText(FontSize.md, color = Theme.textContrastMedium),
-            Modifier.fillMaxWidth().padding(vertical = Space._2xl + Space.lg),
+            alfText(FontSize.sm, color = theme.textContrastMedium),
+            Modifier.fillMaxWidth().padding(vertical = Space._5xl),
             align = TextAlign.Center,
         )
+    }
+}
+
+/** RN `ProfileHeaderLoading` (screens/Profile/Header/index.tsx): banner, avatar and button placeholders in contrast_50. */
+@Composable
+private fun ProfileHeaderLoading() {
+    val theme = LocalAlf.current
+    val placeholder = theme.bgContrast50
+    Box(Modifier.fillMaxWidth().background(theme.bg).testTag("profileHeaderLoading")) {
+        Column {
+            Box(Modifier.fillMaxWidth().height(150.dp).background(placeholder))
+            Row(
+                Modifier.fillMaxWidth().padding(start = Space.lg, end = Space.lg, top = Space.md, bottom = Space.sm),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Box(Modifier.size(width = 140.dp, height = 34.dp).clip(RoundedCornerShape(50.dp)).background(placeholder))
+            }
+        }
+        Box(
+            Modifier.offset(x = 10.dp, y = 110.dp).size(94.dp).clip(CircleShape).background(theme.bg),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(Modifier.size(90.dp).clip(CircleShape).background(placeholder))
+        }
+    }
+}
+
+/**
+ * RN `ErrorScreen` with `showHeader` (src/view/com/util/error/ErrorScreen.tsx): "Error" header, a 50 dp contrast_950
+ * circle with a warning icon, a bold 2xl title, the cleaned message and a small inverted "Try again" button.
+ */
+@Composable
+private fun ProfileErrorScreen(copy: ProfileErrorCopy, onRetry: () -> Unit, onBack: () -> Unit) {
+    val theme = LocalAlf.current
+    Column(Modifier.fillMaxSize().statusBarsPadding().testTag("profileErrorScreen")) {
+        ScreenHeader("Error", onBack)
+        Column(Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space._2xl)) {
+            Box(Modifier.fillMaxWidth().padding(bottom = Space.md), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.size(50.dp).clip(CircleShape).background(theme.palette.contrast(950)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BskyIcon(R.drawable.ic_warning, 24.dp, theme.textInverted)
+                }
+            }
+            Txt(copy.title, alfText(FontSize._2xl, FontWeight.Bold), Modifier.fillMaxWidth().padding(bottom = Space.md), align = TextAlign.Center)
+            Txt(copy.message, alfText(FontSize.md), Modifier.fillMaxWidth().padding(bottom = Space.xl), align = TextAlign.Center)
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Row(
+                    Modifier
+                        .testTag("errorScreenTryAgainButton")
+                        .clip(RoundedCornerShape(Radius.full))
+                        .background(theme.invertedButtonBg)
+                        .semantics { onClick(label = "Retries the last action, which errored out") { onRetry(); true } }
+                        .pressable("Retry", onRetry)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    BskyIcon(R.drawable.ic_rotate_ccw, 16.dp, theme.textInverted)
+                    Txt("Try again", alfText(FontSize.sm, FontWeight.Medium, theme.textInverted))
+                }
+            }
+        }
     }
 }

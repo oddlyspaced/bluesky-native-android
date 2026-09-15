@@ -6,8 +6,6 @@ import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.feature.feed.FeedViewModel
 import io.nativestarter.showcase.bluesky.feature.feed.HomeTabs
 import io.nativestarter.showcase.bluesky.feature.feed.PostFeedRow
-import io.nativestarter.showcase.bluesky.feature.profile.PROFILE_TABS
-import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
 import io.nativestarter.showcase.bluesky.testing.FakeBskyRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -127,16 +125,4 @@ class FeatureViewModelTest {
         assertNull(FeedViewModel.viaOf(io.nativestarter.showcase.bluesky.feature.feed.FeedReason.Pin))
     }
 
-    @Test
-    fun profileLoadsHeaderAndPostsTab() = runTest {
-        val vm = ProfileViewModel("did:plc:alice", repo, interactions)
-        val s = vm.state.value
-        assertEquals("Alice", s.profile?.displayName)
-        assertEquals(1, s.posts.size)
-        assertEquals(0, s.selectedTab)
-        assertTrue(s.reachedEnd)
-        vm.selectTab(PROFILE_TABS.indexOf("Likes"))
-        assertEquals(4, vm.state.value.selectedTab)
-        assertTrue(repo.calls.containsAll(listOf("profile:did:plc:alice", "authorFeed:did:plc:alice")))
-    }
 }
