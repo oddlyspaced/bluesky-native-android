@@ -76,7 +76,7 @@ Fuzz 5%. Each cell is px and percent of the image.
 | Hairlines at RN anti-aliased coverage (CP-02 commit) | 180,638 (4.94%) | 123,627 (3.38%) | 49,831 (1.36%) | 22,088 (0.60%) | 59,487 (1.63%) | 36,361 (0.99%) |
 | **Final (CP-03, shared list and button)** | **180,638 (4.94%)** | **123,627 (3.38%)** | **50,681 (1.39%)** | **22,992 (0.63%)** | **57,661 (1.58%)** | **34,535 (0.94%)** |
 
-"—" means that column was not recorded for that build; "0.89%" was recorded without its pixel count. Thread moved from 0.60% to 0.63% between two captures without a thread code change; the difference is in the relative-time text width of the reply row next to its mask.
+"—" means that column was not recorded for that build; "0.89%" was recorded without its pixel count. Thread moved from 0.60% to 0.63% between two captures without a thread code change; the cause was not measured.
 
 Rejected iterations, kept for the record:
 
