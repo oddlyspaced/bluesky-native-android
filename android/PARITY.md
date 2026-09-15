@@ -6,13 +6,11 @@ Acceptance: **awaiting owner acceptance.**
 
 ## Verdict
 
-- **Home passes the 2% gate with masks, in light and dark:** 1.61% and 1.75% (`drift`: above 1%, so a person who did not write the port must sign off). Before this round it was 3.75% with the same masks.
-- Thread and profile pass or drift below 2% in light and dark.
-- **Font scale 2.0 fails** (home 6.24%, profile 2.17%, measured on `41c1923`). The cause is now found and fixed in code (`29055d7`), but not re-captured. See "Font scale".
-- **Error home fails** (5.34%): the RN baseline shows a different moment of the error flow, so this row is not valid evidence.
-- **No screen passes raw.**
-- **Events: MISMATCH, 4 differences on the last capture** (see "Event diff"). All 4 are addressed in code (`1bb20f6`, `1862ea3`) and covered by JVM tests. They are not re-captured.
-- **Not re-captured on the final code `1862ea3`: every state.** All result rows below come from `1bb20f6` (base, noise) or `41c1923` (other states). On 2026-09-15, four capture attempts (20:29, 20:30, 20:36 and 20:40 IST, the last after a 2-minute wait) failed with `Maestro Android driver did not start up in time` (tcp:7001). Logcat shows the cause: the Maestro driver crashed in `Instrumentation.getUiAutomation` ("Cannot call disconnect() while connecting UiAutomation"). Android allows one UiAutomation client. During every attempt, `com.mobilenext.mobilecli.DeviceServer` (`app_process`, PID 16593) was running on emulator-5554, with the adb forward `tcp:52038 -> localabstract:mobilecli-server`. Three `npm exec @mobilenext/mobile-mcp@latest` processes on the host (PIDs 16991, 98290, 84936) belong to other sessions, so none was stopped. Connected tests did run on the final code.
+- **Base, same run (r4):** home drift 1.61% masked, thread pass 0.72%, profile pass 0.82%. Home needs sign-off by a person who did not write the port. No screen passes raw.
+- **Native noise floor (two runs of one build):** masked 0 px on home and profile, 3,803 px (0.10%) on thread. The RN noise floor is not measured: the second RN base run did not start (see "Not measured").
+- **Events (interactions flow):** unordered MATCH, 16 of 16. Ordered: 1 difference left, fixed in code (`5368546`) after the capture and not re-captured.
+- **Interactions home fails (4.45% masked), but the row is not valid evidence:** the two screenshots show different moments of the feed load. Interactions thread passes (0.90%).
+- **Not measured on the final code:** dark, font scale 2.0, empty, error, the RN noise floor, and a capture with `5368546`. The dev network AppView began to return HTTP 502 during the batch. The rows from earlier builds are kept below and marked as stale.
 
 ## Setup
 
@@ -20,187 +18,165 @@ Acceptance: **awaiting owner acceptance.**
 |---|---|
 | Device | emulator-5554, Pixel 10 Pro AVD, Android 16 (API 36.1), 1280x2856, density 480 (3 px = 1 dp) |
 | RN app | `xyz.blueskyweb.app`, bluesky-social-app at `2bfb94d` (react-native 0.86.0), e2e build, Metro on 8081 |
-| Native app | `io.nativestarter.showcase.bluesky`, debug build. Base and noise: commit `1bb20f6` (final). Other states: `41c1923` (see Verdict) |
+| Native app | `io.nativestarter.showcase.bluesky`, debug build installed from `1862ea3` for the r4 captures. `5368546` (home event gate) is built and tested but not installed or captured |
 | Server | dev network PDS `http://localhost:3000`, AppView DID `did:plc:bw7ad3erl7btq6qwf66yqiov`, reseeded by every flow under `/tmp/bsky-seed.lock` |
-| Pack tools | `migration-pack/skills/check-parity/scripts/capture.mjs`, `diff.mjs` (threshold 0.02, fuzz 5%), `report.mjs`, `events.mjs` |
+| Device setup | `adb -s emulator-5554 reverse tcp:3000 tcp:3000` and `tcp:8081 tcp:8081` before each capture |
+| Pack tools | `migration-pack/skills/check-parity/scripts/capture.mjs`, `diff.mjs` (threshold 0.02, fuzz 5%), `events.mjs` |
 | Total pixels per image | 3,655,680 |
 
 ## Commands
 
 Run from `android/parity`. `<pack>` is `../../../../migration-pack/skills/check-parity/scripts`.
 
-1. Build and install (under `/tmp/native-build.lock`):
+1. Tests and builds (under `/tmp/native-build.lock`):
    ```
-   ANDROID_SERIAL=emulator-5554 ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx3g :app:testDebugUnitTest :app:installDebug
+   ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx3g testDebugUnitTest assembleDebug assembleRelease
+   ANDROID_SERIAL=emulator-5554 ./gradlew --no-daemon :app:connectedDebugAndroidTest
+   ANDROID_SERIAL=emulator-5554 ./gradlew --no-daemon :app:installDebug
    ```
-2. Capture one state for one app. The script takes the seed lock, sets dark mode or font scale, runs `capture.mjs` with a flow in `flows/pack/` and resets the device:
+   `connectedDebugAndroidTest` uninstalls the app when it ends, so run `installDebug` in a separate, later command.
+2. One capture. `run-step.sh` stops when another app is in the foreground (exit 3) or a mobilecli DeviceServer is on emulator-5554 (exit 4), then calls `run-pack.sh`, which takes the seed lock, sets dark mode or font scale, and runs `capture.mjs`:
    ```
-   ./run-pack.sh native <base|dark|font2|interactions|empty|error> out
-   ./run-pack.sh rn <state> out
+   ./run-step.sh <native|rn> <base|dark|font2|interactions|empty|error> r4
    ```
-3. RN side of each diff: the committed baselines in `parity/baseline/rn/`, copied to `out/<state>/rnbase/android/{home,thread,profile}.png`:
-
-   | State | RN files |
-   |---|---|
-   | base | `android-home`, `android-thread`, `android-profile` |
-   | dark | `android-dark-r2-*` |
-   | font2 | `android-font2-r2-*` |
-   | interactions | `android-interactions-home`, `android-interactions-r3-thread` |
-   | empty | `android-empty-home`, `android-empty-r3-profile` |
-   | error | `android-error-r2-home`, `android-error-r2-thread` |
-
-4. Masks, diffs and report:
+   Both apps are captured in the same batch, so the RN side of each diff is the same-run RN capture.
+3. Masks and diffs:
    ```
-   python3 make_masks.py masks-spec.json <state> out/<state>/rnbase/android out/<state>/native/android out/masks-<state>.json
-   node <pack>/diff.mjs --rn out/<state>/rnbase/android --native out/<state>/native/android --out out/<state>/diff-raw
-   node <pack>/diff.mjs --rn out/<state>/rnbase/android --native out/<state>/native/android --out out/<state>/diff-masked --mask out/masks-<state>.json
-   node <pack>/report.mjs --diff out/<state>/diff-masked/results.json --out out/<state>/parity-report.md --title "<state> (Android)"
+   python3 make_masks.py masks-spec.json <state> r4/<state>/rn/android r4/<state>/native/android r4/masks-<state>.json
+   node <pack>/diff.mjs --rn r4/<state>/rn/android --native r4/<state>/native/android --out r4/<state>/diff-raw
+   node <pack>/diff.mjs --rn r4/<state>/rn/android --native r4/<state>/native/android --out r4/<state>/diff-masked --mask r4/masks-<state>.json
    ```
-5. Layout measurement (used for the line-box work): `adb -s emulator-5554 shell uiautomator dump`. It gives the RN Android text view bounds. `magick`/PIL row profiles give border rows and ink rows.
+4. Noise floor: the same `diff.mjs` commands with `--rn r4/base/native/android --native r4b/base/native/android` and `--mask r4/masks-base.json`.
+5. Events (the native log is read right after the native interactions capture):
+   ```
+   adb -s emulator-5554 shell run-as io.nativestarter.showcase.bluesky cat files/events.jsonl > r4/interactions/native-events.jsonl
+   node <pack>/events.mjs --rn events/rn-expected-interactions.jsonl --native r4/interactions/native-events.jsonl \
+     --ignore uri,authorDid,initMs,likerClout,postClout [--ordered]
+   ```
 
 ## Masks
 
-`make_masks.py` is the Android port of `ios/parity/make_masks.py`. Each mask is measured on both images and merged. Bands are declared per state and screen in `masks-spec.json`. Font scale 2.0 has its own bands, which follow the larger layout.
+`make_masks.py` measures each mask on both images and merges them. Bands are declared per state and screen in `masks-spec.json`.
 
 | Kind | What it hides | Reason |
 |---|---|---|
 | `status` | y 0 to 150 | Status bar: clock, battery, signal |
-| `glyphs` | Ink clusters of icon glyphs, at least `minw` px wide (36 in post control rows, 40 in the thread anchor row). The "more" ellipsis has its own band. The bottom bar band starts below the notification badge | Licence substitution: Lucide glyphs for the Central icon set, and the neutral header mark (ASSETS.md sections 2 and 3) |
+| `glyphs` | Ink clusters of icon glyphs, at least `minw` px wide | Licence substitution: Lucide glyphs for the Central icon set, and the neutral header mark (ASSETS.md sections 2 and 3) |
 | `tail` | The right-aligned relative time of a post meta line | Capture time |
 | `rect` | The thread anchor date line and its globe glyph | Capture time; the globe is a Lucide glyph |
 
-Not masked: counts (the "1" next to the reply glyph, stats rows, profile metrics, the badge), names, handles, post text, buttons and their chevrons, borders, backgrounds and the code-drawn fallback avatars.
+Not masked: counts (reply, repost and like counts, stats rows, profile metrics, the badge), names, handles, post text, buttons, borders, backgrounds and the code-drawn fallback avatars.
 
-## Results
+Mask area, r4 (4 px grid, overlaps removed): base home 10.89%, thread 8.97%, profile 7.04%; interactions home 10.90%, thread 9.05%. All are under the 15% limit.
 
-Fuzz 5%, threshold 0.02. The mask area uses the `diff.mjs` pixel rule (`floor`/`ceil` of the fractions).
+## Results (r4, same run, native build `1862ea3`)
 
-| State | Screen | Raw px (ratio) | Masked px (ratio) | Status | Mask area | Valid? |
-|---|---|---|---|---|---|---|
-| base | home | 117,589 (3.22%) | 58,780 (1.61%) | drift | 10.51% | Yes |
-| base | thread | 59,801 (1.64%) | 27,164 (0.74%) | pass | 8.70% | Yes |
-| base | profile | 114,872 (3.14%) | 34,940 (0.96%) | pass | 6.86% | Partly. The RN baseline shows "2 followers"; this native run shows "1 follower" (see "Seed race") |
-| dark | home | 119,132 (3.26%) | 64,050 (1.75%) | drift | 10.48% | Yes |
-| dark | thread | 67,224 (1.84%) | 34,546 (0.94%) | pass | 8.70% | Yes |
-| dark | profile | 55,240 (1.51%) | 36,753 (1.01%) | drift | 6.86% | Yes |
-| font scale 2.0 | home | 310,586 (8.50%) | 228,220 (6.24%) | **fail** | 12.21% | Yes |
-| font scale 2.0 | thread | 102,765 (2.81%) | 52,873 (1.45%) | drift | 9.99% | Yes. "Everybody can reply" wraps to its own line in both apps |
-| font scale 2.0 | profile | 173,941 (4.76%) | 79,299 (2.17%) | **fail** | 6.92% | Partly. RN r2 shows "1 following", native "2 following" (seed race) |
-| empty | home | 78,394 (2.14%) | 50,380 (1.38%) | drift | 7.25% | Yes |
-| empty | profile | 117,198 (3.21%) | 35,741 (0.98%) | pass | 6.83% | Partly. Both show "No posts yet" and "Write a post"; RN r3 shows "1 follower", native "2 followers" (seed race) |
-| error | home | 252,694 (6.91%) | 195,355 (5.34%) | **fail** | 10.62% | **No.** RN r2 shows the full feed with the end-of-feed block; native shows the Discover notice and the load-more error "There was an issue fetching posts". The two captures are at different moments of the reseed |
-| error | thread | 32,311 (0.88%) | 24,120 (0.66%) | pass | 6.16% | Yes. Both show "Error loading post" and Retry |
-| interactions | home, thread | — | — | not measured | — | The final native capture failed (see Verdict); the run deleted the earlier native images. The RN r3 thread baseline is valid |
+Fuzz 5%, threshold 0.02.
 
-Every mask area is under the 15% limit.
+| State | Screen | Raw px (ratio) | Masked px (ratio) | Status | Valid? |
+|---|---|---|---|---|---|
+| base | home | 115,250 (3.15%) | 58,774 (1.61%) | drift | Yes |
+| base | thread | 55,152 (1.51%) | 26,392 (0.72%) | pass | Yes |
+| base | profile | 109,202 (2.99%) | 30,031 (0.82%) | pass | Yes. Both apps waited for "2 followers" and "2 following" |
+| interactions | home | 221,505 (6.06%) | 162,854 (4.45%) | **fail** | **No.** Native shows the Discover notice and the end-of-feed block below the five posts; RN shows neither yet. The posts, the like and repost counts and the colours match |
+| interactions | thread | 65,131 (1.78%) | 32,906 (0.90%) | pass | Yes |
 
-### Home before and after (P2)
+### Stale rows (earlier builds, not re-captured)
 
-Same masks (`base` bands), same RN baseline:
+These rows are from native build `41c1923` against RN r2/r3 baselines. They do not include `29055d7` (font scale) or the event changes.
 
-| Native build | Raw | Masked |
-|---|---|---|
-| `2c45d66` (before) | 194,006 (5.31%) | 137,239 (3.75%) |
-| `1bb20f6` (final) | 117,589 (3.22%) | 58,780 (1.61%) |
-
-With the old whole-row masks (`compare.sh`), home went from 3.38% to 1.29%, and dark home from 3.96% to 1.42%.
+| State | Screen | Masked (ratio) | Status | Note |
+|---|---|---|---|---|
+| dark | home / thread / profile | 1.75% / 0.94% / 1.01% | drift / pass / drift | |
+| font scale 2.0 | home | 6.24% | fail | Cause found and fixed in `29055d7` (see "Font scale") |
+| font scale 2.0 | thread | 1.45% | drift | |
+| font scale 2.0 | profile | 2.17% | fail | The RN r2 baseline shows no posts and "1 following". It needs a new RN baseline |
+| empty | home / profile | 1.38% / 0.98% | drift / pass | |
+| error | home | 5.34% | fail | Not valid: the RN r2 baseline shows a different moment of the error flow |
+| error | thread | 0.66% | pass | |
 
 ## Noise floor
 
-Two native base captures, diffed with the same commands and masks: `out2/base/native` (build `41c1923`, 18:36 IST) and `out/base/native` (build `1bb20f6`, 18:42 IST). The two builds draw the same UI; only the `post:view` position code differs. A second capture of `1bb20f6` itself could not be taken (see Verdict).
-
-```
-node <pack>/diff.mjs --rn out2/base/native/android --native out/base/native/android --out out/noise/raw
-node <pack>/diff.mjs --rn out2/base/native/android --native out/base/native/android --out out/noise/masked --mask out/masks-base.json
-```
+Native base captured twice in one batch, same build, same seed flow (`r4` at 00:44, `r4b` later in the batch):
 
 | Screen | Raw | Masked |
 |---|---|---|
-| home | 6,813 (0.19%) | 0 (0.00%) |
-| thread | 2,766 (0.08%) | 0 (0.00%) |
-| profile | 2,786 (0.08%) | 0 (0.00%) |
+| home | 772 (0.02%) | 0 (0.00%) |
+| thread | 9,157 (0.25%) | 3,803 (0.10%) |
+| profile | 760 (0.02%) | 0 (0.00%) |
 
-The raw pixels are the status bar clock, the relative times and the thread date line. In this pair both runs showed "2 followers". An earlier pair of the same build gave 10,592 px (0.29%) masked on profile, because the follower count changed between the runs (see "Seed race").
-
-## Line boxes (P2)
-
-`designsystem/text/RnLineBox.kt` ports the React Native 0.86 Android text measurement in one place (review A19: no per-screen offsets):
-
-- Font size: `ceil(PixelUtil.toPixelFromSP(fontSize))` (`TextAttributes.effectiveFontSize`). For example, text_sm 13.1 sp is painted at 40 px, not 39.3 px.
-- Explicit line height: `CustomLineHeightSpan` — line box `ceil(lineHeight)`, `ascent -= ceil(L/2)`, `descent += floor(L/2)`, first top and last bottom set to them, so `includeFontPadding` has no effect.
-- No line height: `StaticLayout`/`BoringLayout` with `includeFontPadding` (RN default true): pitch `descent - ascent`, plus `ascent - top` above and `bottom - descent` below.
-- The metrics come from `Paint.getFontMetricsInt` at runtime, for the same Inter file RN uses. Intrinsic heights return the RN box, because feed rows use `IntrinsicSize.Min`.
-- ALF `Text` always applies `leading_snug` (Typography.tsx). Legacy `Text` (Discover notice, end of feed, load-more retry) uses `legacyText`.
-
-Measured with `uiautomator dump` on RN: meta 51 px, post text 60 px, counts 51 px, Discover notice 120 px, end-of-feed message 135 px. `RnLineBoxTest` predicts each of these from the font file metrics.
-
-After the change, every home border is on the RN pixel row: 614, 1131, 1402, 1673, 2641 in both apps. Post names and post text are on the same rows as RN.
+The raw pixels are the status bar and relative times. The thread residual is inside the anchor area. RN noise floor: not measured (RN base r4b did not reach "Sign in").
 
 ## Font scale (`29055d7`, not re-captured)
 
-The rule of this review was "native rows sit 18 to 21 px higher, fix the line box". Measurement of the `41c1923` font scale 2.0 images shows that the line boxes are not the cause:
+Measurement of the `41c1923` font scale 2.0 images shows that the text line boxes are not the cause of the home failure:
 
-- Home: the tab bar border is at y 471 in both apps. Every row below the composer prompt has the same height in both apps (705, 348, 348, 349 px between borders). Ink heights of the text are equal (for example 76 px for "What's up?").
-- The whole offset (18 px) is above the composer prompt. RN `useHeaderOffset` (src/components/hooks/useHeaderOffset.ts) gives the list `paddingTop` as `52 + 23 + 20 * fontScale - 4` dp. `fontScale` from `useWindowDimensions` is the linear `Configuration.fontScale`. The tab text is a real text node with lineHeight 20, and on Android 16 `PixelUtil.toPixelFromSP` sends it through the nonlinear `FontScaleConverter`: 20 sp is 34 dp (102 px), not 40 dp (120 px). 120 - 102 = 18 px.
-- RN `DisplayMetricsHolder` keeps `fontScaleConverter` (`setTo`, and `getRealMetrics` does not clear it), so RN text is nonlinear, the same as `RnText`.
-- Profile font scale 2.0: the ink rows match RN down to y 1336. Below that the RN r2 baseline shows no posts, and it shows "1 following" (seed race). That row needs a new RN baseline, not a layout change.
+- The tab bar border is at y 471 in both apps. Every row below the composer prompt has the same height in both apps, and text ink heights are equal.
+- The whole offset (18 px) is above the composer prompt. RN `useHeaderOffset` (src/components/hooks/useHeaderOffset.ts) gives the list `paddingTop` as `52 + 23 + 20 * fontScale - 4` dp with the linear `Configuration.fontScale`. The tab text itself goes through `PixelUtil.toPixelFromSP`, which uses the nonlinear Android 16 `FontScaleConverter`: 20 sp is 34 dp (102 px), not 40 dp (120 px). 120 - 102 = 18 px.
+- RN `DisplayMetricsHolder` keeps `fontScaleConverter`, so RN text scales nonlinearly, the same as `RnText`.
 
-Fix: `RnFontScale.jsLineHeightExcessPx` in `designsystem/text/RnLineBox.kt` gives the difference between a JS `lineHeight * fontScale` prediction and the real line box. Home adds it to the measured header height, for the content top and for `FeedFooter`. It is 0 px at 1.0, 7 px at 1.3 and 18 px at 2.0. `RnLineBoxTest` checks line boxes at 1.0, 1.3 and 2.0 with the Android 16 converter tables.
+Fix: `RnFontScale.jsLineHeightExcessPx` in `designsystem/text/RnLineBox.kt` gives the difference between a JS `lineHeight * fontScale` prediction and the real line box. Home adds it to the measured header height for the content top and `FeedFooter`: 0 px at 1.0, 7 px at 1.3, 18 px at 2.0. `RnLineBoxTest` checks line boxes at 1.0, 1.3 and 2.0 with the Android 16 converter tables.
 
 ## Seed race
 
-`?users&follows&posts&feeds&thread` creates Bob's follow of Alice, and the AppView indexes it asynchronously. The server returns `followersCount: 2` (checked with `app.bsky.actor.getProfile` as alice.test). The native app loads the profile within a few seconds of the seed, so some runs show "1 follower" and some "2 followers". Two native runs of the same build showed both. RN starts later and showed "2 followers" in base. The same race changes the following count in the r2/r3 profile baselines. It is a capture timing effect, not a port difference, but it is counted in the profile ratios above.
+`?users&follows&posts&feeds&thread` creates the follows, and the AppView indexes them asynchronously, so a profile loaded early can show "1 follower" or "1 following". Server check: alice.test has 2 followers (bob, carla) and 2 follows.
 
-Flow change (not yet run): `flows/pack/wait-profile-counts.yml` waits for `profileHeaderFollowersButton` with "2 followers" and `profileHeaderFollowsButton` with "2 following" before the profile screenshot, in `readonly.yml` and `empty.yml`. If the profile loaded before indexing, it pulls to refresh, up to 4 times, then asserts. The counts are not masked. Server check on 2026-09-15: alice.test has 2 followers (bob, carla) and 2 follows.
+`flows/pack/wait-profile-counts.yml` (used by `readonly.yml` and `empty.yml`) waits for "2 followers" and "2 following", pulls to refresh up to 4 times if needed, and then asserts each count inside its id node (`profileHeaderFollowersButton`, `profileHeaderFollowsButton`). In both apps the label is on a child of the id node. The counts are not masked. In r4, both base profile captures passed the wait.
 
 ## Event diff
 
-**Result: MISMATCH, 4 differences.** The RN side is derived from source, not captured. The RN `.env` sets `EXPO_PUBLIC_LOG_DEBUG=session`, which hides `metric` logs, and changing upstream is not allowed. The derivation follows `ios/PARITY.md` "Event diff": the shell remount on sign-in and `thread:preferences:load`. `post:view` positions follow `PostFeed.tsx` `getPostPosition`.
+The RN side is derived from source, not captured: the RN `.env` sets `EXPO_PUBLIC_LOG_DEBUG=session`, which hides `metric` logs.
+
+Result on the r4 interactions capture (native `1862ea3`), with `--ignore uri,authorDid,initMs,likerClout,postClout`:
 
 ```
-adb -s emulator-5554 shell run-as io.nativestarter.showcase.bluesky cat files/events.jsonl > out/interactions/native-events.jsonl
-node <pack>/events.mjs --rn events/rn-expected-interactions.jsonl --native out/interactions/native-events.jsonl \
-  --ignore uri,authorDid,initMs,likerClout,postClout --out out/interactions/events-result.json
+MATCH (unordered): rn 16 event(s), native 16 event(s)
+MISMATCH (ordered): rn 16 event(s), native 16 event(s)
+  order differs at 3: rn router:navigate (line 4), native home:feedDisplayed (line 4)
+  order differs at 4: rn init (line 5), native router:navigate (line 5)
+  order differs at 5: rn home:feedDisplayed (line 6), native init (line 6)
 ```
 
-The native log is from the interactions flow on build `41c1923` (14 events). Output:
+| Rule | RN source | State |
+|---|---|---|
+| `router:navigate {}` and `init` again after sign-in | App.tsx renders the tree under `key={currentAccount?.did}`; Navigation.tsx `onNavigationReady` runs once per mount | Fixed (`1862ea3`), captured: present |
+| `home:feedDisplayed` after the remount events | Home.tsx mounts `HomeScreenReady` (which logs it on focus) only when preferences and pinned feeds have loaded | **Fixed in `5368546`, after the capture. Not re-captured.** This is the remaining ordered difference |
+| `post:view` positions `[0, 1, 2, 3]`, top to bottom | `PostFeed` `getPostPosition`; `List` viewability 40% for 500 ms, in index order | Fixed (`1bb20f6`, `1862ea3`), captured: in order |
+| Anchor `post:view` before `router:navigate {from: Home}` | `BaseNavigationContainer` calls `onStateChange` from its own `useEffect`; the thread screen's anchor effect runs first in the same commit | Expected list corrected in `5368546`; native matches |
+| No `thread:preferences:load` in this flow | `useThreadPreferences.ts:50-71` logs only when server preferences change after mount; Home already loaded them (`replaceEqualDeep`) | Expected list corrected in `1862ea3`; native logs nothing, as expected. The iOS port is being aligned to this rule |
 
-```
-MISMATCH (unordered): rn 17 event(s), native 14 event(s), ignoring uri, authorDid, initMs, likerClout, postClout
-  missing in native: init {} (rn line 2)
-  missing in native: router:navigate {} (rn line 1)
-  missing in native: thread:preferences:load {"sort":"hotness","view":"linear"} (rn line 15)
-  props differ:      post:view (rn line 7, native line 5): position rn=0 native=1
-```
+`likerClout` and `postClout` are ignored because they depend on the follower count at tap time.
 
-| Difference | State |
+## Not measured
+
+| Item | Reason |
 |---|---|
-| `post:view` position for the thread reply: RN counts root rows before the slice's first row | **Fixed** in `1bb20f6` (`PostViewPosition`, test expects `[0, 1, 2, 3]`). Not re-captured |
-| Second `router:navigate {}` and `init` after sign-in | **Fixed** in `1862ea3`. Confirmed in source: App.tsx renders the tree under `<Fragment key={currentAccount?.did}>`, and Navigation.tsx `onNavigationReady` (`useCallOnce`) runs once per mount. `NavigationReadyEvents` logs on every account key change (`EventRulesTest`). Not re-captured |
-| `thread:preferences:load {sort: hotness, view: linear}` when the thread opens | **The RN expected line was wrong for this flow; removed** in `1862ea3`. `useThreadPreferences.ts:50-71` logs only when `serverPrefs` changes after mount. `usePreferencesQuery` uses `replaceEqualDeep`, and Home already loaded the preferences, so `useState(serverPrefs)` starts with the same object and nothing is logged. Native now follows that rule through `PreferencesCache`: it logs the raw sort and `view` once, only for preferences loaded after the screen opened, and never on a failed load (N22; `Cp02ThreadTest`). **This differs from the iOS port**, which logs once per thread screen (`9b950d0`). One of the two readings must be confirmed with an RN capture that shows `metric` logs |
-| Ordered `post:view` (N6) | **Fixed in code** in `1862ea3`: rows at 40% visibility for 500 ms, reported in index order (RN `List` `viewabilityConfig`). `events.mjs --ordered` is not yet run |
+| RN base r4b (RN noise floor) | 01:10:47: `setup-app.yml` did not see "Sign in" within 180 s |
+| Native dark r4 | 01:27:08: signed in, then home showed "Unable to connect" |
+| RN dark r4 and every later state (font2, empty, error) | 01:27 to 01:44: RN dark hung in `setupServer.js`. At 01:43 and 01:44, `app.bsky.feed.getTimeline` through the PDS returned HTTP 502 after 10.8 s. PDS, seed manager and Metro still answered on 3000, 1986 and 8081. The dev network (`mock-server.ts`) was not restarted, because it is under a supervisor |
+| Capture with `5368546` | Built and tested only; the device work was stopped by the server failure |
 
-`likerClout` and `postClout` are ignored because they depend on the follower count at tap time (seed race).
+Earlier on 2026-09-15 (20:29 to 20:40) and 2026-09-16 (00:36), captures also failed for two setup reasons, both cleared: a `com.mobilenext.mobilecli.DeviceServer` held UiAutomation on the emulator (the lead stopped it), and the adb reverse rules were missing (now re-added before each capture).
 
 ## States covered
 
 | State | RN | Native | Notes |
 |---|---|---|---|
-| Home, thread, profile (light) | yes | yes (final build) | |
-| Dark (system dark = dim) | yes (r2) | yes (`41c1923`) | |
-| Font scale 2.0 | yes (r2) | yes (`41c1923`) | Fails on home and profile |
-| Empty seed (`?users&follows`) | yes (home; profile r3) | yes (`41c1923`) | |
-| After like and repost | yes (home; thread r3) | no valid final capture | See Verdict |
-| Error (reseed after sign-in) | yes (r2) | yes (`41c1923`) | Home row invalid |
+| Home, thread, profile (light) | r4 | r4 (`1862ea3`) | Same run |
+| After like and repost | r4 | r4 (`1862ea3`) | Home row not valid (different moment) |
+| Dark (system dark = dim) | r2 | `41c1923` | Stale |
+| Font scale 2.0 | r2 | `41c1923` | Stale; home fix not captured; profile baseline needs posts |
+| Empty seed (`?users&follows`) | home r1, profile r3 | `41c1923` | Stale |
+| Error (reseed after sign-in) | r2 | `41c1923` | Stale; home row invalid |
 | Loading, load-more error, profile error | no | no | Covered by JVM and Compose UI tests |
 
-New RN baselines this round: `parity/baseline/rn/android-interactions-r3-thread.png` (the flow waits for `postThreadItem-by-carla.test`) and `android-empty-r3-profile.png` (it waits for "No posts yet"). No existing baseline was overwritten.
+New RN baselines this round (none overwritten): `parity/baseline/rn/android-r4-home.png`, `android-r4-thread.png`, `android-r4-profile.png`, `android-interactions-r4-thread.png`.
 
-## Tests (final code)
+## Tests
 
 | Suite | Result |
 |---|---|
-| JVM (`testDebugUnitTest`, with `assembleDebug assembleRelease`), code `1862ea3` | 108 tests, 0 failures |
+| JVM (`testDebugUnitTest`, with `assembleDebug assembleRelease`), code `5368546` | 109 tests, 0 failures |
 | Compose UI and Keystore (`:app:connectedDebugAndroidTest`, emulator-5554), code `1862ea3` | 10 tests, 0 failures |
 
 ## Differences that remain
@@ -209,15 +185,14 @@ None of these is accepted. Each needs a named owner.
 
 | # | Difference | Screen | Evidence |
 |---|---|---|---|
-| 1 | Rows 18 px higher than RN at font scale 2.0 on home; profile baseline shows no posts | Home, profile | "Font scale". Home fixed in code (`29055d7`), not re-captured. Profile needs a new RN baseline |
-| 2 | `thread:preferences:load` rule differs between the Android and iOS ports | Events | "Event diff". Needs an RN capture with `metric` logs |
-| 3 | Relative time: native shows "now" where RN shows "16s" to "21s" | Home, thread, profile | Same tick semantics (P4, `MinuteTickerTest`). RN's tick starts when the JS app is ready, 16 to 21 s after the seed; the native one starts within 5 s. Masked |
-| 4 | Discover notice text 1 px higher | Home | Ink rows 1999/2054 vs RN 2000/2055 |
+| 1 | Home masked 1.61% (drift) | Home | Results r4 |
+| 2 | Font scale 2.0 home offset fixed in code, not re-captured; font scale 2.0 profile needs an RN baseline with posts | Home, profile | "Font scale" |
+| 3 | `home:feedDisplayed` order fixed in code, not re-captured | Events | "Event diff" |
+| 4 | Relative time: native shows "now" where RN shows "2m" (tick start differs) | Home, thread, profile | Masked |
 | 5 | Header dropdown and share glyph shapes (Lucide) | All | Glyph masks |
 | 6 | Code-drawn fallback avatars | All | Not masked; counted |
-| 7 | Scroll indicator after navigation | Profile | RN shows a scrollbar at the right edge; Compose lists show none |
+| 7 | Scroll indicator after navigation | Profile | RN shows a scrollbar; Compose lists show none |
 | 8 | Profile description links and mentions are not detected | Profile | RN runs `detectFacets`; the seeded bio has none |
-| 9 | Follower and following counts vary with the seed race | Profile | "Seed race" |
 
 ## Accepted design differences
 

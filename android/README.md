@@ -109,7 +109,7 @@ Last measured results (emulator-5554, Android 16):
 
 | Suite | Result |
 |---|---|
-| JVM tests (code `1862ea3`) | 108 tests, 0 failures |
+| JVM tests (code `5368546`) | 109 tests, 0 failures |
 | Compose UI and Keystore tests (code `1862ea3`) | 10 tests, 0 failures |
 | Release smoke | `assembleRelease` passed; installed and launched: "Create account" and "Sign in" present, `e2eSignInAlice` and `e2eSignInBob` absent, not debuggable |
 
