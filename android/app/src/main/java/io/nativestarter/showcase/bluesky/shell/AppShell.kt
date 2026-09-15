@@ -1,7 +1,20 @@
 package io.nativestarter.showcase.bluesky.shell
 
-import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import io.nativestarter.showcase.bluesky.core.navigation.AppNavigator
+import io.nativestarter.showcase.bluesky.core.navigation.RouteEntry
+import io.nativestarter.showcase.bluesky.core.navigation.TabBackStacks
+import io.nativestarter.showcase.bluesky.feature.HomeRoute
+import io.nativestarter.showcase.bluesky.feature.ProfileRoute
+import io.nativestarter.showcase.bluesky.feature.ThreadRoute
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +42,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,18 +63,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import io.nativestarter.showcase.bluesky.AccountScope
 import io.nativestarter.showcase.bluesky.AppContainer
 import io.nativestarter.showcase.bluesky.BuildConfig
 import io.nativestarter.showcase.bluesky.R
 import io.nativestarter.showcase.bluesky.core.analytics.LocalAnalytics
 import io.nativestarter.showcase.bluesky.core.common.runCatchingCancellable
-import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.platform.LocalHaptics
 import io.nativestarter.showcase.bluesky.core.session.Session
 import io.nativestarter.showcase.bluesky.core.session.SessionState
@@ -83,65 +89,15 @@ import io.nativestarter.showcase.bluesky.designsystem.ToastHost
 import io.nativestarter.showcase.bluesky.designsystem.Txt
 import io.nativestarter.showcase.bluesky.designsystem.UserAvatar
 import io.nativestarter.showcase.bluesky.designsystem.alfText
-import io.nativestarter.showcase.bluesky.designsystem.post.PostActions
 import io.nativestarter.showcase.bluesky.designsystem.pressable
-import io.nativestarter.showcase.bluesky.feature.feed.FeedViewModel
-import io.nativestarter.showcase.bluesky.feature.feed.HomeScreen
-import io.nativestarter.showcase.bluesky.feature.profile.ProfileScreen
-import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
-import io.nativestarter.showcase.bluesky.feature.thread.ThreadScreen
-import io.nativestarter.showcase.bluesky.feature.thread.ThreadViewModel
-import io.nativestarter.showcase.bluesky.feature.thread.ThreadCallbacks
 import io.nativestarter.showcase.bluesky.designsystem.AlfButton
 import io.nativestarter.showcase.bluesky.designsystem.ButtonColor
 import io.nativestarter.showcase.bluesky.designsystem.ButtonSize
-import io.nativestarter.showcase.bluesky.feature.profile.ProfileCallbacks
-import io.nativestarter.showcase.bluesky.core.network.PostSource
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.UriHandler
-import io.nativestarter.showcase.bluesky.feature.feed.HomeCallbacks
-import io.nativestarter.showcase.bluesky.designsystem.text.RichSegment
-import io.nativestarter.showcase.bluesky.designsystem.text.RichTextModel
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-object Routes {
-    const val HOME = "home"
-    const val SEARCH = "search"
-    const val MESSAGES = "messages"
-    const val NOTIFICATIONS = "notifications"
-    const val PROFILE = "profile"
-    const val THREAD = "thread/{uri}"
-    const val NOT_IN_SHOWCASE = "notInShowcase/{title}"
-
-    val TABS = listOf(HOME, SEARCH, MESSAGES, NOTIFICATIONS, PROFILE)
-
-    fun thread(uri: String) = "thread/" + Uri.encode(uri)
-    fun notInShowcase(title: String) = "notInShowcase/" + Uri.encode(title)
-
-    /** RN route names, as `router:navigate {from}` reports them (src/Navigation.tsx). */
-    fun rnScreenName(route: String?): String? = when (route) {
-        HOME -> "Home"
-        SEARCH -> "Search"
-        MESSAGES -> "Messages"
-        NOTIFICATIONS -> "Notifications"
-        PROFILE -> "MyProfile"
-        THREAD -> "PostThread"
-        NOT_IN_SHOWCASE -> "NotInShowcase"
-        else -> null
-    }
-
-    /** RN `TAB_TO_NAV_ITEM` (src/lib/routes/tab-to-nav-item.ts). */
-    fun navItem(tab: String): String = when (tab) {
-        HOME -> "home"
-        SEARCH -> "search"
-        MESSAGES -> "chat"
-        NOTIFICATIONS -> "notifications"
-        else -> "profile"
-    }
-}
+/** Route names live in core/navigation so features can use them without the shell. */
+typealias Routes = io.nativestarter.showcase.bluesky.core.navigation.Routes
 
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
@@ -240,23 +196,100 @@ private fun SignedOutScreen(container: AppContainer) {
     }
 }
 
+/**
+ * Per-tab back stacks (review A16), held across recomposition and Activity recreation. Each back-stack entry has its
+ * own ViewModelStore, cleared when the entry leaves its stack.
+ */
+class ShellRouterViewModel : ViewModel() {
+    val stacks = TabBackStacks(Routes.TABS)
+    private val stores = HashMap<Long, ViewModelStore>()
+
+    /** Bumped on every stack change, so the shell recomposes. */
+    var version by mutableIntStateOf(0)
+        private set
+
+    fun owner(entry: RouteEntry): ViewModelStoreOwner {
+        val store = stores.getOrPut(entry.id) { ViewModelStore() }
+        return object : ViewModelStoreOwner {
+            override val viewModelStore: ViewModelStore = store
+        }
+    }
+
+    fun changed(removed: List<RouteEntry> = emptyList()) {
+        removed.forEach { stores.remove(it.id)?.clear() }
+        version++
+    }
+
+    override fun onCleared() {
+        stores.values.forEach { it.clear() }
+        stores.clear()
+    }
+}
+
+/**
+ * The signed-in shell: bottom bar, unread polling, and the selected tab's current screen. It does not create screen
+ * view models; the route factories in `feature/FeatureRoutes.kt` do, inside the entry's ViewModelStoreOwner.
+ * Only the current entry is composed; the saved state of the other entries stays in a SaveableStateHolder.
+ */
 @Composable
 private fun SignedInShell(account: AccountScope, session: Session) {
-    val nav = rememberNavController()
     val analytics = LocalAnalytics.current
-    val backStack by nav.currentBackStackEntryAsState()
-    val route = backStack?.destination?.route
-    var lastTab by rememberSaveable { mutableStateOf(Routes.HOME) }
-    if (route in Routes.TABS) lastTab = route!!
+    val router: ShellRouterViewModel = viewModel(key = "router-${session.did}")
+    val saveable = rememberSaveableStateHolder()
+    @Suppress("UNUSED_VARIABLE") val version = router.version
+    val stacks = router.stacks
+    val current = stacks.current
+
+    val navigator = remember(router, saveable) {
+        fun removed(entries: List<RouteEntry>) {
+            entries.forEach { saveable.removeState(it.id) }
+            router.changed(entries)
+        }
+        object : AppNavigator {
+            override fun openThread(uri: String) {
+                stacks.push(Routes.THREAD, uri)
+                router.changed()
+            }
+
+            override fun openNotInShowcase(title: String) {
+                stacks.push(Routes.NOT_IN_SHOWCASE, title)
+                router.changed()
+            }
+
+            override fun selectTab(tab: String) {
+                stacks.select(tab)
+                router.changed()
+            }
+
+            override fun back() {
+                when (val result = stacks.back()) {
+                    is TabBackStacks.Back.Popped -> removed(listOf(result.removed))
+                    TabBackStacks.Back.ToFirstTab -> router.changed()
+                    TabBackStacks.Back.NotHandled -> Unit
+                }
+            }
+
+            fun pressTab(tab: String) {
+                when (val press = stacks.press(tab)) {
+                    TabBackStacks.Press.Switched -> router.changed()
+                    // InsideAtRoot: soft reset (scroll to top and refresh).
+                    TabBackStacks.Press.SoftReset -> account.softReset.emit(tab)
+                    // Inside: pop the tab's stack to its root.
+                    is TabBackStacks.Press.PoppedToRoot -> removed(press.removed)
+                }
+            }
+        }
+    }
+    BackHandler(enabled = stacks.canGoBack()) { navigator.back() }
 
     // RN onStateChange: `router:navigate {from: previousScreen}` on every navigation state change.
-    var previousRoute by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(route) {
-        val previous = previousRoute
-        if (route != null && previous != null && previous != route) {
-            analytics.metric("router:navigate", mapOf("from" to Routes.rnScreenName(previous)))
+    var previousEntry by remember { mutableStateOf<RouteEntry?>(null) }
+    LaunchedEffect(current.id) {
+        val previous = previousEntry
+        if (previous != null && previous.id != current.id) {
+            analytics.metric("router:navigate", mapOf("from" to Routes.rnScreenName(previous.route)))
         }
-        if (route != null) previousRoute = route
+        previousEntry = current
     }
 
     val unread: UnreadNotificationsViewModel = viewModel(
@@ -272,260 +305,58 @@ private fun SignedInShell(account: AccountScope, session: Session) {
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) unread.check(isPoll = true)
         }
     }
-
-    val openPost: (PostView) -> Unit = { nav.navigate(Routes.thread(it.uri)) }
     LaunchedEffect(account) { account.loadOwnProfile() }
 
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            NavHost(nav, startDestination = Routes.HOME) {
-                composable(Routes.HOME) { HomeRoute(account, session, openPost, nav) }
-                composable(Routes.SEARCH) { NotInShowcase("Search") }
-                composable(Routes.MESSAGES) { NotInShowcase("Chat") }
-                composable(Routes.NOTIFICATIONS) { NotInShowcase("Notifications") }
-                composable(Routes.PROFILE) { ProfileRoute(account, session, openPost, nav) }
-                composable(Routes.THREAD) { entry ->
-                    val uri = Uri.decode(entry.arguments?.getString("uri").orEmpty())
-                    ThreadRoute(account, session, uri, nav, openPost)
-                }
-                composable(Routes.NOT_IN_SHOWCASE) { entry ->
-                    val title = Uri.decode(entry.arguments?.getString("title").orEmpty())
-                    Column(
-                        Modifier.fillMaxSize().background(LocalAlf.current.bg)
-                            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
-                    ) {
-                        ScreenHeader(title, onBack = { nav.popBackStack() })
-                        NotInShowcase(title, Modifier.weight(1f))
+            key(current.id) {
+                saveable.SaveableStateProvider(current.id) {
+                    val owner = remember(current.id) { router.owner(current) }
+                    CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
+                        RouteContent(current, account, session, navigator)
                     }
                 }
             }
-            if (route == Routes.HOME || route == Routes.PROFILE) {
-                ComposeFab(Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 12.dp).testTag("composeFAB")) {
-                    nav.navigate(Routes.notInShowcase("New post"))
+            if (current.route == Routes.HOME || current.route == Routes.PROFILE) {
+                ComposeFab(Modifier.align(Alignment.BottomEnd).padding(end = Space._2xl, bottom = Space.md).testTag("composeFAB")) {
+                    navigator.openNotInShowcase("New post")
                 }
             }
         }
         BottomBar(
-            selected = lastTab,
+            selected = stacks.selected,
             badge = badge,
             // ThreadComposePrompt hides the bottom bar border (useHideBottomBarBorderForScreen).
-            hideBorder = route == Routes.THREAD,
+            hideBorder = current.route == Routes.THREAD,
             onSelect = { target ->
                 analytics.metric("nav:click", mapOf("item" to Routes.navItem(target), "surface" to "bottomBar"))
-                when {
-                    // InsideAtRoot: soft reset (scroll to top and refresh).
-                    route == target -> account.softReset.emit(target)
-                    // Inside: pop the tab's stack to its root.
-                    lastTab == target -> nav.popBackStack(target, inclusive = false)
-                    else -> nav.selectTab(target)
-                }
+                navigator.pressTab(target)
             },
         )
     }
 }
 
-private fun NavHostController.selectTab(route: String) {
-    navigate(route) {
-        popUpTo(Routes.HOME) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
-    }
-}
-
+/** Screen factory: one composable per route name. */
 @Composable
-private fun HomeRoute(account: AccountScope, session: Session, openPost: (PostView) -> Unit, nav: NavHostController) {
-    val analytics = LocalAnalytics.current
-    val uriHandler = LocalUriHandler.current
-    val vm: FeedViewModel = viewModel(
-        key = "feed-${session.did}",
-        factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did, account.postCache) } },
-    )
-    val state by vm.state.collectAsStateWithLifecycle()
-    // RN Home.tsx useFocusEffect: `home:feedDisplayed` with reason 'focus'.
-    LifecycleResumeEffect(Unit) {
-        analytics.metric(
-            "home:feedDisplayed",
-            mapOf("index" to state.selectedTab, "feedType" to "following", "feedUrl" to "following", "reason" to "focus"),
-        )
-        onPauseOrDispose { }
-    }
-    val softResets = remember(account) { account.softReset.resets.filter { it == Routes.HOME }.map { } }
-    HomeScreen(
-        state = state,
-        softResets = softResets,
-        currentAccountDid = session.did,
-        callbacks = HomeCallbacks(
-            onRefresh = { vm.refresh(FeedViewModel.REASON_PULL_TO_REFRESH) },
-            onSelectTab = vm::selectTab,
-            onRequestSoftReset = { account.softReset.emit(Routes.HOME) },
-            onSoftReset = { vm.refresh(FeedViewModel.REASON_SOFT_RESET) },
-            onNotInShowcase = { nav.navigate(Routes.notInShowcase(it)) },
-            onEndReached = vm::onEndReached,
-            onRetry = vm::retry,
-            onRetryLoadMore = vm::retryLoadMore,
-            onPostSeen = vm::onPostSeen,
-            onComposerPressed = vm::onComposerPressed,
-            onOpenFullThread = { nav.navigate(Routes.thread(it)) },
-            postActions = { row ->
-                val via = FeedViewModel.viaOf(row.reason)
-                PostActions(
-                    onOpen = {
-                        vm.onPostPressed(it)
-                        // RN PostFeedItem `onBeforePress`: stash the source feed for the thread (setUnstablePostSource).
-                        account.postSources.set(it.uri, PostSource(feedDescriptor = "following", via = via))
-                        openPost(it)
-                    },
-                    onToggleLike = { vm.toggleLike(it, via) },
-                    onToggleRepost = { vm.toggleRepost(it, via) },
-                    onOpenAuthor = {
-                        vm.onAuthorPressed(it)
-                        if (it.author.did == session.did) nav.selectTab(Routes.PROFILE) else nav.navigate(Routes.notInShowcase("Profile"))
-                    },
-                    // RN opens the composer, which is outside the slice.
-                    onReply = {
-                        vm.onReplyPressed(it)
-                        nav.navigate(Routes.notInShowcase("Reply"))
-                    },
-                    onRichText = { segment -> openRichText(segment, uriHandler, nav) },
-                    onOpenReposter = { nav.navigate(Routes.notInShowcase("Profile")) },
-                    onQuote = { nav.navigate(Routes.notInShowcase("Quote post")) },
-                )
-            },
-        ),
-    )
-}
-
-/** RN RichText taps: links open through the proxy URL (`shouldProxyLinks`); mentions and tags open screens outside the slice. */
-private fun openRichText(segment: RichSegment, uriHandler: UriHandler, nav: NavHostController) {
-    when (segment) {
-        is RichSegment.Link -> runCatching { uriHandler.openUri(RichTextModel.proxiedUrl(segment.uri)) }
-        is RichSegment.Mention -> nav.navigate(Routes.notInShowcase("Profile"))
-        is RichSegment.Tag -> nav.navigate(Routes.notInShowcase("Hashtag"))
-        is RichSegment.Plain -> Unit
-    }
-}
-
-@Composable
-private fun ProfileRoute(account: AccountScope, session: Session, openPost: (PostView) -> Unit, nav: NavHostController) {
-    val uriHandler = LocalUriHandler.current
-    val vm: ProfileViewModel = viewModel(
-        key = "profile-${session.did}",
-        factory = viewModelFactory {
-            initializer {
-                ProfileViewModel(
-                    actorDid = session.did,
-                    repository = account.repository,
-                    interactions = account.interactions,
-                    analytics = account.analytics,
-                    postCache = account.postCache,
-                    onProfileLoaded = account::setOwnProfile,
-                )
+private fun RouteContent(entry: RouteEntry, account: AccountScope, session: Session, navigator: AppNavigator) {
+    when (entry.route) {
+        Routes.HOME -> HomeRoute(account, session, navigator)
+        Routes.SEARCH -> NotInShowcase("Search")
+        Routes.MESSAGES -> NotInShowcase("Chat")
+        Routes.NOTIFICATIONS -> NotInShowcase("Notifications")
+        Routes.PROFILE -> ProfileRoute(account, session, navigator)
+        Routes.THREAD -> ThreadRoute(account, session, entry.arg.orEmpty(), navigator)
+        Routes.NOT_IN_SHOWCASE -> {
+            val title = entry.arg.orEmpty()
+            Column(
+                Modifier.fillMaxSize().background(LocalAlf.current.bg)
+                    .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
+            ) {
+                ScreenHeader(title, onBack = navigator::back)
+                NotInShowcase(title, Modifier.weight(1f))
             }
-        },
-    )
-    val state by vm.state.collectAsStateWithLifecycle()
-    // RN Profile `listenSoftReset`: scroll the current section to the top and truncate its feed.
-    val softResets = remember(account) { account.softReset.resets.filter { it == Routes.PROFILE }.map { } }
-    ProfileScreen(
-        state = state,
-        softResets = softResets,
-        currentAccountDid = session.did,
-        callbacks = ProfileCallbacks(
-            onRefresh = vm::refresh,
-            onSoftReset = vm::softReset,
-            onSelectTab = vm::selectTab,
-            onBack = { nav.popBackStack() },
-            onRetryProfile = vm::retryProfile,
-            onRetry = vm::retry,
-            onRetryLoadMore = vm::retryLoadMore,
-            onEndReached = vm::onEndReached,
-            onPostSeen = vm::onPostSeen,
-            onOpenFullThread = { nav.navigate(Routes.thread(it)) },
-            onNotInShowcase = { nav.navigate(Routes.notInShowcase(it)) },
-            postActions = { row ->
-                val via = FeedViewModel.viaOf(row.reason)
-                PostActions(
-                    onOpen = {
-                        vm.onPostPressed(it)
-                        // The profile feed has no feed source info, so the thread gets no feed descriptor.
-                        account.postSources.set(it.uri, PostSource(feedDescriptor = null, via = via))
-                        openPost(it)
-                    },
-                    onToggleLike = { vm.toggleLike(it, via) },
-                    onToggleRepost = { vm.toggleRepost(it, via) },
-                    onOpenAuthor = {
-                        vm.onAuthorPressed(it)
-                        if (it.author.did != session.did) nav.navigate(Routes.notInShowcase("Profile"))
-                    },
-                    onReply = {
-                        vm.onReplyPressed(it)
-                        nav.navigate(Routes.notInShowcase("Reply"))
-                    },
-                    onRichText = { segment -> openRichText(segment, uriHandler, nav) },
-                    onOpenReposter = { nav.navigate(Routes.notInShowcase("Profile")) },
-                    onQuote = { nav.navigate(Routes.notInShowcase("Quote post")) },
-                )
-            },
-        ),
-    )
-}
-
-@Composable
-private fun ThreadRoute(account: AccountScope, session: Session, uri: String, nav: NavHostController, openPost: (PostView) -> Unit) {
-    val uriHandler = LocalUriHandler.current
-    val vm: ThreadViewModel = viewModel(
-        key = "thread-$uri",
-        factory = viewModelFactory {
-            initializer {
-                ThreadViewModel(
-                    anchorUri = uri,
-                    repository = account.repository,
-                    interactions = account.interactions,
-                    analytics = account.analytics,
-                    userDid = session.did,
-                    postCache = account.postCache,
-                    source = account.postSources.consume(uri),
-                )
-            }
-        },
-    )
-    val state by vm.state.collectAsStateWithLifecycle()
-    val ownProfile by account.ownProfile.collectAsStateWithLifecycle()
-    ThreadScreen(
-        state = state,
-        ownAvatar = ownProfile?.avatar,
-        callbacks = ThreadCallbacks(
-            onBack = { nav.popBackStack() },
-            onThreadOptions = { nav.navigate(Routes.notInShowcase("Thread options")) },
-            onRetry = vm::retry,
-            onShowOtherReplies = vm::showOtherReplies,
-            onOpenThread = { nav.navigate(Routes.thread(it)) },
-            onAnchorLaidOut = vm::onAnchorLaidOut,
-            onStartReached = vm::onStartReached,
-            onEndReached = vm::onEndReached,
-            onItemSeen = vm::onItemSeen,
-            // The composer is outside the slice.
-            onReplyToAnchor = { nav.navigate(Routes.notInShowcase("Reply")) },
-            postActions = { item ->
-                PostActions(
-                    onOpen = { if (it.uri != uri) openPost(it) },
-                    onToggleLike = vm::toggleLike,
-                    onToggleRepost = vm::toggleRepost,
-                    onOpenAuthor = {
-                        if (item.depth == 0) vm.onAnchorAuthorPressed(it)
-                        if (it.author.did == session.did) nav.selectTab(Routes.PROFILE) else nav.navigate(Routes.notInShowcase("Profile"))
-                    },
-                    onReply = {
-                        vm.onReplyPressed(it)
-                        nav.navigate(Routes.notInShowcase("Reply"))
-                    },
-                    onRichText = { segment -> openRichText(segment, uriHandler, nav) },
-                    onOpenReposter = { nav.navigate(Routes.notInShowcase("Profile")) },
-                    onQuote = { nav.navigate(Routes.notInShowcase("Quote post")) },
-                )
-            },
-        ),
-    )
+        }
+    }
 }
 
 /**
