@@ -146,7 +146,19 @@ The AppView indexes the seeded follows asynchronously, so a profile loaded early
 
 ## Event diff
 
-The RN side is derived from source, not captured: the RN `.env` sets `EXPO_PUBLIC_LOG_DEBUG=session`, which hides `metric` logs.
+The RN side of the **interactions** comparison is derived from source: it runs against the expected
+list in `events/rn-expected-interactions.jsonl`.
+
+The RN side of the **readonly** comparison is **captured from the device**, not derived. This file
+said otherwise until 2026-09-16, claiming the RN `.env` sets `EXPO_PUBLIC_LOG_DEBUG=session` and
+hides `metric` logs. That is false for this flow, and the claim mattered: it was used to argue that a
+difference might be an error in our own expectation rather than a defect. The evidence:
+`run-round.sh:40-41` runs `rn-events.mjs` over the RN capture's own device log, and `rn-events.mjs:87`
+parses `(metric) event:` out of it; the resulting `evidence/base/rn-events-all.jsonl` carries
+telemetry this slice never ports (`feature:viewed`, `experiment:viewed`) and real un-seeded DIDs,
+which no derived list could invent.
+
+**Where the RN log is captured, it is ground truth, and a real difference is a port defect.**
 
 Result on the interactions capture, with `--ignore uri,authorDid,initMs,likerClout,postClout`:
 
@@ -166,20 +178,41 @@ missing 2 | mismatches 3 | order mismatches 9
 ```
 
 The two states were captured in separate runs and produce **byte-identical** difference lines, so
-this is a stable property of the flow, not capture noise. The 14 lines have 3 causes:
+this is a stable property of the flow, not capture noise.
 
-| # | Cause | Evidence |
+**Most of the 14 lines are an artifact of the comparator.** `events.mjs --ordered` compares the two
+logs by position, so one event missing near the head shifts every later index and manufactures
+"property mismatches" and "order mismatches" that do not exist. Aligned by hand, the two logs are:
+
+| RN line | Native line | Event |
 |---|---|---|
-| 1 | Order: RN emits `home:feedDisplayed` before the following feed's `post:view` events. The port emits a `post:view` first. This one inversion at index 6 cascades into most of the 9 order mismatches, which are the same events reported one position apart. | `orderMismatches[0]`, then indexes 10 to 18 |
-| 2 | Properties: the port's following-feed `post:view` positions read 1, 2, 3 where RN reads 0, 1, 2, and the first row's `isReply` is `false` in the port against `true` in RN. | `mismatches` at indexes 7, 8, 9 |
-| 3 | The profile feed emits two fewer events: no `feed:endReached` and one fewer `post:view`, both on `author\|...\|posts_and_author_threads`. | `missing`, indexes 19 and 20 |
+| 1-6 | 1-6 | identical |
+| **7** | — | `home:feedDisplayed`, no `reason` key. The port emits nothing |
+| 8-15 | 7-14 | identical, one position apart |
+| 16 | 16 | `home:feedDisplayed`, `reason: focus` |
+| 17 | 15 | `router:navigate {from: PostThread}`. **Inverted against RN** |
+| 18-19 | 17-18 | identical |
+| **20** | — | `feed:endReached`, author feed. The port emits nothing |
+| 21 | 19 | `post:view`, author feed, position 0. Identical |
 
-**The cause of each is not established yet, and this file does not claim one.** The RN side of this
-comparison is derived from source, not captured (see the note above), so each difference is either a
-defect in the port or an error in the derived list. Difference 2 resembles the `post:view` position
-defect already found and fixed on iOS, which makes a port defect the more likely reading, but that is
-an expectation, not a measurement. Until the cause is established, these are open items, not drift to
-accept: a sign-off never covers an unexplained difference.
+So two events are genuinely absent and one pair is genuinely inverted. The causes:
+
+| # | Verdict | Cause |
+|---|---|---|
+| 1 | **Port defect** | RN has two `home:feedDisplayed` call sites: `Home.tsx:178` (`reason: 'focus'`) and `Home.tsx:199` (`onPageSelected`, no `reason`), which ViewPager2 fires for the initial page. The port has one, `FeatureRoutes.kt:72`, with `reason` hardcoded to `focus`. This is a missing event, not an ordering fault |
+| 1b | **Port defect** | On back-navigation RN logs the focus event **before** `router:navigate {from: PostThread}`; the port reverses them, because `AppShell.kt:296-304` logs from the shell effect, which runs before the destination's own effect. This mirrors the rule already recorded below |
+| 2 | **No defect. This file was wrong** | The port's following-feed `post:view` positions are `0, 1, 2, 3` with `isReply` `true, false, false, false`, which equals RN exactly. `PostFeedList.kt:174-180` already implements RN's `getPostPosition` rule from `PostFeed.tsx:991-1011`. The reported mismatch was produced entirely by the offset from difference 1. The iOS position defect does not carry over |
+| 3a | **No defect. This file was wrong** | The profile `post:view` **is** emitted, `native-events-cmp.jsonl:19`, equal to RN's line 21. It was reported missing only as the tail of a shorter log |
+| 3b | **Port defect** | `feed:endReached` is genuinely absent. RN fires it on first layout while `isFetching` is still false, because RN auto-paginates from a `useEffect` (`util.ts:29,39`) after render. The port calls `autoPaginate` inline in the load coroutine (`FeedPager.kt:85`), setting `isFetching = true` before recomposition, so the gate at `ProfileScreen.kt:165` never opens. The call site exists (`ProfileViewModel.kt:221`); the flow cannot reach it |
+
+Corrected count: **three port defects (1, 1b, 3b), and two claims this file made in error (2, 3a).**
+
+The mechanism behind 3b is read from source; the absence of the event is measured. A runtime trace of
+`FeedPagerState` where `ProfileScreen.kt:165` first evaluates would show which branch applies. That
+changes the exact fix, not the verdict.
+
+Fixing 1 or 3b changes the interactions flow as well, which matches 16 of 16 today. Re-measure it
+after any such change, and re-derive `events/rn-expected-interactions.jsonl`.
 
 | Rule | RN source | Fixed in |
 |---|---|---|
