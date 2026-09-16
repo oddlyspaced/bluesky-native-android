@@ -113,14 +113,34 @@ class XrpcBskyRepository(
         page.notifications.count { !it.isRead }
     }
 
-    override suspend fun preferences(): UserPreferences = session.authed(accountDid) { s ->
-        UserPreferences.parse(client.query("app.bsky.actor.getPreferences", emptyMap(), s.accessJwt, XrpcClient.Target.Pds))
+    /**
+     * `preferences()` and `pinnedFeeds()` read the same `app.bsky.actor.getPreferences` document, so home
+     * issued two identical requests and a thread a third (review B7). One request is shared: concurrent
+     * callers queue on the mutex and the response is reused for [PREFS_TTL_MS], which is what RN gets from one
+     * React Query cache entry. Only a successful read is remembered, so a failed load is still retried at once
+     * (review B3, B4).
+     */
+    private val prefsMutex = kotlinx.coroutines.sync.Mutex()
+    private var prefsText: String? = null
+    private var prefsAtMs = 0L
+
+    private suspend fun preferencesDocument(): String = prefsMutex.withLockCompat {
+        val now = clock.millis()
+        val cached = prefsText
+        if (cached != null && now - prefsAtMs < PREFS_TTL_MS) return@withLockCompat cached
+        val text = session.authed(accountDid) { s ->
+            client.query("app.bsky.actor.getPreferences", emptyMap(), s.accessJwt, XrpcClient.Target.Pds)
+        }
+        prefsText = text
+        prefsAtMs = now
+        text
     }
 
+    override suspend fun preferences(): UserPreferences = UserPreferences.parse(preferencesDocument())
+
     override suspend fun pinnedFeeds(): List<PinnedFeed> = session.authed(accountDid) { s ->
-        val prefs = XrpcJson.parseToJsonElement(
-            client.query("app.bsky.actor.getPreferences", emptyMap(), s.accessJwt, XrpcClient.Target.Pds),
-        ).jsonObject["preferences"]?.jsonArray ?: JsonArray(emptyList())
+        val prefs = XrpcJson.parseToJsonElement(preferencesDocument())
+            .jsonObject["preferences"]?.jsonArray ?: JsonArray(emptyList())
         val saved = prefs.map { it.jsonObject }
             .firstOrNull { it["\$type"]?.jsonPrimitive?.content == "app.bsky.actor.defs#savedFeedsPrefV2" }
             ?.get("items")?.jsonArray?.map { it.jsonObject }
@@ -189,6 +209,19 @@ class XrpcBskyRepository(
 
     private inline fun <reified T> decode(text: String): T = XrpcJson.decodeFromString(text)
 }
+
+/** `Mutex.withLock` with a non-inline name, so a `return@` inside the block reads clearly. */
+private suspend inline fun <T> kotlinx.coroutines.sync.Mutex.withLockCompat(block: () -> T): T {
+    lock()
+    try {
+        return block()
+    } finally {
+        unlock()
+    }
+}
+
+/** How long one `getPreferences` response is reused for. Long enough to fold a screen's reads into one. */
+private const val PREFS_TTL_MS = 60_000L
 
 object AtUri {
     /** `at://did/collection/rkey` -> `rkey`. */

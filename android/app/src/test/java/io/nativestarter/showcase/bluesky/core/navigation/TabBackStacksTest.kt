@@ -75,6 +75,35 @@ class TabBackStacksTest {
         }
     }
 
+    /** Process death must not drop an open thread and return the user to the Home root (review B13). */
+    @Test
+    fun stacksSurviveSaveAndRestore() {
+        val s = stacks()
+        s.push(Routes.THREAD, "at://home-thread")
+        s.press(Routes.PROFILE)
+        s.push(Routes.THREAD, "at://profile-thread")
+        val saved = s.save()
+
+        val restored = TabBackStacks(Routes.TABS)
+        restored.restore(saved)
+        assertEquals(Routes.PROFILE, restored.selected)
+        assertEquals("at://profile-thread", restored.current.arg)
+        assertEquals(listOf(Routes.PROFILE, Routes.THREAD), restored.stack(Routes.PROFILE).map { it.route })
+        restored.press(Routes.HOME)
+        assertEquals("the other tab's stack came back too", "at://home-thread", restored.current.arg)
+        val ids = restored.allEntries().map { it.id }
+        assertEquals("restored entries get fresh ids", ids.size, ids.toSet().size)
+    }
+
+    @Test
+    fun restoringNothingLeavesTheTabRoots() {
+        val s = stacks()
+        s.restore(emptyList())
+        assertEquals(Routes.HOME, s.selected)
+        assertEquals(Routes.HOME, s.current.route)
+        assertFalse(s.canGoBack())
+    }
+
     @Test
     fun selectKeepsTheStack() {
         val s = stacks()

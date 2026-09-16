@@ -176,6 +176,33 @@ class XrpcClientTest {
         assertTrue(paths.toString(), paths.any { it == "/xrpc/com.atproto.server.deleteSession Bearer R1" })
     }
 
+    /**
+     * `preferences()` and `pinnedFeeds()` read one document, so a screen that needs both issues one request
+     * (review B7). A failed read caches nothing, so a retry still reaches the network (review B3).
+     */
+    @Test
+    fun preferencesAndPinnedFeedsShareOneRequest() = runBlocking {
+        val repo = XrpcBskyRepository(client, signedIn(), accountDid = me.did)
+        server.enqueue(MockResponse().setBody(Fixtures.text("getPreferences.json")))
+
+        assertEquals("top", repo.preferences().threadSort)
+        assertEquals(listOf("Following"), repo.pinnedFeeds().map { it.displayName })
+
+        assertEquals("one getPreferences for both reads", 1, server.requestCount)
+        assertEquals("/xrpc/app.bsky.actor.getPreferences", server.takeRequest().path)
+    }
+
+    @Test
+    fun aFailedPreferencesReadIsNotCached() = runBlocking {
+        val repo = XrpcBskyRepository(client, signedIn(), accountDid = me.did)
+        server.enqueue(MockResponse().setResponseCode(500).setBody("""{"error":"InternalServerError"}"""))
+        server.enqueue(MockResponse().setBody(Fixtures.text("getPreferences.json")))
+
+        assertTrue(runCatching { repo.preferences() }.isFailure)
+        assertEquals("top", repo.preferences().threadSort)
+        assertEquals("the retry went to the network", 2, server.requestCount)
+    }
+
     @Test
     fun callsForAnotherAccountFail() = runBlocking {
         val repo = XrpcBskyRepository(client, signedIn(), accountDid = "did:plc:someone-else")

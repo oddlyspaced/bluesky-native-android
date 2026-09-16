@@ -202,9 +202,18 @@ private fun SignedOutScreen(container: AppContainer) {
  * Per-tab back stacks (review A16), held across recomposition and Activity recreation. Each back-stack entry has its
  * own ViewModelStore, cleared when the entry leaves its stack.
  */
-class ShellRouterViewModel : ViewModel() {
+class ShellRouterViewModel(saved: androidx.lifecycle.SavedStateHandle) : ViewModel() {
     val stacks = TabBackStacks(Routes.TABS)
     private val stores = HashMap<Long, ViewModelStore>()
+
+    init {
+        // Back stacks survive process death (review B13). The provider is read at save time, so the snapshot
+        // is always the current stacks and nothing has to be written on every navigation.
+        saved.get<android.os.Bundle>(STACKS_KEY)?.getStringArrayList(STACKS_KEY)?.let(stacks::restore)
+        saved.setSavedStateProvider(STACKS_KEY) {
+            android.os.Bundle().apply { putStringArrayList(STACKS_KEY, stacks.save()) }
+        }
+    }
 
     fun owner(entry: RouteEntry): ViewModelStoreOwner {
         val store = stores.getOrPut(entry.id) { ViewModelStore() }
@@ -224,6 +233,10 @@ class ShellRouterViewModel : ViewModel() {
     override fun onCleared() {
         stores.values.forEach { it.clear() }
         stores.clear()
+    }
+
+    private companion object {
+        const val STACKS_KEY = "shell-back-stacks"
     }
 }
 

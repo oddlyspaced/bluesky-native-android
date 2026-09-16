@@ -127,4 +127,39 @@ class TabBackStacks(private val tabs: List<String>) {
     }
 
     fun canGoBack(): Boolean = stacks.getValue(selected).size > 1 || selected != tabs.first()
+
+    /**
+     * A snapshot for `SavedStateHandle` (review B13). The stacks lived only in a ViewModel, so process death
+     * returned the user to the Home root and lost any open thread. Format: the selected tab first, then one
+     * `tabroutearg` line per entry, in stack order.
+     */
+    fun save(): ArrayList<String> {
+        val out = arrayListOf(selected)
+        tabs.forEach { tab ->
+            stacks.getValue(tab).forEach { entry -> out += "$tab$SEP${entry.route}$SEP${entry.arg.orEmpty()}" }
+        }
+        return out
+    }
+
+    /** Restores a [save] snapshot. Entries get fresh ids, because the old ids keyed state that is gone. */
+    fun restore(values: List<String>) {
+        if (values.isEmpty()) return
+        tabs.forEach { stacks.getValue(it).clear() }
+        values.drop(1).forEach { line ->
+            val parts = line.split(SEP)
+            if (parts.size < 3) return@forEach
+            stacks[parts[0]]?.add(RouteEntry(nextId++, parts[1], parts[2].takeIf { it.isNotEmpty() }))
+        }
+        // A tab whose root entry did not survive would break `current`, so put one back.
+        tabs.forEach { tab ->
+            val stack = stacks.getValue(tab)
+            if (stack.isEmpty() || stack.first().route != tab) stack.add(0, RouteEntry(nextId++, tab))
+        }
+        values.first().takeIf { it in stacks }?.let { selected = it }
+    }
+
+    private companion object {
+        /** Unit separator: it cannot occur in a route name or an AT-URI. */
+        const val SEP = ""
+    }
 }
