@@ -1,0 +1,60 @@
+{
+  "tool": {
+    "name": "check-parity/diff",
+    "version": "1.0.0"
+  },
+  "threshold": 0.02,
+  "fuzz": "5%",
+  "createdAt": "2026-09-16T09:20:20.198Z",
+  "rnDir": "android/parity/out/dark/rn/android",
+  "nativeDir": "android/parity/out/dark/native/android",
+  "screens": [
+    {
+      "name": "home",
+      "rn": "android/parity/out/dark/rn/android/home.png",
+      "native": "android/parity/out/dark/native/android/home.png",
+      "diff": "diffs/home.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 116220,
+      "totalPixels": 3655680,
+      "ratio": 0.03179162289915966,
+      "status": "fail",
+      "masks": [],
+      "warnings": []
+    },
+    {
+      "name": "profile",
+      "rn": "android/parity/out/dark/rn/android/profile.png",
+      "native": "android/parity/out/dark/native/android/profile.png",
+      "diff": "diffs/profile.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 47310,
+      "totalPixels": 3655680,
+      "ratio": 0.012941504726890757,
+      "status": "drift",
+      "masks": [],
+      "warnings": []
+    },
+    {
+      "name": "thread",
+      "rn": "android/parity/out/dark/rn/android/thread.png",
+      "native": "android/parity/out/dark/native/android/thread.png",
+      "diff": "diffs/thread.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 63188,
+      "totalPixels": 3655680,
+      "ratio": 0.017284882703081234,
+      "status": "drift",
+      "masks": [],
+      "warnings": []
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "drift": 2,
+    "fail": 1
+  }
+}

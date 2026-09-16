@@ -1,0 +1,265 @@
+{
+  "tool": {
+    "name": "check-parity/events",
+    "version": "1.0.0"
+  },
+  "mode": "ordered",
+  "ignore": [
+    "uri",
+    "authorDid",
+    "initMs",
+    "likerClout",
+    "postClout"
+  ],
+  "rnCount": 21,
+  "nativeCount": 19,
+  "match": false,
+  "missing": [
+    {
+      "index": 19,
+      "name": "feed:endReached",
+      "props": {
+        "feedType": "author",
+        "feedUrl": "author|did:plc:SEEDED|posts_and_author_threads",
+        "itemCount": 1
+      },
+      "line": 20
+    },
+    {
+      "index": 20,
+      "name": "post:view",
+      "props": {
+        "isReply": false,
+        "logContext": "FeedItem",
+        "feedDescriptor": "author|did:plc:SEEDED|posts_and_author_threads",
+        "position": 0
+      },
+      "line": 21
+    }
+  ],
+  "extra": [],
+  "mismatches": [
+    {
+      "index": 7,
+      "name": "post:view",
+      "rnLine": 8,
+      "nativeLine": 8,
+      "diffs": [
+        {
+          "key": "isReply",
+          "rn": true,
+          "native": false
+        },
+        {
+          "key": "position",
+          "rn": 0,
+          "native": 1
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "name": "post:view",
+      "rnLine": 9,
+      "nativeLine": 9,
+      "diffs": [
+        {
+          "key": "position",
+          "rn": 1,
+          "native": 2
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "name": "post:view",
+      "rnLine": 10,
+      "nativeLine": 10,
+      "diffs": [
+        {
+          "key": "position",
+          "rn": 2,
+          "native": 3
+        }
+      ]
+    }
+  ],
+  "orderMismatches": [
+    {
+      "index": 6,
+      "rn": {
+        "name": "home:feedDisplayed",
+        "props": {
+          "index": 0,
+          "feedType": "following",
+          "feedUrl": "following"
+        },
+        "line": 7
+      },
+      "native": {
+        "name": "post:view",
+        "props": {
+          "isReply": true,
+          "logContext": "FeedItem",
+          "feedDescriptor": "following",
+          "position": 0
+        },
+        "line": 7
+      }
+    },
+    {
+      "index": 10,
+      "rn": {
+        "name": "post:view",
+        "props": {
+          "isReply": false,
+          "logContext": "FeedItem",
+          "feedDescriptor": "following",
+          "position": 3
+        },
+        "line": 11
+      },
+      "native": {
+        "name": "post:clickthroughItem",
+        "props": {
+          "logContext": "FeedItem",
+          "feedDescriptor": "following"
+        },
+        "line": 11
+      }
+    },
+    {
+      "index": 11,
+      "rn": {
+        "name": "post:clickthroughItem",
+        "props": {
+          "logContext": "FeedItem",
+          "feedDescriptor": "following"
+        },
+        "line": 12
+      },
+      "native": {
+        "name": "post:view",
+        "props": {
+          "isReply": false,
+          "logContext": "Post",
+          "feedDescriptor": "following"
+        },
+        "line": 12
+      }
+    },
+    {
+      "index": 12,
+      "rn": {
+        "name": "post:view",
+        "props": {
+          "isReply": false,
+          "logContext": "Post",
+          "feedDescriptor": "following"
+        },
+        "line": 13
+      },
+      "native": {
+        "name": "router:navigate",
+        "props": {
+          "from": "Home"
+        },
+        "line": 13
+      }
+    },
+    {
+      "index": 13,
+      "rn": {
+        "name": "router:navigate",
+        "props": {
+          "from": "Home"
+        },
+        "line": 14
+      },
+      "native": {
+        "name": "post:view",
+        "props": {
+          "isReply": true,
+          "logContext": "PostThreadItem"
+        },
+        "line": 14
+      }
+    },
+    {
+      "index": 14,
+      "rn": {
+        "name": "post:view",
+        "props": {
+          "isReply": true,
+          "logContext": "PostThreadItem"
+        },
+        "line": 15
+      },
+      "native": {
+        "name": "router:navigate",
+        "props": {
+          "from": "PostThread"
+        },
+        "line": 15
+      }
+    },
+    {
+      "index": 16,
+      "rn": {
+        "name": "router:navigate",
+        "props": {
+          "from": "PostThread"
+        },
+        "line": 17
+      },
+      "native": {
+        "name": "nav:click",
+        "props": {
+          "item": "profile",
+          "surface": "bottomBar"
+        },
+        "line": 17
+      }
+    },
+    {
+      "index": 17,
+      "rn": {
+        "name": "nav:click",
+        "props": {
+          "item": "profile",
+          "surface": "bottomBar"
+        },
+        "line": 18
+      },
+      "native": {
+        "name": "router:navigate",
+        "props": {
+          "from": "Home"
+        },
+        "line": 18
+      }
+    },
+    {
+      "index": 18,
+      "rn": {
+        "name": "router:navigate",
+        "props": {
+          "from": "Home"
+        },
+        "line": 19
+      },
+      "native": {
+        "name": "post:view",
+        "props": {
+          "isReply": false,
+          "logContext": "FeedItem",
+          "feedDescriptor": "author|did:plc:SEEDED|posts_and_author_threads",
+          "position": 0
+        },
+        "line": 19
+      }
+    }
+  ],
+  "rnFile": "android/parity/evidence/dark/rn-events-cmp.jsonl",
+  "nativeFile": "android/parity/evidence/dark/native-events-cmp.jsonl"
+}
