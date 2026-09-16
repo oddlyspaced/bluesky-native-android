@@ -12,10 +12,13 @@ cd "$(dirname "$0")"
 LABEL=$1; STATE=$2; OUT_ROOT=${3:-out}
 SERIAL=emulator-5554
 PACK=../../../../migration-pack/skills/check-parity/scripts
+# `<label>-r2` is a second run of the same app, for the same state, in the same batch and on the same build.
+# It is the per-state noise floor (review A9): two runs that should be identical, measured with that state's
+# own masks, so a drift number can be read against the noise of that state rather than of `base`.
 case $LABEL in
-  rn) APP_ID=xyz.blueskyweb.app ;;
-  native) APP_ID=io.nativestarter.showcase.bluesky ;;
-  *) echo "label must be rn or native" >&2; exit 2 ;;
+  rn|rn-r2) APP_ID=xyz.blueskyweb.app ;;
+  native|native-r2) APP_ID=io.nativestarter.showcase.bluesky ;;
+  *) echo "label must be rn, native, rn-r2 or native-r2" >&2; exit 2 ;;
 esac
 case $STATE in
   base|dark|font2) FLOW=flows/pack/readonly.yml ;;
@@ -40,8 +43,41 @@ case $STATE in
   dark) adb -s $SERIAL shell cmd uimode night yes >/dev/null; sleep 3 ;;
   font2) adb -s $SERIAL shell settings put system font_scale 2.0; sleep 3 ;;
 esac
+# Start each capture from an empty log, so an event log covers this capture and nothing else (review A2).
+adb -s $SERIAL logcat -c >/dev/null 2>&1
+
+# Every capture gets a hard time limit. A stuck Maestro flow holds the seed lock, which blocks this agent and
+# the iOS one; one once held it for eight hours. On timeout the capture's own process tree is killed - only its
+# descendants, never another agent's Maestro.
+CAPTURE_TIMEOUT=${CAPTURE_TIMEOUT:-420}
+kill_tree() {
+  local p=$1 c
+  for c in $(pgrep -P "$p" 2>/dev/null); do kill_tree "$c"; done
+  kill -9 "$p" 2>/dev/null
+}
+
 node $PACK/capture.mjs --flow "$FLOW" --platform android --device $SERIAL --label "$LABEL" \
-  --out "$OUT_ROOT/$STATE" --env APP_ID=$APP_ID > "$OUT_ROOT/$STATE/$LABEL.log" 2>&1
+  --out "$OUT_ROOT/$STATE" --env APP_ID=$APP_ID > "$OUT_ROOT/$STATE/$LABEL.log" 2>&1 &
+cap_pid=$!
+( sleep "$CAPTURE_TIMEOUT"; kill -0 "$cap_pid" 2>/dev/null && {
+    echo "$(date +%H:%M:%S) $LABEL $STATE: TIMEOUT after ${CAPTURE_TIMEOUT}s, killing the capture" >&2
+    kill_tree "$cap_pid"
+  } ) &
+watchdog=$!
+wait "$cap_pid"
 rc=$?
+kill "$watchdog" 2>/dev/null
+
+# Event logs, read right after the capture that produced them. The native app appends RN-named events to
+# files/events.jsonl in debug builds; `launchApp clearState` deletes it, so the file holds this capture only.
+if [ "$LABEL" = native ]; then
+  adb -s $SERIAL shell run-as io.nativestarter.showcase.bluesky cat files/events.jsonl \
+    > "$OUT_ROOT/$STATE/native-events.jsonl" 2>/dev/null
+  echo "$(date +%H:%M:%S) native $STATE: $(wc -l < "$OUT_ROOT/$STATE/native-events.jsonl" | tr -d ' ') event(s)"
+fi
+# The RN app has no file sink: its `ax.metric` calls reach the Metric logger, which the console transport
+# prints. Keep the raw device log for this capture; rn-events.jsonl is derived from it by rn-events.mjs.
+adb -s $SERIAL logcat -d > "$OUT_ROOT/$STATE/$LABEL-logcat.txt" 2>/dev/null
+
 echo "$(date +%H:%M:%S) $LABEL $STATE: capture.mjs exit $rc ($(ls "$OUT_ROOT/$STATE/$LABEL/android" 2>/dev/null | tr '\n' ' '))"
 exit $rc

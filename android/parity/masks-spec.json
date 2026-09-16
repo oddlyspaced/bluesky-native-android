@@ -86,7 +86,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -98,7 +100,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -110,7 +114,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -122,7 +128,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -134,7 +142,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -146,7 +156,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -158,7 +170,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -170,7 +184,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -182,7 +198,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -194,7 +212,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -278,7 +298,9 @@
     ],
     "minw": 40,
     "right_x": 880,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -290,7 +312,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "tail",
@@ -312,7 +336,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -324,7 +350,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -352,7 +380,9 @@
     ],
     "minw": 12,
     "bg_x": 1015,
-    "reason": "share glyph (Lucide substitute)"
+    "reason": "share glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -365,7 +395,9 @@
     "minw": 12,
     "gap": 20,
     "bg_x": 1240,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "tail",
@@ -387,7 +419,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -399,7 +433,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -513,7 +549,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -525,7 +563,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -537,7 +577,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -549,7 +591,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -561,7 +605,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -573,7 +619,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -585,7 +633,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -597,7 +647,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -609,7 +661,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -621,7 +675,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -705,7 +761,9 @@
     ],
     "minw": 40,
     "right_x": 880,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -717,7 +775,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "tail",
@@ -739,7 +799,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -751,7 +813,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -779,7 +843,9 @@
     ],
     "minw": 12,
     "bg_x": 1015,
-    "reason": "share glyph (Lucide substitute)"
+    "reason": "share glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -792,7 +858,9 @@
     "minw": 12,
     "gap": 20,
     "bg_x": 1240,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "tail",
@@ -814,7 +882,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -826,7 +896,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -940,7 +1012,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -952,7 +1026,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -964,7 +1040,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -976,7 +1054,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -988,7 +1068,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1000,7 +1082,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1012,7 +1096,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1024,7 +1110,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1036,7 +1124,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1048,7 +1138,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1142,7 +1234,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "tail",
@@ -1174,7 +1268,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1276,7 +1372,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1288,7 +1386,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1300,7 +1400,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1312,7 +1414,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1324,7 +1428,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1336,7 +1442,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1348,7 +1456,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1360,7 +1470,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1372,7 +1484,9 @@
     ],
     "minw": 36,
     "right_x": 900,
-    "minw_right": 12
+    "minw_right": 12,
+    "minh_right": 6,
+    "ar_max_right": 8
    },
    {
     "kind": "glyphs",
@@ -1384,19 +1498,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
-   },
-   {
-    "kind": "glyphs",
-    "box": [
-     40,
-     1980,
-     220,
-     2120
-    ],
-    "minw": 40,
-    "bg_x": 30,
-    "reason": "info glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1538,7 +1642,9 @@
     ],
     "minw": 12,
     "bg_x": 1015,
-    "reason": "share glyph (Lucide substitute)"
+    "reason": "share glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1551,7 +1657,9 @@
     "minw": 12,
     "gap": 20,
     "bg_x": 1240,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1687,7 +1795,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1709,7 +1819,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1731,7 +1843,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1753,7 +1867,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1775,7 +1891,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1815,7 +1933,9 @@
     ],
     "minw": 12,
     "bg_x": 1015,
-    "reason": "share glyph (Lucide substitute)"
+    "reason": "share glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1828,7 +1948,9 @@
     "minw": 12,
     "gap": 20,
     "bg_x": 1240,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "tail",
@@ -1860,7 +1982,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",
@@ -1953,7 +2077,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "tail",
@@ -1985,7 +2111,9 @@
     ],
     "minw": 12,
     "gap": 20,
-    "reason": "more-options ellipsis glyph (Lucide substitute)"
+    "reason": "more-options ellipsis glyph (Lucide substitute)",
+    "minh": 6,
+    "ar_max": 8
    },
    {
     "kind": "glyphs",

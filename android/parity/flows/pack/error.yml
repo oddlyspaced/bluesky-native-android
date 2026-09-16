@@ -27,23 +27,30 @@ appId: ${APP_ID}
     timeout: 15000
 - takeScreenshot: thread
 - back
-# Pull to refresh. RN PostFeed refreshFeed runs truncateAndInvalidate (keep page 1, refetch). After the reseed the
-# old session gets HTTP 500 from getTimeline, so both apps end in the failed-refresh state: page 1 rows plus the
-# load-more retry row (PostFeed.tsx `isError && !isEmpty`). Wait for that row, so the screenshot is taken after the
-# refresh has failed and not before it starts (React Query retries first).
-# Soft reset instead of a pull gesture: pressing the active Home tab runs the same refresh path in both apps
-# (RN Home.tsx onSoftReset -> truncateAndInvalidate; native TabBackStacks.Press.SoftReset -> FeedViewModel.refresh).
-# A swipe did not start RN's RefreshControl in this flow, so the RN capture never reached the failed refresh.
+- waitForAnimationToEnd
+# Soft reset the Home tab. Both apps wire the same refresh path to it:
+#   RN      BottomBar.onPressTab -> getTabState(...) === InsideAtRoot -> emitSoftReset()
+#           -> FeedPage.onSoftReset -> truncateAndInvalidate + feed:refresh {reason: "soft-reset"}
+#   native  TabBackStacks.press -> Press.SoftReset -> FeedViewModel.refresh(REASON_SOFT_RESET)
+#
+# Press twice. RN `getTabState` descends to the deepest focused route (src/lib/routes/helpers.ts:69-80), so while
+# PostThread is still the focused route the first press reads `Inside` and only pops the tab stack to its root;
+# the second press reads `InsideAtRoot` and emits the soft reset. A single press was therefore consumed by the
+# pop and never reached `FeedPage.onSoftReset`, which is why the earlier RN capture kept its cached pages and
+# still rendered FollowingEndOfFeed (review A4). The native stacks behave the same way: the first press pops to
+# the root, the second soft resets. The RN event log for this capture is the proof that the refresh ran.
 - tapOn:
     id: "bottomBarHomeBtn"
-# Native reaches the failed-refresh state (page 1 rows plus the load-more retry row). RN does not: with the same
-# gesture its feed query is not refetched, so it keeps the cached pages and shows FollowingEndOfFeed. Measured on
-# 2026-09-16 with three gestures (swipe 40-80%, swipe 30-90%, Home tab soft reset); RN never rendered the retry row,
-# although its thread query did fail ("Error loading post"). The wait is therefore optional: each app is captured at
-# its own settled state after the same gesture, and PARITY.md records the difference.
+- waitForAnimationToEnd
+- tapOn:
+    id: "bottomBarHomeBtn"
+# After the reseed `getTimeline` fails for the old session, so a refresh that runs ends in the failed-refresh
+# state: page 1 rows plus the load-more retry row (PostFeed.tsx `isError && !isEmpty`). React Query retries first,
+# so wait for the row instead of screenshotting mid-refresh. The wait stays optional so a flow can never hold the
+# seed lock on this assertion: each app is captured at the state it settles in, and the event logs say what ran.
 - extendedWaitUntil:
     visible: "There was an issue fetching posts. Tap here to try again."
-    timeout: 30000
+    timeout: 60000
     optional: true
 - waitForAnimationToEnd:
     timeout: 15000
