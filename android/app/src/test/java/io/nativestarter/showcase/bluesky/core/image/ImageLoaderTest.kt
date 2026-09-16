@@ -1,6 +1,12 @@
 package io.nativestarter.showcase.bluesky.core.image
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -59,6 +65,35 @@ class ImageLoaderTest {
         // Another target size is another entry.
         assertEquals("1000:1000/1", loader.load("https://x/a.jpg", 1000, 1000))
         assertEquals(listOf(4, 1), decoder.decoded)
+    }
+
+    /**
+     * A feed row that scrolls away cancels its own coroutine. The shared load belongs to the loader, not to
+     * whichever caller started it, so the other waiters still get the image (review B6).
+     */
+    @Test
+    fun cancellingOneCallerDoesNotFailTheOthersSharingTheLoad() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        var fetches = 0
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val loader = CachingImageLoader(
+            fetch = {
+                fetches++
+                gate.await()
+                "1000:1000".toByteArray()
+            },
+            decoder = FakeDecoder(),
+            cache = MemoryCache(1_000) { it.length },
+            ioDispatcher = dispatcher,
+            scope = CoroutineScope(SupervisorJob() + dispatcher),
+        )
+        val first = launch { loader.load("https://x/a.jpg", 126, 126) }
+        val second = async { loader.load("https://x/a.jpg", 126, 126) }
+        runCurrent()
+        first.cancel()
+        gate.complete(Unit)
+        assertEquals("1000:1000/4", second.await())
+        assertEquals("the two callers shared one fetch", 1, fetches)
     }
 
     @Test

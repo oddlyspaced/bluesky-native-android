@@ -1,9 +1,10 @@
 package io.nativestarter.showcase.bluesky.core.image
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 /** Loads remote images at a target size (review A15). Screens depend on this interface, not on an HTTP client. */
@@ -77,6 +78,12 @@ class CachingImageLoader<T : Any>(
     private val decoder: ImageDecoder<T>,
     private val cache: MemoryCache<T>,
     private val ioDispatcher: CoroutineDispatcher,
+    /**
+     * Owns the shared load. The `async` must not be a child of whichever caller happened to start it: a row
+     * that scrolls away cancels its own coroutine, and that would cancel the load every other waiter is
+     * awaiting (review B6). A `SupervisorJob` also keeps one failed load from cancelling the rest.
+     */
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + ioDispatcher),
 ) : ImageLoader<T> {
     private val inFlight = HashMap<String, Deferred<T?>>()
 
@@ -85,22 +92,21 @@ class CachingImageLoader<T : Any>(
     override suspend fun load(url: String, targetWidthPx: Int, targetHeightPx: Int): T? {
         val key = key(url, targetWidthPx, targetHeightPx)
         cache.get(key)?.let { return it }
-        val deferred = coroutineScope {
-            synchronized(inFlight) {
-                inFlight.getOrPut(key) {
-                    async(ioDispatcher) {
-                        try {
-                            val bytes = fetch(url) ?: return@async null
-                            val (w, h) = decoder.bounds(bytes) ?: return@async null
-                            decoder.decode(bytes, Downsampling.sampleSize(w, h, targetWidthPx, targetHeightPx))
-                                ?.also { cache.put(key, it) }
-                        } finally {
-                            synchronized(inFlight) { inFlight.remove(key) }
-                        }
+        val deferred = synchronized(inFlight) {
+            inFlight.getOrPut(key) {
+                scope.async {
+                    try {
+                        val bytes = fetch(url) ?: return@async null
+                        val (w, h) = decoder.bounds(bytes) ?: return@async null
+                        decoder.decode(bytes, Downsampling.sampleSize(w, h, targetWidthPx, targetHeightPx))
+                            ?.also { cache.put(key, it) }
+                    } finally {
+                        synchronized(inFlight) { inFlight.remove(key) }
                     }
                 }
             }
         }
+        // Awaiting is cancellable per caller; the load itself lives in the loader's scope.
         return withContext(ioDispatcher) { deferred.await() }
     }
 

@@ -162,11 +162,16 @@ class ThreadViewModel(
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
             query.update { it.copy(isFetching = true) }
-            val sort = query.value.sort ?: runCatchingCancellable { repository.preferences() }
+            // RN `useThreadPreferences` keeps `isLoaded` false until the query succeeds, so a failed read is
+            // retried instead of being pinned as "top" for the life of the screen (review B4). The sort is
+            // stored only on success; a failed attempt still loads the thread with RN's `normalizeSort`
+            // default, and `retry()` reads the preferences again.
+            val loaded = query.value.sort ?: runCatchingCancellable { repository.preferences() }
                 .onSuccess(preferencesCache::put)
                 .map { it.threadSort }
-                .getOrDefault(UNKNOWN_SORT)
-                .also { loaded -> query.update { it.copy(sort = loaded) } }
+                .getOrNull()
+                ?.also { value -> query.update { it.copy(sort = value) } }
+            val sort = loaded ?: UNKNOWN_SORT
             runCatchingCancellable { repository.postThreadV2(anchorUri, sort) }
                 .onSuccess { data ->
                     postCache.put(ThreadTraversal.postsOf(ThreadTraversal.parse(data.thread)))

@@ -121,18 +121,16 @@ object PostViewVisibility {
 }
 
 /**
- * Calls [onPostSeen] for each post row that stays visible for [PostViewVisibility.MIN_VIEW_MS], in list order.
- * The view model logs each URI once.
+ * Reports the keys of the rows that stayed at least [PostViewVisibility.VISIBLE_FRACTION] visible for
+ * [PostViewVisibility.MIN_VIEW_MS], in list order.
+ *
+ * Every list that logs `post:view` uses this, so the feed and the thread share RN's one `List` viewability rule
+ * (src/view/com/util/List.tsx). The thread used to log on composition instead, which counted rows the lazy list
+ * had prepared off-screen and rows the reader never saw (review B9).
  */
 @Composable
-fun TrackPostViews(
-    listState: LazyListState,
-    rows: List<PostFeedRow>,
-    onPostSeen: (PostFeedRow.SliceItemRow) -> Unit,
-    enabled: Boolean = true,
-) {
-    val currentRows by rememberUpdatedState(rows)
-    val currentOnPostSeen by rememberUpdatedState(onPostSeen)
+fun TrackVisibleRows(listState: LazyListState, enabled: Boolean = true, onVisible: (List<Any>) -> Unit) {
+    val currentOnVisible by rememberUpdatedState(onVisible)
     LaunchedEffect(listState, enabled) {
         if (!enabled) return@LaunchedEffect
         snapshotFlow {
@@ -146,9 +144,26 @@ fun TrackPostViews(
             .distinctUntilChanged()
             .collectLatest { keys ->
                 delay(PostViewVisibility.MIN_VIEW_MS)
-                val byKey = currentRows.filterIsInstance<PostFeedRow.SliceItemRow>().associateBy { it.key }
-                keys.forEach { key -> byKey[key]?.let(currentOnPostSeen) }
+                currentOnVisible(keys)
             }
+    }
+}
+
+/**
+ * Calls [onPostSeen] for each post row that stays visible for [PostViewVisibility.MIN_VIEW_MS], in list order.
+ * The view model logs each URI once.
+ */
+@Composable
+fun TrackPostViews(
+    listState: LazyListState,
+    rows: List<PostFeedRow>,
+    onPostSeen: (PostFeedRow.SliceItemRow) -> Unit,
+    enabled: Boolean = true,
+) {
+    val currentRows by rememberUpdatedState(rows)
+    TrackVisibleRows(listState, enabled) { keys ->
+        val byKey = currentRows.filterIsInstance<PostFeedRow.SliceItemRow>().associateBy { it.key }
+        keys.forEach { key -> byKey[key]?.let(onPostSeen) }
     }
 }
 

@@ -4,7 +4,6 @@ import io.nativestarter.showcase.bluesky.designsystem.IconSize
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
@@ -107,7 +106,11 @@ fun BlueskyRoot(container: AppContainer) {
     val now by container.minuteTicker.now.collectAsStateWithLifecycle()
     // RN NavigationContainer onReady: `router:navigate {}` then `init {initMs}`, again on each account key change.
     val accountKey = (sessionState as? SessionState.SignedIn)?.session?.did
-    LaunchedEffect(accountKey) { container.navigationReady.onAccountKey(accountKey) }
+    LaunchedEffect(accountKey) {
+        // Sign-out ends the account's lifetime: its caches, shadows and scope go with it (review B1).
+        if (accountKey == null) container.closeAccount()
+        container.navigationReady.onAccountKey(accountKey)
+    }
     ProvideAlfTheme {
         CompositionLocalProvider(
             LocalNow provides now,
@@ -203,10 +206,6 @@ class ShellRouterViewModel : ViewModel() {
     val stacks = TabBackStacks(Routes.TABS)
     private val stores = HashMap<Long, ViewModelStore>()
 
-    /** Bumped on every stack change, so the shell recomposes. */
-    var version by mutableIntStateOf(0)
-        private set
-
     fun owner(entry: RouteEntry): ViewModelStoreOwner {
         val store = stores.getOrPut(entry.id) { ViewModelStore() }
         return object : ViewModelStoreOwner {
@@ -214,9 +213,12 @@ class ShellRouterViewModel : ViewModel() {
         }
     }
 
-    fun changed(removed: List<RouteEntry> = emptyList()) {
+    /**
+     * Clears the ViewModelStore of every entry that left a stack. The stacks are snapshot state, so the shell
+     * recomposes on its own and there is no version counter to bump (review B12).
+     */
+    fun evict(removed: List<RouteEntry> = emptyList()) {
         removed.forEach { stores.remove(it.id)?.clear() }
-        version++
     }
 
     override fun onCleared() {
@@ -235,42 +237,39 @@ private fun SignedInShell(account: AccountScope, session: Session) {
     val analytics = LocalAnalytics.current
     val router: ShellRouterViewModel = viewModel(key = "router-${session.did}")
     val saveable = rememberSaveableStateHolder()
-    @Suppress("UNUSED_VARIABLE") val version = router.version
     val stacks = router.stacks
+    // Reading the stacks is what subscribes this composable to them (review B12).
     val current = stacks.current
 
     val navigator = remember(router, saveable) {
         fun removed(entries: List<RouteEntry>) {
             entries.forEach { saveable.removeState(it.id) }
-            router.changed(entries)
+            router.evict(entries)
         }
         object : AppNavigator {
             override fun openThread(uri: String) {
                 stacks.push(Routes.THREAD, uri)
-                router.changed()
             }
 
             override fun openNotInShowcase(title: String) {
                 stacks.push(Routes.NOT_IN_SHOWCASE, title)
-                router.changed()
             }
 
             override fun selectTab(tab: String) {
                 stacks.select(tab)
-                router.changed()
             }
 
             override fun back() {
                 when (val result = stacks.back()) {
                     is TabBackStacks.Back.Popped -> removed(listOf(result.removed))
-                    TabBackStacks.Back.ToFirstTab -> router.changed()
+                    TabBackStacks.Back.ToFirstTab -> Unit
                     TabBackStacks.Back.NotHandled -> Unit
                 }
             }
 
             fun pressTab(tab: String) {
                 when (val press = stacks.press(tab)) {
-                    TabBackStacks.Press.Switched -> router.changed()
+                    TabBackStacks.Press.Switched -> Unit
                     // InsideAtRoot: soft reset (scroll to top and refresh).
                     TabBackStacks.Press.SoftReset -> account.softReset.emit(tab)
                     // Inside: pop the tab's stack to its root.

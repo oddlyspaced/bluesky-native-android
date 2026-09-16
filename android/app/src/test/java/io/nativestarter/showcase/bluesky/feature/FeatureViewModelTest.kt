@@ -10,6 +10,7 @@ import io.nativestarter.showcase.bluesky.testing.FakeBskyRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -18,7 +19,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -112,6 +115,32 @@ class FeatureViewModelTest {
         val removed = feed.state.value.rows.filterIsInstance<PostFeedRow.SliceItemRow>().first().post
         assertEquals("unlike after a confirmed like deletes it", 0, removed.likeCount)
         assertTrue(repo.calls.any { it.startsWith("deleteLike:") })
+    }
+
+    /**
+     * Sign-out ends the account's lifetime. Before, the scope was closed only when a *different* DID signed in,
+     * so signing back in as the same DID reused the previous account's caches and its live scope (review B1).
+     */
+    @Test
+    fun accountScopesCloseOnSignOutAndOnAccountChange() {
+        val created = mutableListOf<String>()
+        val scopes = io.nativestarter.showcase.bluesky.AccountScopes { did ->
+            created += did
+            io.nativestarter.showcase.bluesky.AccountScope(did, repo, analytics, CoroutineScope(Dispatchers.Main))
+        }
+        val alice = scopes.forDid("did:plc:alice")
+        assertSame("the same account keeps its scope", alice, scopes.forDid("did:plc:alice"))
+
+        val bob = scopes.forDid("did:plc:bob")
+        assertFalse("another account closes the previous scope", alice.scope.isActive)
+        assertTrue(bob.scope.isActive)
+
+        scopes.close()
+        assertFalse("sign-out closes the scope", bob.scope.isActive)
+
+        val aliceAgain = scopes.forDid("did:plc:alice")
+        assertNotSame("signing back in as the same DID gets fresh state", alice, aliceAgain)
+        assertEquals(listOf("did:plc:alice", "did:plc:bob", "did:plc:alice"), created)
     }
 
     @Test

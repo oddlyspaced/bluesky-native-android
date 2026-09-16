@@ -66,7 +66,11 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.5")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
-    // Used only for PullToRefreshBox; no Material components are drawn (keep-design).
+    // keep-design: the UI is built from the RN app's ALF tokens, not Material 3 defaults. Two Material
+    // components are drawn, both where RN itself falls back to the platform on Android: the pull-to-refresh
+    // indicator (PullToRefreshBox with PullToRefreshDefaults.Indicator, on home and profile) and the
+    // load-more spinner (CircularProgressIndicator, in the feed footer). Nothing else Material is drawn.
+    // The earlier note here said no Material component was drawn, which the code contradicted (review B11).
     implementation("androidx.compose.material3:material3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")

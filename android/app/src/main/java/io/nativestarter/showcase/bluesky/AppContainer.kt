@@ -46,16 +46,25 @@ class AppContainer(
     },
     val haptics: Haptics = VibratorHaptics(context.applicationContext),
 ) {
-    val client = XrpcClient(BuildConfig.PDS_URL, BuildConfig.APPVIEW_PROXY)
+    /** One OkHttp client, so XRPC calls and image loads share one connection pool for the host (review B21). */
+    private val http = okhttp3.OkHttpClient()
+    val client = XrpcClient(BuildConfig.PDS_URL, BuildConfig.APPVIEW_PROXY, http)
     val sessionManager = SessionManager(client, store)
     val toaster = Toaster()
 
     /** Remote avatars and banners: memory cache and downsampling behind an interface (review A15). */
     val imageLoader: io.nativestarter.showcase.bluesky.core.image.ImageLoader<android.graphics.Bitmap> =
-        io.nativestarter.showcase.bluesky.core.image.androidImageLoader()
+        io.nativestarter.showcase.bluesky.core.image.androidImageLoader(http)
 
     /** RN `TickEveryMinuteProvider`: one tick source for the process, started with the app (review P4). */
     val minuteTicker = io.nativestarter.showcase.bluesky.core.common.MinuteTicker(CoroutineScope(SupervisorJob() + Dispatchers.Default))
+
+    init {
+        // Parse the Inter faces before the first screen composes, never during composition (review B10).
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            io.nativestarter.showcase.bluesky.designsystem.text.prewarmFonts(context.applicationContext)
+        }
+    }
 
     /** Process start in elapsed realtime, for the RN `init` event (`initMs`). */
     val processStartElapsedMs: Long = Process.getStartElapsedRealtime()
@@ -64,14 +73,37 @@ class AppContainer(
     /** RN `onNavigationReady` events, once per account key (the tree remounts under `key={currentAccount?.did}`). */
     val navigationReady = io.nativestarter.showcase.bluesky.shell.NavigationReadyEvents(analytics, ::millisSinceProcessStart)
 
-    private var account: AccountScope? = null
+    private val accounts = AccountScopes { did ->
+        AccountScope(did, XrpcBskyRepository(client, sessionManager, accountDid = did), analytics)
+    }
 
     /** The dependencies of one signed-in account. A new account gets a new scope with empty post state. */
+    fun accountFor(did: String): AccountScope = accounts.forDid(did)
+
+    /** Sign-out ends the account's lifetime (review B1). */
+    fun closeAccount() = accounts.close()
+}
+
+/**
+ * Holds the scope of the signed-in account. One account is live at a time, and both signing in as a different
+ * DID and signing out end the previous account's lifetime, so its PostCache, shadows, post sources, preferences,
+ * own profile and coroutine scope are released. Closing on sign-out was missing, so signing back in as the same
+ * DID reused stale state and the account's main-immediate scope stayed live (review B1).
+ */
+class AccountScopes(private val create: (String) -> AccountScope) {
+    private var current: AccountScope? = null
+
     @Synchronized
-    fun accountFor(did: String): AccountScope {
-        account?.takeIf { it.did == did }?.let { return it }
-        account?.close()
-        return AccountScope(did, XrpcBskyRepository(client, sessionManager, accountDid = did), analytics).also { account = it }
+    fun forDid(did: String): AccountScope {
+        current?.takeIf { it.did == did }?.let { return it }
+        current?.close()
+        return create(did).also { current = it }
+    }
+
+    @Synchronized
+    fun close() {
+        current?.close()
+        current = null
     }
 }
 

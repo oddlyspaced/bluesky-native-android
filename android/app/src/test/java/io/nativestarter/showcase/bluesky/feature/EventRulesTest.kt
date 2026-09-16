@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -89,6 +90,25 @@ class EventRulesTest {
             "RN keeps HomeScreenReady unmounted without preferences, so home:feedDisplayed is not logged",
             FeedViewModel(failing, failingInteractions, analytics, "did:plc:alice").homeReady.value,
         )
+    }
+
+    /**
+     * A failed preferences load is a failed query, not a loaded set of defaults: the user's feed filters are
+     * still unknown, so the feed stays not-ready and a retry re-reads them (review B3, B15).
+     */
+    @Test
+    fun homeBecomesReadyWhenTheRetrySucceeds() = runTest {
+        val repo = FakeBskyRepository().apply { failPreferences = true }
+        val interactions = PostInteractions(repo, CoroutineScope(Dispatchers.Main), analytics) { 2 }
+        val vm = FeedViewModel(repo, interactions, analytics, "did:plc:alice")
+        assertFalse("without preferences RN keeps HomeScreenReady unmounted", vm.homeReady.value)
+        assertEquals(1, repo.calls.count { it == "preferences" })
+
+        repo.failPreferences = false
+        vm.retry()
+
+        assertTrue("the retry re-reads the preferences, so the feed is ready", vm.homeReady.value)
+        assertEquals("the retry issued a second read", 2, repo.calls.count { it == "preferences" })
     }
 
     @Test

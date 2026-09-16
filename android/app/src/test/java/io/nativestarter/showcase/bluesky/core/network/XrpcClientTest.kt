@@ -26,6 +26,7 @@ import org.junit.Test
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.system.measureTimeMillis
 
 /** Header split from RN src/state/session/clients.ts, token refresh, sign-out and account scoping. */
 class XrpcClientTest {
@@ -162,12 +163,17 @@ class XrpcClientTest {
 
         val call = launch(Dispatchers.IO) { runCatching { repo.profile("alice.test") } }
         withTimeout(5_000) { while (paths.none { it.contains("refreshSession") }) delay(10) }
-        sessions.logout()
+        // Sign-out must not queue behind the in-flight refresh: the mutex guards the state, not the network
+        // call (review B2). The refresh here is held for 300 ms, so a blocking sign-out would take about that.
+        val signOutMs = measureTimeMillis { sessions.logout() }
         call.join()
 
         assertEquals(SessionState.SignedOut, sessions.state.value)
+        assertTrue("sign-out waited $signOutMs ms for the in-flight refresh", signOutMs < 200)
         assertNull("a finished refresh must not write tokens after sign-out", store.load())
-        assertTrue(paths.toString(), paths.any { it == "/xrpc/com.atproto.server.deleteSession Bearer R2" })
+        // The session is revoked with the refresh token held at sign-out. The newer token the in-flight refresh
+        // returns is dropped with the rest of its result, so it is never used here.
+        assertTrue(paths.toString(), paths.any { it == "/xrpc/com.atproto.server.deleteSession Bearer R1" })
     }
 
     @Test

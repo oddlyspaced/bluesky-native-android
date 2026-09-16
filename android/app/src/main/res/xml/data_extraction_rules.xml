@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  `allowBackup="false"` already stops cloud backup. Device-to-device transfer is a separate channel on
+  Android 12 and newer and needs its own rule, or the Keystore-wrapped session store could be copied to another
+  device (review B19). Nothing in this app is meant to be transferred.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+    </device-transfer>
+</data-extraction-rules>

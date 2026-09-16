@@ -402,6 +402,31 @@ class Cp02ThreadTest {
         assertFalse("review N22", analytics.names().contains("thread:preferences:load"))
     }
 
+    /**
+     * A failed preferences read must not pin "top" as the sort for the life of the screen: RN keeps
+     * `isThreadPreferencesLoaded` false and reads again, so Retry re-reads them (review B4, B15).
+     */
+    @Test
+    fun failedPreferencesAreReadAgainOnRetry() = runTest {
+        repo.failPreferences = true
+        val cache = PreferencesCache()
+        val vm = ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), null, cache)
+        assertTrue("the thread still loads with RN's normalizeSort default", repo.calls.contains("postThreadV2:top"))
+        assertNull("nothing is cached from a failed read", cache.value)
+        assertFalse(analytics.names().contains("thread:preferences:load"))
+
+        repo.failPreferences = false
+        repo.preferencesResponse = UserPreferences(threadSort = "newest", threadSortRaw = "newest")
+        vm.retry()
+
+        assertTrue("retry reads the preferences again", repo.calls.contains("postThreadV2:newest"))
+        assertNotNull(cache.value)
+        assertEquals(
+            listOf(mapOf<String, Any?>("sort" to "newest", "view" to "linear")),
+            analytics.events.filter { it.first == "thread:preferences:load" }.map { it.second },
+        )
+    }
+
     @Test
     fun postSourcesAreConsumedOnce() {
         val sources = PostSources()

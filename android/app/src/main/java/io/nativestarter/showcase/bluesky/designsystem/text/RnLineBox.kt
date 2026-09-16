@@ -150,13 +150,42 @@ fun interFontRes(weight: FontWeight?): Int = when ((weight ?: FontWeight.Normal)
 
 private data class MetricsKey(val fontRes: Int, val sizePx: Int)
 
+/**
+ * The four Inter faces, loaded once. `ResourcesCompat.getFont` reads and parses a font file, which is the
+ * expensive half of measuring a line box; [prewarmFonts] does it off the main thread so no composition pays for
+ * it (review B10).
+ */
+private object Typefaces {
+    private val cache = HashMap<Int, android.graphics.Typeface?>()
+
+    @Synchronized
+    fun get(context: Context, fontRes: Int): android.graphics.Typeface? =
+        cache.getOrPut(fontRes) { ResourcesCompat.getFont(context, fontRes) }
+}
+
+/** Every Inter weight the design system uses. */
+private val INTER_FONTS = listOf(R.font.inter_regular, R.font.inter_medium, R.font.inter_semibold, R.font.inter_bold)
+
+/**
+ * Loads the Inter faces off the main thread, at app start (review B10).
+ *
+ * Warming changes only *when* a font is parsed, never the metrics it yields, so the measured RN line box is
+ * identical whether or not this has run. The synchronous path stays as the fallback, which is why a cold cache
+ * can never move a pixel.
+ */
+suspend fun prewarmFonts(context: Context) {
+    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        INTER_FONTS.forEach { Typefaces.get(context, it) }
+    }
+}
+
 private object FontMetricsCache {
     private val cache = HashMap<MetricsKey, FontMetricsPx>()
 
     @Synchronized
     fun get(context: Context, key: MetricsKey): FontMetricsPx = cache.getOrPut(key) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = ResourcesCompat.getFont(context, key.fontRes)
+            typeface = Typefaces.get(context, key.fontRes)
             textSize = key.sizePx.toFloat()
         }
         val fm = paint.fontMetricsInt

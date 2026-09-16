@@ -52,12 +52,16 @@ class UnreadNotificationsViewModel(
         if (isPoll && UnreadPolicy.skipPoll(cachedCount, random())) return
         inFlight = true
         viewModelScope.launch {
-            runCatchingCancellable { repository.unreadNotificationCount() }
-                .onSuccess { count ->
-                    cachedCount = count
-                    _badge.value = UnreadPolicy.badge(count)
-                }
-            inFlight = false
+            try {
+                runCatchingCancellable { repository.unreadNotificationCount() }
+                    .onSuccess { count ->
+                        cachedCount = count
+                        _badge.value = UnreadPolicy.badge(count)
+                    }
+            } finally {
+                // Cancellation must not leave the flag set, or the badge never updates again (review B22).
+                inFlight = false
+            }
         }
     }
 }

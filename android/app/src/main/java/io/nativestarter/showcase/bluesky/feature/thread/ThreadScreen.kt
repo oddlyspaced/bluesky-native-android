@@ -154,13 +154,19 @@ private fun ThreadList(state: ThreadUiState, callbacks: ThreadCallbacks, modifie
             .filter { it }
             .collect { current.onStartReached() }
     }
+    // RN `usePostViewTracking('PostThreadItem')` goes through the same `List` viewability rule as the feed:
+    // 40% visible for 500 ms, in index order (review B9).
+    val items = state.items
+    io.nativestarter.showcase.bluesky.feature.feed.TrackVisibleRows(listState) { keys ->
+        val byKey = items.filterIsInstance<ThreadItem.Post>().associateBy { it.key }
+        keys.forEach { key -> byKey[key]?.let(current.onItemSeen) }
+    }
     // Parents are prepended above the anchor; LazyColumn keeps the first visible item by key, as RN
     // `maintainVisibleContentPosition` keeps the anchor in place.
     LazyColumn(modifier, state = listState) {
         itemsIndexed(state.items, key = { _, item -> item.key }, contentType = { _, item -> item::class.simpleName }) { index, item ->
             when (item) {
                 is ThreadItem.Post -> {
-                    LaunchedEffect(item.uri) { current.onItemSeen(item) }
                     val actions = callbacks.postActions(item)
                     if (item.depth == 0) {
                         LaunchedEffect(item.uri, state.sort) { current.onAnchorLaidOut() }

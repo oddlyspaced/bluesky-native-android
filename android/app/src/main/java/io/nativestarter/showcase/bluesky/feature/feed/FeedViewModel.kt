@@ -13,6 +13,7 @@ import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.network.PreferencesCache
 import io.nativestarter.showcase.bluesky.core.network.StrongRef
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -97,21 +98,40 @@ class FeedViewModel(
     val homeReady: StateFlow<Boolean> = combine(preferencesLoaded, pinnedFeedsLoaded) { p, f -> p && f }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    private var preferencesJob: Job? = null
+    private var pinnedFeedsJob: Job? = null
+
     init {
-        viewModelScope.launch {
-            runCatchingCancellable { repository.preferences() }.onSuccess {
-                preferencesCache?.put(it)
-                prefs.value = it.homeFeed
-                preferencesLoaded.value = true
-            }
-        }
-        viewModelScope.launch {
-            runCatchingCancellable { HomeTabs.from(repository.pinnedFeeds()) }.onSuccess {
-                tabs.value = it
-                pinnedFeedsLoaded.value = true
-            }
-        }
+        loadPreferences()
         pager.refresh()
+    }
+
+    /**
+     * RN `usePreferencesQuery` and `usePinnedFeedsInfos` are queries, so a failed load is retried and is never a
+     * loaded set of defaults. Until one succeeds the user's hideReplies, hideReposts and hideQuotePosts are
+     * unknown, the feed is not tuned with guessed filters, and `homeReady` stays false so `home:feedDisplayed`
+     * waits, as RN keeps `HomeScreenReady` unmounted (review B3).
+     *
+     * Refresh and retry re-read whatever has not loaded yet; a load already in flight is not started twice.
+     */
+    private fun loadPreferences() {
+        if (!preferencesLoaded.value && preferencesJob?.isActive != true) {
+            preferencesJob = viewModelScope.launch {
+                runCatchingCancellable { repository.preferences() }.onSuccess {
+                    preferencesCache?.put(it)
+                    prefs.value = it.homeFeed
+                    preferencesLoaded.value = true
+                }
+            }
+        }
+        if (!pinnedFeedsLoaded.value && pinnedFeedsJob?.isActive != true) {
+            pinnedFeedsJob = viewModelScope.launch {
+                runCatchingCancellable { HomeTabs.from(repository.pinnedFeeds()) }.onSuccess {
+                    tabs.value = it
+                    pinnedFeedsLoaded.value = true
+                }
+            }
+        }
     }
 
     fun selectTab(index: Int) {
@@ -121,11 +141,15 @@ class FeedViewModel(
     /** RN `feed:refresh`: reason `pull-to-refresh` (PostFeed `refreshFeed`) or `soft-reset` (FeedPage). */
     fun refresh(reason: String) {
         analytics.metric("feed:refresh", linkedMapOf("feedType" to FEED, "feedUrl" to FEED, "reason" to reason))
+        loadPreferences()
         pager.refresh(isPullToRefresh = reason == REASON_PULL_TO_REFRESH)
     }
 
     /** Error banner "Retry": RN `refetch()` without an event. */
-    fun retry() = pager.refresh()
+    fun retry() {
+        loadPreferences()
+        pager.refresh()
+    }
 
     /** `LoadMoreRetryBtn`: RN `fetchNextPage()`. */
     fun retryLoadMore() = pager.fetchNextPage(fromRetry = true)

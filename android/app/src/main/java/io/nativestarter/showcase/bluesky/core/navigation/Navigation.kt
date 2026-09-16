@@ -1,5 +1,8 @@
 package io.nativestarter.showcase.bluesky.core.navigation
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 /** Route names. Tabs are the roots of their own back stacks (review A16). */
 object Routes {
     const val HOME = "home"
@@ -60,9 +63,15 @@ data class RouteEntry(val id: Long, val route: String, val arg: String? = null)
  */
 class TabBackStacks(private val tabs: List<String>) {
     private var nextId = 0L
-    private val stacks: Map<String, MutableList<RouteEntry>> = tabs.associateWith { mutableListOf(RouteEntry(nextId++, it)) }
 
-    var selected: String = tabs.first()
+    /**
+     * Snapshot state, so the shell recomposes because it read the stacks, not because a version counter was
+     * bumped next to a suppressed unused read (review B12).
+     */
+    private val stacks: Map<String, androidx.compose.runtime.snapshots.SnapshotStateList<RouteEntry>> =
+        tabs.associateWith { androidx.compose.runtime.mutableStateListOf(RouteEntry(nextId++, it)) }
+
+    var selected: String by androidx.compose.runtime.mutableStateOf(tabs.first())
         private set
 
     val current: RouteEntry get() = stacks.getValue(selected).last()

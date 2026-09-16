@@ -1,5 +1,6 @@
 package io.nativestarter.showcase.bluesky.core.navigation
 
+import androidx.compose.runtime.snapshots.Snapshot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -52,6 +53,26 @@ class TabBackStacksTest {
         val b = s.push(Routes.THREAD, "x")
         assertTrue(a.id != b.id)
         assertEquals(Routes.TABS.size + 1, s.allEntries().size)
+    }
+
+    /**
+     * The shell recomposes because it read the stacks, not because a version counter was bumped beside a
+     * suppressed unused read (review B12).
+     */
+    @Test
+    fun stackChangesAreObservableSnapshotState() {
+        val s = stacks()
+        var applied = 0
+        val handle = Snapshot.registerApplyObserver { _, _ -> applied++ }
+        try {
+            Snapshot.withMutableSnapshot { s.push(Routes.THREAD, "a") }
+            assertTrue("pushing a screen notifies snapshot observers", applied > 0)
+            val afterPush = applied
+            Snapshot.withMutableSnapshot { s.press(Routes.PROFILE) }
+            assertTrue("selecting a tab notifies snapshot observers", applied > afterPush)
+        } finally {
+            handle.dispose()
+        }
     }
 
     @Test
