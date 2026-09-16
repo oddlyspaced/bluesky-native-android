@@ -172,17 +172,32 @@ MATCH (ordered):   rn 16 event(s), native 16 event(s)
 Measured on 2026-09-16, same ignore list. Evidence: `parity/evidence/base/` and
 `parity/evidence/dark/` (`events-result.json` with its two input logs).
 
+The comparator that produced the first result was itself defective. Both results are kept, because
+the difference between them is the point.
+
 ```
+# events.mjs before the fix: compares the two logs by position
 rn 21 event(s), native 19 event(s), match false
-missing 2 | mismatches 3 | order mismatches 9
+missing 2 | mismatches 3 | order mismatches 9          <- 14 lines, 11 of them false
+
+# events.mjs after the fix: aligns the logs first
+missing in native: home:feedDisplayed {...} (rn line 7)
+missing in native: feed:endReached {...} (rn line 20)
+order differs at 16: router:navigate moved earlier in native,
+                     from rn position 16 (line 17) to native position 14 (line 15)
 ```
 
-The two states were captured in separate runs and produce **byte-identical** difference lines, so
-this is a stable property of the flow, not capture noise.
+One event absent near the head shifted every later index and manufactured property and order
+mismatches that did not exist. The fix aligns the two logs with a longest common subsequence before
+classifying anything (Pack commits `32666de` and `26d1a80`). The corrected result is exactly the
+hand alignment below, produced automatically.
 
-**Most of the 14 lines are an artifact of the comparator.** `events.mjs --ordered` compares the two
-logs by position, so one event missing near the head shifts every later index and manufactures
-"property mismatches" and "order mismatches" that do not exist. Aligned by hand, the two logs are:
+Files: `parity/evidence/{base,dark}/events-result.json` is the original, defective output, kept as
+the record. `events-result-aligned.json` beside it is the corrected output. Both states were
+captured in separate runs and give **byte-identical** lines in both tools, so the delta is a stable
+property of the flow, not capture noise.
+
+The hand alignment that the corrected comparator now reproduces:
 
 | RN line | Native line | Event |
 |---|---|---|
