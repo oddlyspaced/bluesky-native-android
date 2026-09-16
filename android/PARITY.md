@@ -10,7 +10,10 @@ Acceptance: **awaiting owner acceptance.**
 - **One screen fails: error home (4.91% masked).** It is a real behaviour difference, not a capture artefact (see "Error home").
 - **Drift, above 1% (a person who did not write the port must sign off):** base home 1.61%, dark home 1.75%, font scale 2.0 home 1.68%, thread 1.45% and profile 1.26%, empty home 1.38%, interactions home 1.62%.
 - **Everything else passes masked.** No screen passes raw.
-- **Events: ordered MATCH, 16 of 16** (`events.mjs --ordered`).
+- **Events: ordered MATCH, 16 of 16 on the interactions flow** (`events.mjs --ordered`). The longer
+  readonly flow does **not** match: 21 RN events against 19 native, with 14 difference lines that
+  collapse to 3 causes. See "Event diff". The earlier line in this file claimed a match without
+  naming its flow, which read as a claim about the whole app. It is corrected here.
 - **Noise floor:** native masked 0 px on home and profile, 0.10% on thread; RN masked 0 px on home and profile, 0.16% on thread.
 - Fixed this round: font scale 2.0 home 6.24% → 1.68%, interactions home 4.45% → 1.62%, and the RN empty profile now loads and is captured.
 
@@ -151,6 +154,32 @@ Result on the interactions capture, with `--ignore uri,authorDid,initMs,likerClo
 MATCH (unordered): rn 16 event(s), native 16 event(s)
 MATCH (ordered):   rn 16 event(s), native 16 event(s)
 ```
+
+### The readonly flow does not match
+
+Measured on 2026-09-16, same ignore list. Evidence: `parity/evidence/base/` and
+`parity/evidence/dark/` (`events-result.json` with its two input logs).
+
+```
+rn 21 event(s), native 19 event(s), match false
+missing 2 | mismatches 3 | order mismatches 9
+```
+
+The two states were captured in separate runs and produce **byte-identical** difference lines, so
+this is a stable property of the flow, not capture noise. The 14 lines have 3 causes:
+
+| # | Cause | Evidence |
+|---|---|---|
+| 1 | Order: RN emits `home:feedDisplayed` before the following feed's `post:view` events. The port emits a `post:view` first. This one inversion at index 6 cascades into most of the 9 order mismatches, which are the same events reported one position apart. | `orderMismatches[0]`, then indexes 10 to 18 |
+| 2 | Properties: the port's following-feed `post:view` positions read 1, 2, 3 where RN reads 0, 1, 2, and the first row's `isReply` is `false` in the port against `true` in RN. | `mismatches` at indexes 7, 8, 9 |
+| 3 | The profile feed emits two fewer events: no `feed:endReached` and one fewer `post:view`, both on `author\|...\|posts_and_author_threads`. | `missing`, indexes 19 and 20 |
+
+**The cause of each is not established yet, and this file does not claim one.** The RN side of this
+comparison is derived from source, not captured (see the note above), so each difference is either a
+defect in the port or an error in the derived list. Difference 2 resembles the `post:view` position
+defect already found and fixed on iOS, which makes a port defect the more likely reading, but that is
+an expectation, not a measurement. Until the cause is established, these are open items, not drift to
+accept: a sign-off never covers an unexplained difference.
 
 | Rule | RN source | Fixed in |
 |---|---|---|
