@@ -10,10 +10,13 @@ Acceptance: **awaiting owner acceptance.**
 - **One screen fails: error home (4.91% masked).** It is a real behaviour difference, not a capture artefact (see "Error home").
 - **Drift, above 1% (a person who did not write the port must sign off):** base home 1.61%, dark home 1.75%, font scale 2.0 home 1.68%, thread 1.45% and profile 1.26%, empty home 1.38%, interactions home 1.62%.
 - **Everything else passes masked.** No screen passes raw.
-- **Events: ordered MATCH, 16 of 16 on the interactions flow** (`events.mjs --ordered`). The longer
-  readonly flow does **not** match: 21 RN events against 19 native, with 14 difference lines that
-  collapse to 3 causes. See "Event diff". The earlier line in this file claimed a match without
-  naming its flow, which read as a claim about the whole app. It is corrected here.
+- **Events: no flow matches. Nothing in this file may claim event parity today.**
+  - Readonly flow: 21 RN events against 19 native. Three real differences, all port defects. See
+    "Event diff".
+  - Interactions flow: this file claimed "MATCH, 16 of 16". That claim is false and contradicted by
+    its own result file, which records `match: false`. Re-measured it reports a mismatch and exits 1.
+  - Both earlier claims were written without checking the measurement beside them. The comparator
+    that produced them was also defective, and is fixed (Pack `32666de`, `26d1a80`).
 - **Noise floor:** native masked 0 px on home and profile, 0.10% on thread; RN masked 0 px on home and profile, 0.16% on thread.
 - Fixed this round: font scale 2.0 home 6.24% → 1.68%, interactions home 4.45% → 1.62%, and the RN empty profile now loads and is captured.
 
@@ -160,12 +163,33 @@ which no derived list could invent.
 
 **Where the RN log is captured, it is ground truth, and a real difference is a port defect.**
 
-Result on the interactions capture, with `--ignore uri,authorDid,initMs,likerClout,postClout`:
+**This file claimed a match on the interactions capture. The claim is false, and it was false
+against its own evidence.** It printed:
 
 ```
 MATCH (unordered): rn 16 event(s), native 16 event(s)
 MATCH (ordered):   rn 16 event(s), native 16 event(s)
 ```
+
+The result file written by that run, `parity/out/interactions/events-result.json`, records
+`match: false` with `rn 17, native 14`. So the printed claim never matched the measurement beside
+it, and this is independent of the comparator defect described below.
+
+Re-measured on 2026-09-16 with the corrected comparator, same ignore list:
+
+```
+MISMATCH (ordered): rn 16 event(s), native 14 event(s)
+  missing in native: router:navigate {} (rn line 4)
+  missing in native: init {} (rn line 5)
+  props differ:      post:view (rn line 7, native line 5): position rn=0 native=1
+  exit 1
+```
+
+Two cautions on reading this. `parity/out/` is not committed, so the native log above may come from
+a different round than the original claim, and the expected list has changed since (17 events then,
+16 now). The differences are therefore **not established as port defects** the way the readonly
+flow's are. What is established: **the interactions flow does not match, no run on record shows it
+matching, and the claim must not be repeated until a fresh capture settles it.**
 
 ### The readonly flow does not match
 
@@ -226,8 +250,9 @@ The mechanism behind 3b is read from source; the absence of the event is measure
 `FeedPagerState` where `ProfileScreen.kt:165` first evaluates would show which branch applies. That
 changes the exact fix, not the verdict.
 
-Fixing 1 or 3b changes the interactions flow as well, which matches 16 of 16 today. Re-measure it
-after any such change, and re-derive `events/rn-expected-interactions.jsonl`.
+Fixing 1 or 3b changes the interactions flow as well. That flow does **not** match today, contrary
+to what this file claimed, so it must be captured and measured again from scratch rather than
+compared against the present expected list, which has drifted from the one the old claim used.
 
 | Rule | RN source | Fixed in |
 |---|---|---|
