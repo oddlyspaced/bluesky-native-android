@@ -103,28 +103,50 @@ class ThreadViewModel(
     private val threadPrefsAtOpen: ThreadViewPrefs? = preferencesCache.value?.threadView
     private var loggedPreferencesLoad = false
 
+    /**
+     * Parsing and building the thread depends on the response, the "show more replies" state and the other
+     * replies, never on the like and repost shadows, but `combine` re-runs on every shadow emission. Without
+     * this memo one like tap re-parsed the whole thread (review B5).
+     */
+    private var builtQuery: Query? = null
+    private var builtVisible: Boolean? = null
+    private var builtOther: OtherReplies? = null
+    private var builtItems: List<ThreadItem> = emptyList()
+
+    private fun threadItemsFor(q: Query, visible: Boolean, other: OtherReplies): List<ThreadItem> {
+        if (builtQuery !== q || builtVisible != visible || builtOther !== other) {
+            val isPlaceholderData = q.data == null && q.error == null
+            val api = if (isPlaceholderData) {
+                listOfNotNull(placeholder?.let(ApiThreadItem::placeholder))
+            } else {
+                ThreadTraversal.parse(q.data?.thread.orEmpty())
+            }
+            val annotated = ThreadTraversal.sortAndAnnotate(api, userDid)
+            val serverOther = when {
+                !(q.hasOtherReplies && visible) -> emptyList()
+                other is OtherReplies.Loaded -> other.items
+                other is OtherReplies.Failed -> emptyList()
+                else -> ThreadTraversal.otherReplySkeletons()
+            }
+            builtItems = ThreadTraversal.buildThread(
+                threadItems = annotated.threadItems,
+                otherThreadItems = annotated.otherThreadItems,
+                serverOtherThreadItems = serverOther,
+                isLoading = isPlaceholderData,
+                otherItemsVisible = visible,
+                hasOtherThreadItems = q.hasOtherReplies,
+            )
+            builtQuery = q
+            builtVisible = visible
+            builtOther = other
+        }
+        return builtItems
+    }
+
     val state: StateFlow<ThreadUiState> = combine(query, otherItemsVisible, otherReplies, window, interactions.shadows) { q, visible, other, w, shadows ->
         val isPlaceholderData = q.data == null && q.error == null
-        val api = if (isPlaceholderData) {
-            listOfNotNull(placeholder?.let(ApiThreadItem::placeholder))
-        } else {
-            ThreadTraversal.parse(q.data?.thread.orEmpty())
-        }
-        val annotated = ThreadTraversal.sortAndAnnotate(api, userDid)
-        val serverOther = when {
-            !(q.hasOtherReplies && visible) -> emptyList()
-            other is OtherReplies.Loaded -> other.items
-            other is OtherReplies.Failed -> emptyList()
-            else -> ThreadTraversal.otherReplySkeletons()
-        }
-        val items = ThreadTraversal.buildThread(
-            threadItems = annotated.threadItems,
-            otherThreadItems = annotated.otherThreadItems,
-            serverOtherThreadItems = serverOther,
-            isLoading = isPlaceholderData,
-            otherItemsVisible = visible,
-            hasOtherThreadItems = q.hasOtherReplies,
-        ).map { if (it is ThreadItem.Post) it.copy(post = interactions.apply(it.post, shadows)) else it }
+        val items = threadItemsFor(q, visible, other)
+            .map { if (it is ThreadItem.Post) it.copy(post = interactions.apply(it.post, shadows)) else it }
         val (anchor, hasParents) = ThreadTraversal.anchorOf(items)
         val slices = ThreadTraversal.slices(items, w)
         ThreadUiState(

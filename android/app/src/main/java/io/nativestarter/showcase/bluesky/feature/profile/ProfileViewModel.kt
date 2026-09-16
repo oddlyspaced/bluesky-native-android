@@ -91,6 +91,26 @@ class ProfileViewModel(
     private var feedStarted = false
     private val seenUris = HashSet<String>()
 
+    /**
+     * The author tuner output depends on the loaded pages only, but `combine` re-runs on every like and repost
+     * shadow emission. Memoising it keeps one tap from re-tuning the whole profile feed (review B5).
+     */
+    private var tunedPages: List<List<io.nativestarter.showcase.bluesky.core.network.FeedViewPost>>? = null
+    private var tunedRows: List<PostFeedRow> = emptyList()
+    private var tunedSliceCount = 0
+
+    private fun tunedRowsFor(
+        pages: List<List<io.nativestarter.showcase.bluesky.core.network.FeedViewPost>>,
+    ): List<PostFeedRow> {
+        if (tunedPages !== pages) {
+            val slices = FeedTuner.author().tune(pages.flatten())
+            tunedRows = PostFeedRows.build(slices, withComposerPrompt = false)
+            tunedSliceCount = slices.size
+            tunedPages = pages
+        }
+        return tunedRows
+    }
+
     private val pager = FeedPager(
         scope = viewModelScope,
         fetch = { cursor ->
@@ -109,8 +129,7 @@ class ProfileViewModel(
         interactions.shadows,
         descriptionFacets,
     ) { p, tab, f, shadows, facets ->
-        val slices = FeedTuner.author().tune(f.items)
-        val rows = PostFeedRows.build(slices, withComposerPrompt = false).map { row ->
+        val rows = tunedRowsFor(f.pages).map { row ->
             if (row is PostFeedRow.SliceItemRow) row.copy(post = interactions.apply(row.post, shadows)) else row
         }
         ProfileUiState(
@@ -126,7 +145,7 @@ class ProfileViewModel(
                 isRefreshing = f.isRefreshing,
                 isFetchingNextPage = f.isFetchingNextPage,
                 hasNextPage = f.hasNextPage,
-                isEmpty = !f.isFetching && slices.isEmpty(),
+                isEmpty = !f.isFetching && tunedSliceCount == 0,
                 error = f.error,
             ),
         )

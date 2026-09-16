@@ -6,6 +6,7 @@ import io.nativestarter.showcase.bluesky.core.analytics.Analytics
 import io.nativestarter.showcase.bluesky.core.analytics.InteractionContext
 import io.nativestarter.showcase.bluesky.core.common.runCatchingCancellable
 import io.nativestarter.showcase.bluesky.core.network.BskyRepository
+import io.nativestarter.showcase.bluesky.core.network.FeedViewPost
 import io.nativestarter.showcase.bluesky.core.network.HomeFeedPrefs
 import io.nativestarter.showcase.bluesky.core.network.PinnedFeed
 import io.nativestarter.showcase.bluesky.core.network.PostCache
@@ -69,9 +70,30 @@ class FeedViewModel(
     )
     private val seenUris = HashSet<String>()
 
+    /**
+     * The tuner output depends on the loaded pages and the feed preferences, never on the like and repost
+     * shadows, but `combine` re-runs on every shadow emission. Without this memo one like tap re-tuned and
+     * re-built every loaded page (review B5). Applying the shadows stays per row, which is O(rows) and is the
+     * work the emission is actually for.
+     */
+    private var tunedPages: List<List<FeedViewPost>>? = null
+    private var tunedPrefs: HomeFeedPrefs? = null
+    private var tunedRows: List<PostFeedRow> = emptyList()
+    private var tunedSliceCount = 0
+
+    private fun tunedRowsFor(pages: List<List<FeedViewPost>>, homePrefs: HomeFeedPrefs): List<PostFeedRow> {
+        if (tunedPages !== pages || tunedPrefs != homePrefs) {
+            val slices = FeedTuner.following(homePrefs, userDid).tune(pages.flatten())
+            tunedRows = PostFeedRows.build(slices, withComposerPrompt = true)
+            tunedSliceCount = slices.size
+            tunedPages = pages
+            tunedPrefs = homePrefs
+        }
+        return tunedRows
+    }
+
     val state: StateFlow<FeedUiState> = combine(pager.state, prefs, tabs, selectedTab, interactions.shadows) { p, homePrefs, feedTabs, selected, shadows ->
-        val slices = FeedTuner.following(homePrefs, userDid).tune(p.items)
-        val rows = PostFeedRows.build(slices, withComposerPrompt = true).map { row ->
+        val rows = tunedRowsFor(p.pages, homePrefs).map { row ->
             if (row is PostFeedRow.SliceItemRow) row.copy(post = interactions.apply(row.post, shadows)) else row
         }
         FeedUiState(
@@ -83,7 +105,7 @@ class FeedViewModel(
             isRefreshing = p.isRefreshing,
             isFetchingNextPage = p.isFetchingNextPage,
             hasNextPage = p.hasNextPage,
-            isEmpty = !p.isFetching && slices.isEmpty(),
+            isEmpty = !p.isFetching && tunedSliceCount == 0,
             error = p.error,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState())
