@@ -147,8 +147,12 @@ fun PostFeedItem(
                 if (showReplyTo && (parentAuthor != null || isParentBlocked || isParentNotFound)) {
                     PostRepliedTo(parentAuthor, isParentBlocked, isParentNotFound, currentAccountDid)
                 }
-                PostText(post, actions)
-                PostControls(post, actions, big = false)
+                // RN `<ContentHider testID="contentHider-post">` (PostFeedItem.tsx:513) wraps the post alerts,
+                // text, embeds and controls. The slice ports no label moderation, so it adds the id only.
+                Column(Modifier.testTag("contentHider-post")) {
+                    PostText(post, actions)
+                    PostControls(post, actions, big = false)
+                }
             }
         }
         if (isThreadLastChild || (!isThreadChild && !isThreadParent)) Spacer(Modifier.height(Space.sm))

@@ -1,10 +1,44 @@
 package io.nativestarter.showcase.bluesky.designsystem.text
 
+import io.nativestarter.showcase.bluesky.core.network.ByteSlice
 import io.nativestarter.showcase.bluesky.core.network.Facet
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URI
 import java.net.URLEncoder
+
+/**
+ * A facet found in plain text by [RichTextModel.detect]. A mention carries the handle only: the DID is known
+ * to the AppView, so it is resolved separately, as RN's `detectFacets(client)` does.
+ */
+sealed interface DetectedFacet {
+    /** UTF-8 byte offsets, as `app.bsky.richtext.facet` uses. */
+    val byteStart: Int
+    val byteEnd: Int
+
+    data class Link(override val byteStart: Int, override val byteEnd: Int, val uri: String) : DetectedFacet
+    data class Tag(override val byteStart: Int, override val byteEnd: Int, val tag: String) : DetectedFacet
+    data class Mention(override val byteStart: Int, override val byteEnd: Int, val handle: String) : DetectedFacet
+}
+
+/**
+ * The IANA top-level domains, as the RN app's `tlds` package ships them (MIT). Bundled as a classpath resource,
+ * so the detection rules stay pure Kotlin and run in JVM tests as well as on the device.
+ */
+object Tlds {
+    val all: Set<String> by lazy {
+        val stream = Tlds::class.java.classLoader?.getResourceAsStream("tlds.txt") ?: return@lazy emptySet()
+        stream.bufferedReader().use { reader -> reader.readLines() }.mapNotNull { it.trim().takeIf(String::isNotEmpty) }.toSet()
+    }
+
+    /** Port of `isValidDomain` (@bsky/sdk dist/rich-text/detection.js): the string ends with ".<tld>". */
+    fun isValidDomain(value: String): Boolean = all.any { tld ->
+        val i = value.lastIndexOf(tld)
+        i > 0 && value[i - 1] == '.' && i == value.length - tld.length
+    }
+}
 
 /** A run of post text, plain or with one facet feature (`RichTextSegment` in @bsky/sdk rich-text). */
 sealed interface RichSegment {
@@ -74,6 +108,99 @@ object RichTextModel {
         }
         return RichSegment.Plain(text)
     }
+
+    // Ports of @bsky/sdk dist/rich-text/util.js. Kotlin and JavaScript use the same syntax for these patterns.
+    private val MENTION_REGEX = Regex("""(^|\s|\()(@)([a-zA-Z0-9.-]+)\b""")
+    private val DETECT_URL_REGEX = Regex(
+        """(^|\s|\()((https?://\S+)|((?<domain>[a-z][a-z0-9]*(\.[a-z0-9]+)+)\S*))""",
+        setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE),
+    )
+    private val TRAILING_PUNCTUATION_REGEX = Regex("""\p{P}+$""")
+    private val ZERO_WIDTH = "­⁠ ​‌‍⃢"
+    private val TAG_REGEX = Regex(
+        "(^|\\s)[#＃]((?!️)[^\\s$ZERO_WIDTH]*[^\\d\\s\\p{P}$ZERO_WIDTH]+[^\\s$ZERO_WIDTH]*)?",
+    )
+    private val CASHTAG_REGEX = Regex("""(^|\s|\()\$([A-Za-z][A-Za-z0-9]{0,4})(?=\s|$|[.,;:!?)"'’])""")
+
+    /** `RichText.utf16IndexToUtf8Index`: the byte offset of a UTF-16 index. */
+    private fun utf8Index(text: String, utf16Index: Int): Int =
+        text.substring(0, utf16Index.coerceIn(0, text.length)).toByteArray(Charsets.UTF_8).size
+
+    /**
+     * Port of `detectFacets` (@bsky/sdk dist/rich-text/detection.js): mentions, links, tags and cashtags, in
+     * that order. RN runs it client-side on text that carries no facets of its own, for example a profile
+     * description (`useRichText`, src/components/hooks/useRichText.ts).
+     *
+     * A mention keeps its handle; [DetectedFacet.Mention] is resolved to a DID by the caller.
+     */
+    fun detect(text: String, isValidDomain: (String) -> Boolean = Tlds::isValidDomain): List<DetectedFacet> {
+        val out = ArrayList<DetectedFacet>()
+        for (match in MENTION_REGEX.findAll(text)) {
+            val handle = match.groupValues[3]
+            // RN keeps ".test" handles, which the dev network uses, even though "test" is not an IANA TLD.
+            if (!isValidDomain(handle) && !handle.endsWith(".test")) continue
+            val start = text.indexOf(handle, match.range.first) - 1
+            if (start < 0) continue
+            out += DetectedFacet.Mention(utf8Index(text, start), utf8Index(text, start + handle.length + 1), handle)
+        }
+        for (match in DETECT_URL_REGEX.findAll(text)) {
+            val matched = match.groupValues[2]
+            var uri = matched
+            if (!uri.startsWith("http")) {
+                val domain = match.groups["domain"]?.value
+                if (domain == null || !isValidDomain(domain)) continue
+                uri = "https://$uri"
+            }
+            val start = text.indexOf(matched, match.range.first)
+            if (start < 0) continue
+            var end = start + matched.length
+            // Strip one trailing sentence mark, then one unbalanced closing bracket, as the SDK does.
+            if (uri.isNotEmpty() && uri.last() in ".,;:!?") {
+                uri = uri.dropLast(1)
+                end--
+            }
+            if (uri.endsWith(")") && !uri.contains("(")) {
+                uri = uri.dropLast(1)
+                end--
+            }
+            out += DetectedFacet.Link(utf8Index(text, start), utf8Index(text, end), uri)
+        }
+        for (match in TAG_REGEX.findAll(text)) {
+            val leading = match.groupValues[1]
+            val tag = (match.groups[2]?.value ?: continue).trim().replace(TRAILING_PUNCTUATION_REGEX, "")
+            // The SDK limit is 64 graphemes; UTF-16 length is never below the grapheme count.
+            if (tag.isEmpty() || tag.length > 64) continue
+            val index = match.range.first + leading.length
+            out += DetectedFacet.Tag(utf8Index(text, index), utf8Index(text, index + 1 + tag.length), tag)
+        }
+        for (match in CASHTAG_REGEX.findAll(text)) {
+            val leading = match.groupValues[1]
+            val ticker = (match.groups[2]?.value ?: continue).uppercase()
+            val index = match.range.first + leading.length
+            out += DetectedFacet.Tag(utf8Index(text, index), utf8Index(text, index + 1 + ticker.length), "$$ticker")
+        }
+        return out
+    }
+
+    /**
+     * [detect] plus the AppView handle resolution RN does, turned into `app.bsky.richtext.facet` values that
+     * [segments] renders. A mention whose handle does not resolve is dropped, as `detectFacets` drops it.
+     */
+    suspend fun resolveFacets(text: String, resolveHandle: suspend (String) -> String?): List<Facet> =
+        detect(text).mapNotNull { found ->
+            val feature = when (found) {
+                is DetectedFacet.Link -> feature("app.bsky.richtext.facet#link", "uri" to found.uri)
+                is DetectedFacet.Tag -> feature("app.bsky.richtext.facet#tag", "tag" to found.tag)
+                is DetectedFacet.Mention -> {
+                    val did = resolveHandle(found.handle) ?: return@mapNotNull null
+                    feature("app.bsky.richtext.facet#mention", "did" to did)
+                }
+            }
+            Facet(ByteSlice(found.byteStart, found.byteEnd), listOf(feature))
+        }
+
+    private fun feature(type: String, vararg fields: Pair<String, String>): JsonObject =
+        JsonObject((listOf("\$type" to type) + fields).associate { it.first to JsonPrimitive(it.second) })
 
     /** Port of `toShortUrl` (src/lib/strings/url-helpers.ts). */
     fun toShortUrl(url: String): String = try {

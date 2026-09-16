@@ -13,6 +13,7 @@ import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostSource
 import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.network.PreferencesCache
+import io.nativestarter.showcase.bluesky.core.network.ThreadViewPrefs
 import io.nativestarter.showcase.bluesky.core.network.UserPreferences
 import io.nativestarter.showcase.bluesky.core.network.ThreadV2Response
 import io.nativestarter.showcase.bluesky.core.network.XrpcException
@@ -94,8 +95,12 @@ class ThreadViewModel(
     /** PostControls read `logContext` and the feed descriptor of the feed the thread was opened from. */
     private val context = InteractionContext(LOG_CONTEXT, source?.feedDescriptor)
 
-    /** RN `useThreadPreferences` `useState(serverPrefs)`: the preferences the screen had when it opened. */
-    private val preferencesAtOpen: UserPreferences? = preferencesCache.value
+    /**
+     * RN `useThreadPreferences` `useState(serverPrefs)`: the **thread view** preferences the screen had when it
+     * opened. RN watches `preferences.threadViewPrefs` only, so a change to an unrelated preference is not a
+     * thread preference change (review A13).
+     */
+    private val threadPrefsAtOpen: ThreadViewPrefs? = preferencesCache.value?.threadView
     private var loggedPreferencesLoad = false
 
     val state: StateFlow<ThreadUiState> = combine(query, otherItemsVisible, otherReplies, window, interactions.shadows) { q, visible, other, w, shadows ->
@@ -141,6 +146,12 @@ class ThreadViewModel(
         viewModelScope.launch {
             state.collect { s -> s.anchor?.let(::logAnchorView) }
         }
+        // RN `usePreferencesQuery` is one cache entry per account, so a thread that is already open sees a later
+        // change to the thread view preferences as well (review A13). A StateFlow replays the current value, so
+        // the preferences the screen opened with arrive first and log nothing.
+        viewModelScope.launch {
+            preferencesCache.state.collect { prefs -> prefs?.let(::onThreadPreferences) }
+        }
         fetch()
     }
 
@@ -152,7 +163,7 @@ class ThreadViewModel(
         fetchJob = viewModelScope.launch {
             query.update { it.copy(isFetching = true) }
             val sort = query.value.sort ?: runCatchingCancellable { repository.preferences() }
-                .onSuccess(::onPreferencesLoaded)
+                .onSuccess(preferencesCache::put)
                 .map { it.threadSort }
                 .getOrDefault(UNKNOWN_SORT)
                 .also { loaded -> query.update { it.copy(sort = loaded) } }
@@ -169,19 +180,22 @@ class ThreadViewModel(
 
     /**
      * RN `useThreadPreferences` (src/state/queries/preferences/useThreadPreferences.ts:50-71): `thread:preferences:load`
-     * once per screen, when server preferences arrive that differ from those the screen had at mount
-     * (`prevServerPrefs !== serverPrefs`). `usePreferencesQuery` uses `replaceEqualDeep`, so preferences already
-     * loaded by the feed, and an equal reload, log nothing. A failed load logs nothing (review N22).
+     * once per screen, when `preferences.threadViewPrefs` arrives and differs from the value the screen had at
+     * mount (`prevServerPrefs !== serverPrefs`). `usePreferencesQuery` uses `replaceEqualDeep`, so preferences
+     * already loaded by the feed, and an equal reload, log nothing. A failed load logs nothing (review N22).
+     *
+     * Only `threadViewPrefs` is compared: an unrelated preference change is not a thread preference change, and a
+     * `threadViewPrefs` change that arrives after the screen opened still logs (review A13).
+     *
      * Props: the raw `sort` (with the "hotness" default) and `view` from `lab_treeViewEnabled`.
      */
-    private fun onPreferencesLoaded(loaded: UserPreferences) {
-        preferencesCache.put(loaded)
-        val current = preferencesCache.value ?: return
-        if (loggedPreferencesLoad || current == preferencesAtOpen) return
+    private fun onThreadPreferences(loaded: UserPreferences) {
+        val current = loaded.threadView
+        if (loggedPreferencesLoad || current == threadPrefsAtOpen) return
         loggedPreferencesLoad = true
         analytics.metric(
             "thread:preferences:load",
-            linkedMapOf("sort" to current.threadSortRaw, "view" to if (current.treeViewEnabled) "tree" else "linear"),
+            linkedMapOf("sort" to current.sortRaw, "view" to if (current.treeViewEnabled) "tree" else "linear"),
         )
     }
 

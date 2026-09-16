@@ -2,6 +2,7 @@ package io.nativestarter.showcase.bluesky.designsystem
 
 import io.nativestarter.showcase.bluesky.designsystem.text.FontMetricsPx
 import io.nativestarter.showcase.bluesky.designsystem.text.RnFontScale
+import io.nativestarter.showcase.bluesky.designsystem.text.RnFontScaleCaps
 import io.nativestarter.showcase.bluesky.designsystem.text.RnTextRules
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -126,6 +127,20 @@ class RnLineBoxTest {
     fun maxFontSizeMultiplierCapsTheScaledLineBox() {
         // Bottom bar badge, 12 sp with maxFontSizeMultiplier 1.5: 12 sp -> 24 dp at 2.0, capped at 12 * 3 * 1.5 = 54 px.
         assertEquals(54, RnTextRules.fontSizePx(RnTextRules.pixelFromSp(12f, scaledPx(12f, 2.0f), 3f, 1.5f)))
+    }
+
+    /** The RN `maxFontSizeMultiplier` values of the in-scope sites, collected in one place (review A15). */
+    @Test
+    fun fontScaleCapsAreTheRnValues() {
+        assertEquals(2f, RnFontScaleCaps.headerTitle, 0f)
+        assertEquals(1.5f, RnFontScaleCaps.bottomBarBadge, 0f)
+        assertEquals(2f, RnFontScaleCaps.buttonText, 0f)
+        assertEquals(1f, RnFontScaleCaps.avatarAlert, 0f)
+        // The header title cap sits above the converter value at font scale 2.0, so it changes nothing there.
+        val headerScaled = scaledPx(16.9f, 2.0f)
+        assertEquals(headerScaled, RnTextRules.pixelFromSp(16.9f, headerScaled, 3f, RnFontScaleCaps.headerTitle), 0.001f)
+        // The badge cap does bite: 12 sp is 24 dp (72 px) at 2.0, capped to 12 * 3 * 1.5 = 54 px.
+        assertEquals(54f, RnTextRules.pixelFromSp(12f, scaledPx(12f, 2.0f), 3f, RnFontScaleCaps.bottomBarBadge), 0.001f)
     }
 
     @Test

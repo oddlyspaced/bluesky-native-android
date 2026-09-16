@@ -15,6 +15,13 @@ data class HomeFeedPrefs(
     val hideQuotePosts: Boolean = false,
 )
 
+/**
+ * The `threadViewPref` values the thread screen reads. RN `useThreadPreferences` compares
+ * `preferences.threadViewPrefs` only, so a change to an unrelated preference is not a thread preference change
+ * (review A13).
+ */
+data class ThreadViewPrefs(val sortRaw: String, val treeViewEnabled: Boolean)
+
 /** The parts of `app.bsky.actor.getPreferences` the slice reads. */
 data class UserPreferences(
     val homeFeed: HomeFeedPrefs = HomeFeedPrefs(),
@@ -25,6 +32,9 @@ data class UserPreferences(
     /** `threadViewPrefs.lab_treeViewEnabled`. */
     val treeViewEnabled: Boolean = false,
 ) {
+    /** RN `preferences.threadViewPrefs`, the only part `useThreadPreferences` watches. */
+    val threadView: ThreadViewPrefs get() = ThreadViewPrefs(threadSortRaw, treeViewEnabled)
+
     companion object {
         fun parse(text: String): UserPreferences {
             val prefs = (XrpcJson.parseToJsonElement(text).jsonObject["preferences"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
@@ -55,11 +65,14 @@ data class UserPreferences(
  * A reload with equal values keeps the old value, so a screen sees a change only when a value differs.
  */
 class PreferencesCache {
-    @Volatile
-    var value: UserPreferences? = null
-        private set
+    private val _state = kotlinx.coroutines.flow.MutableStateFlow<UserPreferences?>(null)
+
+    /** Every screen that reads preferences observes this, as RN screens observe one React Query cache entry. */
+    val state: kotlinx.coroutines.flow.StateFlow<UserPreferences?> = _state
+
+    val value: UserPreferences? get() = _state.value
 
     fun put(preferences: UserPreferences) {
-        if (preferences != value) value = preferences
+        if (preferences != _state.value) _state.value = preferences
     }
 }

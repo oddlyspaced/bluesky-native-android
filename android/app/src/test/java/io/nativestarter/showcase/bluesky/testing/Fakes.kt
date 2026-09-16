@@ -92,10 +92,22 @@ class FakeBskyRepository(
         return otherV2Response ?: Fixtures.decode("getPostThreadOtherV2.json")
     }
 
+    /** Overrides the profile fixture. */
+    var profileResponse: ProfileViewDetailed? = null
+
     override suspend fun profile(actor: String): ProfileViewDetailed {
         calls += "profile:$actor"
         if (failReads) error("offline")
-        return Fixtures.decode("getProfile.json")
+        return profileResponse ?: Fixtures.decode("getProfile.json")
+    }
+
+    /** Handles that resolve to a DID. Anything else resolves to null, as an unknown handle does. */
+    var handles: Map<String, String> = mapOf("bob.test" to "did:plc:bob", "carla.test" to "did:plc:carla")
+
+    override suspend fun resolveHandle(handle: String): String? {
+        calls += "resolveHandle:$handle"
+        if (failReads) error("offline")
+        return handles[handle]
     }
 
     override suspend fun unreadNotificationCount(): Int = 1

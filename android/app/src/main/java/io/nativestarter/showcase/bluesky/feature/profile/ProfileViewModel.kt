@@ -8,12 +8,14 @@ import io.nativestarter.showcase.bluesky.core.analytics.NoopAnalytics
 import io.nativestarter.showcase.bluesky.core.common.ErrorText
 import io.nativestarter.showcase.bluesky.core.common.runCatchingCancellable
 import io.nativestarter.showcase.bluesky.core.network.BskyRepository
+import io.nativestarter.showcase.bluesky.core.network.Facet
 import io.nativestarter.showcase.bluesky.core.network.PostCache
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostView
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed
 import io.nativestarter.showcase.bluesky.core.network.StrongRef
 import io.nativestarter.showcase.bluesky.core.network.XrpcException
+import io.nativestarter.showcase.bluesky.designsystem.text.RichTextModel
 import io.nativestarter.showcase.bluesky.feature.feed.AuthorFeedFilter
 import io.nativestarter.showcase.bluesky.feature.feed.FeedPage
 import io.nativestarter.showcase.bluesky.feature.feed.FeedPager
@@ -43,6 +45,11 @@ data class ProfileUiState(
     val isProfileLoading: Boolean = true,
     val profileError: ProfileErrorCopy? = null,
     val selectedTab: Int = 0,
+    /**
+     * Facets detected in the description. RN runs `detectFacets` client-side (`useRichText`), so the text
+     * renders plain first and gains its links, mentions and tags when the AppView has resolved them (A8).
+     */
+    val descriptionFacets: List<Facet> = emptyList(),
     /** The Posts section: RN `PostFeed` for `author|<did>|posts_and_author_threads`, with the Following show rules. */
     val feed: FeedUiState = FeedUiState(),
 ) {
@@ -77,7 +84,10 @@ class ProfileViewModel(
 
     private val profileLoad = MutableStateFlow(ProfileLoad())
     private val selectedTab = MutableStateFlow(0)
+    private val descriptionFacets = MutableStateFlow<List<Facet>>(emptyList())
     private var profileJob: Job? = null
+    private var facetsJob: Job? = null
+    private var facetsText: String? = null
     private var feedStarted = false
     private val seenUris = HashSet<String>()
 
@@ -92,7 +102,13 @@ class ProfileViewModel(
         selectedCount = { items -> FeedTuner.author().tune(items).sumOf { it.items.size } },
     )
 
-    val state: StateFlow<ProfileUiState> = combine(profileLoad, selectedTab, pager.state, interactions.shadows) { p, tab, f, shadows ->
+    val state: StateFlow<ProfileUiState> = combine(
+        profileLoad,
+        selectedTab,
+        pager.state,
+        interactions.shadows,
+        descriptionFacets,
+    ) { p, tab, f, shadows, facets ->
         val slices = FeedTuner.author().tune(f.items)
         val rows = PostFeedRows.build(slices, withComposerPrompt = false).map { row ->
             if (row is PostFeedRow.SliceItemRow) row.copy(post = interactions.apply(row.post, shadows)) else row
@@ -102,6 +118,7 @@ class ProfileViewModel(
             isProfileLoading = p.isLoading,
             profileError = p.error,
             selectedTab = tab,
+            descriptionFacets = facets,
             feed = FeedUiState(
                 rows = rows,
                 isFetched = f.isFetched,
@@ -130,6 +147,7 @@ class ProfileViewModel(
                 .onSuccess { profile ->
                     profileLoad.value = ProfileLoad(profile = profile, isLoading = false)
                     onProfileLoaded(profile)
+                    resolveDescriptionFacets(profile.description.orEmpty())
                     if (!feedStarted) {
                         feedStarted = true
                         pager.refresh()
@@ -137,6 +155,26 @@ class ProfileViewModel(
                 }
                 // The own profile is loaded by DID, so the RN handle-resolution error ("Oops!") cannot occur.
                 .onFailure { e -> profileLoad.update { it.copy(isLoading = false, error = ProfileErrorCopy("Not Found", ErrorText.clean(e))) } }
+        }
+    }
+
+    /**
+     * RN `useRichText(profile.description)` (src/view/screens/Profile.tsx:209, ProfileHeaderStandard.tsx:145-156).
+     * A profile description carries no facets of its own, so RN detects them client-side and resolves each
+     * mention's handle through the AppView. The raw text renders while that runs (`resolvedRT ?? rawRT`), so the
+     * facets are published only when they are ready (review A8).
+     */
+    private fun resolveDescriptionFacets(text: String) {
+        if (text == facetsText) return
+        facetsText = text
+        facetsJob?.cancel()
+        descriptionFacets.value = emptyList()
+        if (text.isBlank()) return
+        facetsJob = viewModelScope.launch {
+            val resolved = RichTextModel.resolveFacets(text) { handle ->
+                runCatchingCancellable { repository.resolveHandle(handle) }.getOrNull()
+            }
+            descriptionFacets.value = resolved
         }
     }
 

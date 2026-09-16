@@ -47,6 +47,8 @@ fun AlfButton(
     testTag: String? = null,
     /** RN `accessibilityHint`, exposed as the click action label. */
     hint: String? = null,
+    /** RN `<ButtonText maxFontSizeMultiplier>`, for example 2 on the thread anchor follow button. */
+    maxFontScale: Float? = null,
 ) {
     val theme = LocalAlf.current
     val background = when (color) {
@@ -77,7 +79,9 @@ fun AlfButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         iconStart?.let { BskyIcon(it, iconSize, foreground) }
-        if (text != null) Txt(text, alfText(if (small) FontSize.sm else FontSize.md, FontWeight.Medium, foreground))
+        if (text != null) {
+            Txt(text, alfText(if (small) FontSize.sm else FontSize.md, FontWeight.Medium, foreground), maxFontScale = maxFontScale)
+        }
         iconEnd?.let { BskyIcon(it, iconSize, foreground, Modifier.width(iconSize)) }
     }
 }

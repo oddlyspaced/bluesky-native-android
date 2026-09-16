@@ -114,9 +114,24 @@ data class HomeCallbacks(
  *   marker, load-more retry, and `FollowingEndOfFeed` only when RN renders it;
  * - `onEndReached` fires within two screens of the end; a soft reset scrolls to the top and refreshes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    state: FeedUiState,
+    callbacks: HomeCallbacks,
+    modifier: Modifier = Modifier,
+    softResets: Flow<Unit> = emptyFlow(),
+    currentAccountDid: String? = null,
+) {
+    // RN wraps the feed pager in `<Layout.Screen testID="HomeScreen">` (Home.tsx:95); the pager itself carries
+    // `testID="homeScreen"` (Home.tsx:305). Compose allows one test tag per node, so the screen is one node above.
+    Box(modifier.fillMaxSize().testTag("HomeScreen")) {
+        HomeScreenPager(state, callbacks, Modifier, softResets, currentAccountDid)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeScreenPager(
     state: FeedUiState,
     callbacks: HomeCallbacks,
     modifier: Modifier = Modifier,

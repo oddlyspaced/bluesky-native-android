@@ -5,8 +5,10 @@ import io.nativestarter.showcase.bluesky.core.network.Facet
 import io.nativestarter.showcase.bluesky.core.network.FeedResponse
 import io.nativestarter.showcase.bluesky.core.network.FeedViewPost
 import io.nativestarter.showcase.bluesky.core.network.XrpcJson
+import io.nativestarter.showcase.bluesky.designsystem.text.DetectedFacet
 import io.nativestarter.showcase.bluesky.designsystem.text.RichSegment
 import io.nativestarter.showcase.bluesky.designsystem.text.RichTextModel
+import io.nativestarter.showcase.bluesky.designsystem.text.Tlds
 import io.nativestarter.showcase.bluesky.feature.feed.AuthorFeedFilter
 import io.nativestarter.showcase.bluesky.feature.feed.FALLBACK_MARKER_URI
 import io.nativestarter.showcase.bluesky.feature.feed.FeedUiState
@@ -265,6 +267,46 @@ class Cp01FeedLogicTest {
         assertEquals("mailto:x@y.z", RichTextModel.toShortUrl("mailto:x@y.z"))
         assertEquals("https://go.bsky.app/redirect?u=https%3A%2F%2Fexample.com%2F", RichTextModel.proxiedUrl("https://example.com/"))
         assertEquals(2, RichTextModel.countLines("a\nb\nc"))
+    }
+
+    /**
+     * Port check for `detectFacets` (@bsky/sdk dist/rich-text/detection.js), which RN runs client-side on text
+     * that carries no facets, such as a profile description (review A8).
+     */
+    @Test
+    fun detectFacetsPortsTheSdkRules() {
+        val text = "see https://example.com/a, and @bob.test #tag \$nvda plus bare example.com/x"
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        fun slice(f: DetectedFacet) = String(bytes, f.byteStart, f.byteEnd - f.byteStart, Charsets.UTF_8)
+        val found = RichTextModel.detect(text)
+
+        val mention = found.filterIsInstance<DetectedFacet.Mention>().single()
+        assertEquals("bob.test", mention.handle)
+        assertEquals("@bob.test", slice(mention))
+
+        val links = found.filterIsInstance<DetectedFacet.Link>()
+        assertEquals(listOf("https://example.com/a", "https://example.com/x"), links.map { it.uri })
+        assertEquals("the trailing comma is not part of the link", "https://example.com/a", slice(links[0]))
+        assertEquals("a bare domain keeps its text and gains the scheme", "example.com/x", slice(links[1]))
+
+        val tags = found.filterIsInstance<DetectedFacet.Tag>()
+        assertEquals("a cashtag is a tag with a \$ prefix, upper case", listOf("tag", "\$NVDA"), tags.map { it.tag })
+        assertEquals("#tag", slice(tags[0]))
+
+        // Offsets are UTF-8 bytes, so text before a facet can be wider than its UTF-16 length.
+        val accented = "héllo #tag"
+        val accentedTag = RichTextModel.detect(accented).filterIsInstance<DetectedFacet.Tag>().single()
+        assertEquals(7, accentedTag.byteStart)
+        assertEquals(
+            "#tag",
+            String(accented.toByteArray(Charsets.UTF_8), accentedTag.byteStart, accentedTag.byteEnd - accentedTag.byteStart, Charsets.UTF_8),
+        )
+
+        // isValidDomain gates mentions and bare domains; RN keeps ".test", which the dev network uses.
+        assertTrue(Tlds.isValidDomain("example.com"))
+        assertFalse("test is not an IANA TLD", Tlds.isValidDomain("bob.test"))
+        assertTrue("an unknown TLD is not a mention", RichTextModel.detect("@bob.invalidtld").isEmpty())
+        assertEquals("the seeded description has no facets", emptyList<DetectedFacet>(), RichTextModel.detect("Test user 1"))
     }
 
     private fun itemFor(n: Int): FeedViewPost = item(

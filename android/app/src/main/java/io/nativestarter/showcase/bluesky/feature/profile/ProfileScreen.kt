@@ -50,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.nativestarter.showcase.bluesky.R
 import io.nativestarter.showcase.bluesky.core.common.ErrorText
+import io.nativestarter.showcase.bluesky.core.network.Facet
 import io.nativestarter.showcase.bluesky.core.network.ProfileViewDetailed
 import io.nativestarter.showcase.bluesky.designsystem.AlfButton
 import io.nativestarter.showcase.bluesky.designsystem.BskyIcon
@@ -69,6 +70,8 @@ import io.nativestarter.showcase.bluesky.designsystem.feed.EmptyState
 import io.nativestarter.showcase.bluesky.designsystem.feed.ErrorMessage
 import io.nativestarter.showcase.bluesky.designsystem.post.PostActions
 import io.nativestarter.showcase.bluesky.designsystem.pressable
+import io.nativestarter.showcase.bluesky.designsystem.text.RichSegment
+import io.nativestarter.showcase.bluesky.designsystem.text.RichText
 import io.nativestarter.showcase.bluesky.designsystem.ui.TabBar
 import io.nativestarter.showcase.bluesky.feature.feed.PostFeedRow
 import io.nativestarter.showcase.bluesky.feature.feed.postFeedItems
@@ -91,6 +94,8 @@ data class ProfileCallbacks(
     val onPostSeen: (PostFeedRow.SliceItemRow) -> Unit = {},
     val onOpenFullThread: (String) -> Unit = {},
     val onNotInShowcase: (String) -> Unit = {},
+    /** A link, mention or tag in the profile description was tapped. */
+    val onRichText: (RichSegment) -> Unit = {},
     val postActions: (PostFeedRow.SliceItemRow) -> PostActions = { PostActions({}, {}, {}) },
 )
 
@@ -169,7 +174,13 @@ private fun ProfileLoaded(
         ) {
             LazyColumn(Modifier.fillMaxSize().testTag("postsFeed-flatlist"), state = listState) {
                 item(key = "header") {
-                    ProfileHeader(profile, current.onNotInShowcase, Modifier.onSizeChanged { headerPx = it.height })
+                    ProfileHeader(
+                        profile = profile,
+                        descriptionFacets = state.descriptionFacets,
+                        onNotInShowcase = current.onNotInShowcase,
+                        onRichText = { current.onRichText(it) },
+                        modifier = Modifier.onSizeChanged { headerPx = it.height },
+                    )
                 }
                 stickyHeader(key = "tabs") {
                     Box(Modifier.onSizeChanged { tabsPx = it.height }) {
@@ -233,12 +244,23 @@ private fun ProfileLoaded(
     }
 }
 
+/** RN `numberOfLines={15}` on the profile description (ProfileHeaderStandard.tsx:150). */
+private const val PROFILE_DESCRIPTION_MAX_LINES = 15
+
 /**
- * RN `ProfileHeaderStandard` inside `ProfileHeaderShell`. The description is plain text: RN detects links and
- * mentions in it client-side (`RichText.detectFacets`), which this slice does not port.
+ * RN `ProfileHeaderStandard` inside `ProfileHeaderShell`. The description is rich text: it carries no facets of
+ * its own, so RN detects links, mentions and tags client-side (`useRichText` then `detectFacets`) and this port
+ * does the same (review A8). [descriptionFacets] is empty until the detection has resolved, because RN renders
+ * the raw text first (`resolvedRT ?? rawRT`).
  */
 @Composable
-private fun ProfileHeader(profile: ProfileViewDetailed, onNotInShowcase: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun ProfileHeader(
+    profile: ProfileViewDetailed,
+    descriptionFacets: List<Facet>,
+    onNotInShowcase: (String) -> Unit,
+    onRichText: (RichSegment) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val theme = LocalAlf.current
     Box(modifier.fillMaxWidth().background(theme.bg)) {
         Column {
@@ -292,7 +314,14 @@ private fun ProfileHeader(profile: ProfileViewDetailed, onNotInShowcase: (String
                 Column(verticalArrangement = Arrangement.spacedBy(Space.md)) {
                     Metrics(profile, onNotInShowcase)
                     profile.description?.takeIf { it.isNotBlank() }?.let {
-                        Txt(it, alfText(FontSize.md), Modifier.testTag("profileHeaderDescription"))
+                        RichText(
+                            text = it,
+                            facets = descriptionFacets,
+                            style = alfText(FontSize.md),
+                            maxLines = PROFILE_DESCRIPTION_MAX_LINES,
+                            testTag = "profileHeaderDescription",
+                            onSegmentClick = onRichText,
+                        )
                     }
                 }
             }

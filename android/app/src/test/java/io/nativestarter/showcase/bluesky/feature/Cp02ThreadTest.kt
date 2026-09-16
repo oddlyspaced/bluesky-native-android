@@ -2,6 +2,7 @@ package io.nativestarter.showcase.bluesky.feature
 
 import io.nativestarter.showcase.bluesky.core.analytics.RecordingAnalytics
 import io.nativestarter.showcase.bluesky.core.network.FeedResponse
+import io.nativestarter.showcase.bluesky.core.network.HomeFeedPrefs
 import io.nativestarter.showcase.bluesky.core.network.PostCache
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
 import io.nativestarter.showcase.bluesky.core.network.PostRecord
@@ -362,6 +363,36 @@ class Cp02ThreadTest {
             analytics.events.filter { it.first == "thread:preferences:load" }.map { it.second },
         )
         assertTrue(repo.calls.contains("postThreadV2:newest"))
+    }
+
+    /**
+     * RN compares `preferences.threadViewPrefs` only (useThreadPreferences.ts:50-52), so changing a feed filter
+     * is not a thread preference change (review A13).
+     */
+    @Test
+    fun anUnrelatedPreferenceChangeIsNotAThreadPreferenceChange() = runTest {
+        val cache = PreferencesCache().apply { put(UserPreferences()) }
+        ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), null, cache)
+        cache.put(UserPreferences(homeFeed = HomeFeedPrefs(hideReplies = true)))
+        assertFalse(analytics.names().contains("thread:preferences:load"))
+    }
+
+    /**
+     * RN keeps the preferences query subscribed while the screen is open, so a `threadViewPrefs` change that
+     * arrives after the thread opened still logs, once (review A13).
+     */
+    @Test
+    fun aLateThreadViewPreferenceChangeStillLogs() = runTest {
+        val cache = PreferencesCache().apply { put(UserPreferences()) }
+        ThreadViewModel(ROOT, repo, interactions, analytics, me, PostCache(), null, cache)
+        assertFalse(analytics.names().contains("thread:preferences:load"))
+        cache.put(UserPreferences(threadSort = "oldest", threadSortRaw = "oldest", treeViewEnabled = true))
+        assertEquals(
+            listOf(mapOf<String, Any?>("sort" to "oldest", "view" to "tree")),
+            analytics.events.filter { it.first == "thread:preferences:load" }.map { it.second },
+        )
+        cache.put(UserPreferences(threadSort = "newest", threadSortRaw = "newest"))
+        assertEquals("once per screen", 1, analytics.events.count { it.first == "thread:preferences:load" })
     }
 
     @Test

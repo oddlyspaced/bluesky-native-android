@@ -106,6 +106,28 @@ object RnFontScale {
             RnTextRules.lineHeightPx(RnTextRules.pixelFromSp(lineHeightDp, scaledLineHeightPx, density, maxFontScale))
 }
 
+/**
+ * The RN `maxFontSizeMultiplier` values of the slice's texts, in one place (review A15). RN sets the prop at four
+ * in-scope sites; two of them draw components this slice does not:
+ *
+ * | RN site | Cap | Ported |
+ * |---|---|---|
+ * | `Layout.Header` TitleText (src/components/Layout/Header/index.tsx:205) | 2 | [headerTitle] |
+ * | `BottomBar` notification badge (BottomBar.tsx:426) | 1.5 | [bottomBarBadge] |
+ * | `ButtonText` on the thread anchor follow button (ThreadItemAnchorFollowButton.tsx:152) | 2 | [buttonText] |
+ * | `UserAvatar` moderation alert badge (UserAvatar.tsx:292) | 1 | [avatarAlert] |
+ *
+ * The follow button and the moderation alert badge are not drawn in the slice (other users' profiles and label
+ * moderation are out of scope), so their caps have no call site yet. They are named here so a later checkpoint
+ * uses the RN value instead of inventing one.
+ */
+object RnFontScaleCaps {
+    const val headerTitle = 2f
+    const val bottomBarBadge = 1.5f
+    const val buttonText = 2f
+    const val avatarAlert = 1f
+}
+
 /** [RnFontScale.jsLineHeightExcessPx] for the current configuration, in dp. */
 @Composable
 fun rememberJsLineHeightExcess(lineHeightDp: Float): androidx.compose.ui.unit.Dp {

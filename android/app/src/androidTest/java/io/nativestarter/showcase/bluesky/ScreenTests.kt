@@ -1,12 +1,24 @@
 package io.nativestarter.showcase.bluesky
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.nativestarter.showcase.bluesky.core.analytics.RecordingAnalytics
+import io.nativestarter.showcase.bluesky.feature.HomeFeedDisplayedEffect
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -48,6 +60,12 @@ private fun post(handle: String, name: String, text: String, like: String? = nul
     viewer = PostViewerState(like = like),
 )
 
+/** A lifecycle this test drives by hand. `createUnsafe` skips the main-thread check of the setter. */
+private class FakeLifecycleOwner : LifecycleOwner {
+    val registry: LifecycleRegistry = LifecycleRegistry.createUnsafe(this).apply { currentState = Lifecycle.State.RESUMED }
+    override val lifecycle: Lifecycle get() = registry
+}
+
 /** Compose UI tests: one per screen, asserting the RN testIDs the shared Maestro flow relies on. */
 @RunWith(AndroidJUnit4::class)
 class ScreenTests {
@@ -72,8 +90,12 @@ class ScreenTests {
         val state = FeedUiState(rows = PostFeedRows.build(slices, withComposerPrompt = true), isFetched = true, isFetching = false)
         rule.setContent { HomeScreen(state, HomeCallbacks(postActions = { actions })) }
 
+        // RN: `<Layout.Screen testID="HomeScreen">` wraps `<Pager testID="homeScreen">` (review A7).
+        rule.onNodeWithTag("HomeScreen").assertIsDisplayed()
         rule.onNodeWithTag("homeScreen").assertIsDisplayed()
         rule.onNodeWithTag("homeScreenFeedTabs").assertIsDisplayed()
+        // RN `<ContentHider testID="contentHider-post">`, once per feed row (review A7).
+        rule.onAllNodes(hasTestTag("contentHider-post"), useUnmergedTree = true).assertCountEquals(3)
         rule.onNodeWithTag("feedItem-by-bob.test").assertIsDisplayed()
         rule.onNodeWithTag("feedItem-by-carla.test").assertIsDisplayed()
         rule.onNodeWithTag("feedItem-by-alice.test").assertIsDisplayed()
@@ -201,6 +223,46 @@ class ScreenTests {
         rule.onNodeWithText("No posts yet", useUnmergedTree = true).assertIsDisplayed()
         rule.onNodeWithText("Write a post", useUnmergedTree = true).performClick()
         assertEquals(listOf("New post"), opened)
+    }
+
+    /**
+     * RN logs `home:feedDisplayed {reason:"focus"}` from `useFocusEffect`, which is navigation focus, not the
+     * Android lifecycle. Returning from the device Home key must log nothing (review A1).
+     */
+    @Test
+    fun homeFeedDisplayedFiresOnNavigationFocusNotOnLifecycleResume() {
+        val analytics = RecordingAnalytics()
+        val owner = FakeLifecycleOwner()
+        var entryId by mutableStateOf(0)
+        rule.setContent {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                // The shell composes only the current back-stack entry, under `key(entry.id)`.
+                key(entryId) { HomeFeedDisplayedEffect(homeReady = true, selectedTab = 0, analytics = analytics) }
+            }
+        }
+        rule.runOnIdle { assertEquals(listOf("home:feedDisplayed"), analytics.names()) }
+        rule.runOnIdle { owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE) }
+        rule.runOnIdle { owner.registry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME) }
+        rule.runOnIdle { assertEquals("an Activity resume is not a navigation focus", 1, analytics.events.size) }
+        // Navigating back to Home composes the entry again, which is a focus.
+        rule.runOnIdle { entryId = 1 }
+        rule.runOnIdle {
+            assertEquals(2, analytics.events.size)
+            assertEquals(
+                mapOf<String, Any?>("index" to 0, "feedType" to "following", "feedUrl" to "following", "reason" to "focus"),
+                analytics.events.last().second,
+            )
+        }
+    }
+
+    @Test
+    fun homeFeedDisplayedWaitsForPreferencesAndPinnedFeeds() {
+        val analytics = RecordingAnalytics()
+        var ready by mutableStateOf(false)
+        rule.setContent { HomeFeedDisplayedEffect(homeReady = ready, selectedTab = 0, analytics = analytics) }
+        rule.runOnIdle { assertEquals(0, analytics.events.size) }
+        rule.runOnIdle { ready = true }
+        rule.runOnIdle { assertEquals(1, analytics.events.size) }
     }
 
     @Test

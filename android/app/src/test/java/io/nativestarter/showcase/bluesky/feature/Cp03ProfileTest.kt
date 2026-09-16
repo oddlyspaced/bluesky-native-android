@@ -1,6 +1,7 @@
 package io.nativestarter.showcase.bluesky.feature
 
 import io.nativestarter.showcase.bluesky.core.analytics.RecordingAnalytics
+import io.nativestarter.showcase.bluesky.core.network.Facet
 import io.nativestarter.showcase.bluesky.core.network.FeedResponse
 import io.nativestarter.showcase.bluesky.core.network.PostCache
 import io.nativestarter.showcase.bluesky.core.network.PostInteractions
@@ -11,6 +12,8 @@ import io.nativestarter.showcase.bluesky.feature.profile.PROFILE_TABS
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileErrorCopy
 import io.nativestarter.showcase.bluesky.feature.profile.ProfileViewModel
 import io.nativestarter.showcase.bluesky.testing.FakeBskyRepository
+import io.nativestarter.showcase.bluesky.testing.Fixtures
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -85,6 +88,38 @@ class Cp03ProfileTest {
         val blocked = vm().state.value
         assertTrue(blocked.feed.showFirstLoadError)
         assertTrue("KnownError.Block shows Posts hidden", blocked.isPostsHidden)
+    }
+
+    /**
+     * RN `useRichText(profile.description)`: a description carries no facets, so RN detects them client-side and
+     * resolves each mention's handle through the AppView (review A8).
+     */
+    @Test
+    fun descriptionFacetsAreDetectedAndMentionsResolved() = runTest {
+        repo.profileResponse = Fixtures.decode<ProfileViewDetailed>("getProfile.json")
+            .copy(description = "ping @bob.test at https://example.com/x")
+        val facets = vm().state.value.descriptionFacets
+        assertEquals(listOf("resolveHandle:bob.test"), repo.calls.filter { it.startsWith("resolveHandle") })
+        assertEquals(
+            listOf("app.bsky.richtext.facet#mention", "app.bsky.richtext.facet#link"),
+            facets.map { it.features.single().getValue("\$type").jsonPrimitive.content },
+        )
+        assertEquals("did:plc:bob", facets.first().features.single().getValue("did").jsonPrimitive.content)
+    }
+
+    @Test
+    fun anUnresolvableMentionIsDropped() = runTest {
+        repo.handles = emptyMap()
+        repo.profileResponse = Fixtures.decode<ProfileViewDetailed>("getProfile.json").copy(description = "hi @bob.test")
+        assertEquals("detectFacets drops a mention it cannot resolve", emptyList<Facet>(), vm().state.value.descriptionFacets)
+    }
+
+    @Test
+    fun theSeededDescriptionHasNoFacets() = runTest {
+        val s = vm().state.value
+        assertTrue(s.profile?.description?.isNotBlank() == true)
+        assertEquals(emptyList<Facet>(), s.descriptionFacets)
+        assertTrue("no handle resolution is needed", repo.calls.none { it.startsWith("resolveHandle") })
     }
 
     @Test

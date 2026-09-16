@@ -1,16 +1,18 @@
 package io.nativestarter.showcase.bluesky.feature
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.nativestarter.showcase.bluesky.AccountScope
+import io.nativestarter.showcase.bluesky.core.analytics.Analytics
 import io.nativestarter.showcase.bluesky.core.analytics.LocalAnalytics
 import io.nativestarter.showcase.bluesky.core.navigation.AppNavigator
 import io.nativestarter.showcase.bluesky.core.navigation.Routes
@@ -46,6 +48,33 @@ private fun openRichText(segment: RichSegment, uriHandler: UriHandler, navigator
     }
 }
 
+/**
+ * RN `HomeScreenReady` `useFocusEffect` (src/view/screens/Home.tsx:176-186): `home:feedDisplayed` with
+ * reason "focus", on **navigation focus only**.
+ *
+ * React Navigation focus is not the Android lifecycle. Returning from the device Home key re-resumes the
+ * Activity but does not re-focus the screen, and RN logs nothing then, so a `LifecycleResumeEffect` logged an
+ * event RN never sends (review A1).
+ *
+ * The shell composes only the current back-stack entry, under `key(entry.id)`, so this composable enters
+ * composition exactly when the Home entry gains focus and leaves it when the entry blurs. A [LaunchedEffect]
+ * therefore fires once per focus and survives an Activity resume.
+ *
+ * RN mounts `HomeScreenReady` only when preferences and pinned feeds have loaded, so the event waits for both.
+ * The index is read when the event fires, as RN's `useNonReactiveCallback` does.
+ */
+@Composable
+fun HomeFeedDisplayedEffect(homeReady: Boolean, selectedTab: Int, analytics: Analytics) {
+    if (!homeReady) return
+    val tab by rememberUpdatedState(selectedTab)
+    LaunchedEffect(Unit) {
+        analytics.metric(
+            "home:feedDisplayed",
+            mapOf("index" to tab, "feedType" to "following", "feedUrl" to "following", "reason" to "focus"),
+        )
+    }
+}
+
 @Composable
 fun HomeRoute(account: AccountScope, session: Session, navigator: AppNavigator) {
     val analytics = LocalAnalytics.current
@@ -55,18 +84,8 @@ fun HomeRoute(account: AccountScope, session: Session, navigator: AppNavigator) 
         factory = viewModelFactory { initializer { FeedViewModel(account.repository, account.interactions, account.analytics, session.did, account.postCache, account.preferences) } },
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    // RN Home.tsx `HomeScreenReady` useFocusEffect: `home:feedDisplayed` with reason 'focus'. RN mounts
-    // HomeScreenReady only after preferences and pinned feeds load, so the event waits for both.
     val homeReady by vm.homeReady.collectAsStateWithLifecycle()
-    if (homeReady) {
-        LifecycleResumeEffect(Unit) {
-            analytics.metric(
-                "home:feedDisplayed",
-                mapOf("index" to state.selectedTab, "feedType" to "following", "feedUrl" to "following", "reason" to "focus"),
-            )
-            onPauseOrDispose { }
-        }
-    }
+    HomeFeedDisplayedEffect(homeReady, state.selectedTab, analytics)
     val softResets = remember(account) { account.softReset.resets.filter { it == Routes.HOME }.map { } }
     HomeScreen(
         state = state,
@@ -150,6 +169,7 @@ fun ProfileRoute(account: AccountScope, session: Session, navigator: AppNavigato
             onPostSeen = vm::onPostSeen,
             onOpenFullThread = navigator::openThread,
             onNotInShowcase = navigator::openNotInShowcase,
+            onRichText = { segment -> openRichText(segment, uriHandler, navigator) },
             postActions = { row ->
                 val via = FeedViewModel.viaOf(row.reason)
                 PostActions(

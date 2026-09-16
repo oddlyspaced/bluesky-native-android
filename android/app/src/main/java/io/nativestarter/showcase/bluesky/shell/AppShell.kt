@@ -444,7 +444,7 @@ private fun BarButton(
                 Txt(
                     badge,
                     alfText(12.sp, FontWeight.SemiBold, Color.White, includeFontPadding = false),
-                    maxFontScale = 1.5f,
+                    maxFontScale = io.nativestarter.showcase.bluesky.designsystem.text.RnFontScaleCaps.bottomBarBadge,
                 )
             }
         }

@@ -25,6 +25,13 @@ interface BskyRepository {
     suspend fun profile(actor: String): ProfileViewDetailed
 
     /**
+     * RN `RichText.detectFacets(client)` resolves a detected mention's handle through the AppView
+     * (`com.atproto.identity.resolveHandle`), because only the AppView knows the DID. Returns null when the
+     * handle does not resolve, as RN drops the facet then.
+     */
+    suspend fun resolveHandle(handle: String): String?
+
+    /**
      * RN `countUnread` (src/state/queries/notifications/unread.tsx): unread items on the first
      * `listNotifications` page (limit 40). Returns 30 or more as-is; the badge formats "30+".
      */
@@ -89,6 +96,14 @@ class XrpcBskyRepository(
 
     override suspend fun profile(actor: String): ProfileViewDetailed = session.authed(accountDid) { s ->
         decode(client.query("app.bsky.actor.getProfile", mapOf("actor" to actor), s.accessJwt))
+    }
+
+    override suspend fun resolveHandle(handle: String): String? = session.authed(accountDid) { s ->
+        runCatching {
+            XrpcJson.parseToJsonElement(
+                client.query("com.atproto.identity.resolveHandle", mapOf("handle" to handle), s.accessJwt),
+            ).jsonObject["did"]?.jsonPrimitive?.content
+        }.getOrNull()
     }
 
     override suspend fun unreadNotificationCount(): Int = session.authed(accountDid) { s ->
