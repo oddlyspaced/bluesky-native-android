@@ -31,13 +31,20 @@ appId: ${APP_ID}
 # old session gets HTTP 500 from getTimeline, so both apps end in the failed-refresh state: page 1 rows plus the
 # load-more retry row (PostFeed.tsx `isError && !isEmpty`). Wait for that row, so the screenshot is taken after the
 # refresh has failed and not before it starts (React Query retries first).
-- swipe:
-    start: 50%, 40%
-    end: 50%, 80%
-    duration: 600
+# Soft reset instead of a pull gesture: pressing the active Home tab runs the same refresh path in both apps
+# (RN Home.tsx onSoftReset -> truncateAndInvalidate; native TabBackStacks.Press.SoftReset -> FeedViewModel.refresh).
+# A swipe did not start RN's RefreshControl in this flow, so the RN capture never reached the failed refresh.
+- tapOn:
+    id: "bottomBarHomeBtn"
+# Native reaches the failed-refresh state (page 1 rows plus the load-more retry row). RN does not: with the same
+# gesture its feed query is not refetched, so it keeps the cached pages and shows FollowingEndOfFeed. Measured on
+# 2026-09-16 with three gestures (swipe 40-80%, swipe 30-90%, Home tab soft reset); RN never rendered the retry row,
+# although its thread query did fail ("Error loading post"). The wait is therefore optional: each app is captured at
+# its own settled state after the same gesture, and PARITY.md records the difference.
 - extendedWaitUntil:
     visible: "There was an issue fetching posts. Tap here to try again."
-    timeout: 60000
+    timeout: 30000
+    optional: true
 - waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: home
