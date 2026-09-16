@@ -25,10 +25,26 @@
 import fs from "node:fs";
 
 const args = process.argv.slice(2);
-const file = args.find((a) => !a.startsWith("--"));
 const outIdx = args.indexOf("--out");
 const out = outIdx === -1 ? null : args[outIdx + 1];
+const file = args.find((a, i) => !a.startsWith("--") && i !== outIdx + 1);
 const quiet = args.includes("--quiet");
+const sliceOnly = args.includes("--slice-only");
+
+/**
+ * The events this slice ports, from src/analytics/metrics/types.ts. The RN app also emits telemetry for
+ * services the slice does not port: GrowthBook feature flags and experiments (`feature:viewed`,
+ * `experiment:viewed`). Those are not a parity difference, they are a different product surface, so
+ * `--slice-only` leaves them out of the comparison. The unfiltered log is still written and committed, so the
+ * exclusion is visible rather than silent, and PARITY.md names it.
+ */
+const SLICE_EVENTS = new Set([
+  "init", "router:navigate", "account:loggedIn", "splash:signInPressed", "nav:click",
+  "home:feedDisplayed", "feed:refresh", "feed:endReached", "composerPrompt:press",
+  "post:view", "post:clickthroughItem", "post:clickthroughAuthor", "post:clickReply",
+  "post:like", "post:unlike", "post:repost", "post:unrepost",
+  "thread:click:showOtherReplies", "thread:preferences:load", "thread:preferences:update",
+]);
 if (!file) {
   process.stderr.write("Usage: node rn-events.mjs <log file> [--out rn-events.jsonl] [--quiet]\n");
   process.exit(2);
@@ -98,13 +114,19 @@ while ((match = MARKER.exec(text)) !== null) {
   events.push({ name: eventName, props });
 }
 
-const jsonl = events.map((e) => JSON.stringify(e)).join("\n") + (events.length ? "\n" : "");
+const excluded = sliceOnly ? events.filter((e) => !SLICE_EVENTS.has(e.name)) : [];
+const kept = sliceOnly ? events.filter((e) => SLICE_EVENTS.has(e.name)) : events;
+const jsonl = kept.map((e) => JSON.stringify(e)).join("\n") + (kept.length ? "\n" : "");
 if (out) fs.writeFileSync(out, jsonl);
 else process.stdout.write(jsonl);
 
 if (!quiet) {
   const where = out ? ` -> ${out}` : "";
-  process.stderr.write(`${events.length} RN event(s) from ${file}${where}\n`);
+  process.stderr.write(`${kept.length} RN event(s) from ${file}${where}\n`);
+  if (excluded.length) {
+    const names = [...new Set(excluded.map((e) => e.name))].sort();
+    process.stderr.write(`  left out, not ported by this slice: ${excluded.length} event(s) (${names.join(", ")})\n`);
+  }
   for (const p of problems) process.stderr.write(`  warning: ${p}\n`);
   if (!events.length) {
     process.stderr.write(
@@ -113,4 +135,4 @@ if (!quiet) {
     );
   }
 }
-process.exit(events.length ? 0 : 1);
+process.exit(kept.length ? 0 : 1);

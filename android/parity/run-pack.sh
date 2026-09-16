@@ -20,6 +20,15 @@ case $LABEL in
   native|native-r2) APP_ID=io.nativestarter.showcase.bluesky ;;
   *) echo "label must be rn, native, rn-r2 or native-r2" >&2; exit 2 ;;
 esac
+
+# The Pack's capture.mjs accepts only `rn` and `native` for --label, and it is the Pack's script, not ours, so a
+# repeat run captures under its real label into a scratch directory and is moved into place afterwards.
+BASE_LABEL=${LABEL%-r2}
+if [ "$LABEL" = "$BASE_LABEL" ]; then
+  CAPTURE_OUT="$OUT_ROOT/$STATE"
+else
+  CAPTURE_OUT="$OUT_ROOT/$STATE/.repeat"
+fi
 case $STATE in
   base|dark|font2) FLOW=flows/pack/readonly.yml ;;
   interactions|empty|error) FLOW=flows/pack/$STATE.yml ;;
@@ -37,8 +46,8 @@ until mkdir /tmp/bsky-seed.lock 2>/dev/null; do
 done
 trap 'reset_device; rmdir /tmp/bsky-seed.lock 2>/dev/null || true' EXIT
 
-rm -rf "$OUT_ROOT/$STATE/$LABEL"
-mkdir -p "$OUT_ROOT/$STATE"
+rm -rf "$OUT_ROOT/$STATE/$LABEL" "$OUT_ROOT/$STATE/.repeat"
+mkdir -p "$CAPTURE_OUT"
 case $STATE in
   dark) adb -s $SERIAL shell cmd uimode night yes >/dev/null; sleep 3 ;;
   font2) adb -s $SERIAL shell settings put system font_scale 2.0; sleep 3 ;;
@@ -56,8 +65,8 @@ kill_tree() {
   kill -9 "$p" 2>/dev/null
 }
 
-node $PACK/capture.mjs --flow "$FLOW" --platform android --device $SERIAL --label "$LABEL" \
-  --out "$OUT_ROOT/$STATE" --env APP_ID=$APP_ID > "$OUT_ROOT/$STATE/$LABEL.log" 2>&1 &
+node $PACK/capture.mjs --flow "$FLOW" --platform android --device $SERIAL --label "$BASE_LABEL" \
+  --out "$CAPTURE_OUT" --env APP_ID=$APP_ID > "$OUT_ROOT/$STATE/$LABEL.log" 2>&1 &
 cap_pid=$!
 ( sleep "$CAPTURE_TIMEOUT"; kill -0 "$cap_pid" 2>/dev/null && {
     echo "$(date +%H:%M:%S) $LABEL $STATE: TIMEOUT after ${CAPTURE_TIMEOUT}s, killing the capture" >&2
@@ -67,6 +76,13 @@ watchdog=$!
 wait "$cap_pid"
 rc=$?
 kill "$watchdog" 2>/dev/null
+
+# Move a repeat run to <state>/<label>-r2/android, which is where collect-evidence.sh looks for it.
+if [ "$LABEL" != "$BASE_LABEL" ] && [ -d "$CAPTURE_OUT/$BASE_LABEL/android" ]; then
+  mkdir -p "$OUT_ROOT/$STATE/$LABEL"
+  mv "$CAPTURE_OUT/$BASE_LABEL/android" "$OUT_ROOT/$STATE/$LABEL/android"
+  rm -rf "$CAPTURE_OUT"
+fi
 
 # Event logs, read right after the capture that produced them. The native app appends RN-named events to
 # files/events.jsonl in debug builds; `launchApp clearState` deletes it, so the file holds this capture only.

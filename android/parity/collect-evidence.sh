@@ -63,14 +63,23 @@ for label in native rn; do
   cp "$ROOT/$STATE/noise-$label/results.json" "$EV/noise-$label-results.json"
 done
 
-# Event logs, for the flows that drive events.
-for side in native rn; do
-  src="$ROOT/$STATE/$side-events.jsonl"
-  [ -f "$src" ] && cp "$src" "$EV/$side-events.jsonl"
+# Event logs, for the flows that drive events. rn-events-all.jsonl is every event the RN app logged;
+# rn-events.jsonl is the slice's events, which is what the comparison runs on.
+for src_name in native-events.jsonl rn-events.jsonl rn-events-all.jsonl; do
+  src="$ROOT/$STATE/$src_name"
+  [ -f "$src" ] && cp "$src" "$EV/$src_name"
 done
 if [ -f "$EV/native-events.jsonl" ] && [ -f "$EV/rn-events.jsonl" ]; then
   echo "== events ($STATE)"
-  node "$PACK/events.mjs" --rn "$EV/rn-events.jsonl" --native "$EV/native-events.jsonl" \
+  # Every capture reseeds, so alice's DID differs between the RN run and the native run. An author feed
+  # descriptor embeds it ("author|<did>|posts_and_author_threads"), which makes it capture-volatile in the
+  # same way `uri` and `authorDid` are. Normalising the DID keeps the descriptor's shape under comparison,
+  # where adding `feedDescriptor` to --ignore would also stop checking the Following feed's descriptor.
+  # The unnormalised logs stay next to these as the evidence.
+  for side in rn native; do
+    sed -E 's/did:plc:[a-z0-9]{20,}/did:plc:SEEDED/g' "$EV/$side-events.jsonl" > "$EV/$side-events-cmp.jsonl"
+  done
+  node "$PACK/events.mjs" --rn "$EV/rn-events-cmp.jsonl" --native "$EV/native-events-cmp.jsonl" \
     --ignore uri,authorDid,initMs,likerClout,postClout --ordered \
     --out "$EV/events-result.json" | tee "$EV/events-ordered.txt"
 fi

@@ -283,10 +283,10 @@
     "box": [
      30,
      598,
-     580,
+     566,
      677
     ],
-    "reason": "anchor date line (capture time) and its globe glyph"
+    "reason": "anchor date line (capture time) and its globe glyph (Lucide substitute); stops before \"Everybody can reply\", which is not masked"
    },
    {
     "kind": "glyphs",
@@ -746,10 +746,10 @@
     "box": [
      30,
      598,
-     580,
+     566,
      677
     ],
-    "reason": "anchor date line (capture time) and its globe glyph"
+    "reason": "anchor date line (capture time) and its globe glyph (Lucide substitute); stops before \"Everybody can reply\", which is not masked"
    },
    {
     "kind": "glyphs",
@@ -1209,10 +1209,10 @@
     "box": [
      30,
      598,
-     580,
+     566,
      677
     ],
-    "reason": "anchor date line (capture time) and its globe glyph"
+    "reason": "anchor date line (capture time) and its globe glyph (Lucide substitute); stops before \"Everybody can reply\", which is not masked"
    },
    {
     "kind": "glyphs",

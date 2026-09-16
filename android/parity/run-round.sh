@@ -33,12 +33,12 @@ for label in rn rn-r2 native native-r2; do
 done
 
 # The RN app has no file sink; its events come from the device log of its own capture (review A4, A6).
-for side in rn native; do
-  log="$ROOT/$STATE/$side-logcat.txt"
-  [ -f "$log" ] || continue
-  if [ "$side" = rn ]; then
-    node rn-events.mjs "$log" --out "$ROOT/$STATE/rn-events.jsonl" || true
-  fi
-done
+# Two files: the complete observed log, which is the evidence, and the slice's events, which is what the
+# comparison runs on. Keeping both makes the exclusion visible instead of silent.
+rn_log="$ROOT/$STATE/rn-logcat.txt"
+if [ -f "$rn_log" ]; then
+  node rn-events.mjs "$rn_log" --out "$ROOT/$STATE/rn-events-all.jsonl" || true
+  node rn-events.mjs "$rn_log" --slice-only --out "$ROOT/$STATE/rn-events.jsonl" || true
+fi
 
 ./collect-evidence.sh "$STATE" "$ROOT"
