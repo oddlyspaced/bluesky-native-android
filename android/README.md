@@ -5,7 +5,9 @@ It is a public showcase of the Nativestarter Migration Pack. The app talks to a 
 (the local Bluesky dev network). It contains no hard-coded posts.
 
 - applicationId, namespace and Kotlin package root: `io.nativestarter.showcase.bluesky`. The app does not use Bluesky's reverse domain or name as its identity (copycat and trademark risk; ASSETS.md section 3). Launcher label: "Native showcase".
-- Design mode: keep-design. The UI is built from the RN app's ALF tokens, not from Material 3 defaults.
+- Design mode: keep-design. The UI is built from the RN app's ALF tokens, not from Material 3 defaults. Two
+  Material components are drawn, both where RN falls back to the platform on Android: the pull-to-refresh
+  indicator and the load-more spinner.
 - Parity evidence, noise floor, masks, event diff and accepted differences: [PARITY.md](PARITY.md).
 
 ## What is ported
@@ -15,7 +17,7 @@ It is a public showcase of the Nativestarter Migration Pack. The app talks to a 
 | CP-00 | ALF tokens and palettes; light, dark and dim themes through a CompositionLocal (system dark maps to dim, the RN default); Inter; XRPC client with the AppView proxy header; session with single-flight refresh, terminal sign-out and server session deletion; Keystore-backed session store; account-scoped dependencies; bottom tab shell with unread polling and badge; soft reset; toasts; haptics; analytics events | `src/alf`, `src/state/session`, `src/view/shell/bottom-bar`, `src/state/queries/notifications/unread.tsx`, `src/lib/haptics.ts` |
 | CP-01 | Home Following feed: FeedTuner and slice rules, `PostFeed` rows (composer prompt, thread slices, "View full thread", Discover fallback marker), pagination with auto-fill and a generation guard, loading, first-load error, empty, load-more retry and end-of-feed states, header that hides on scroll, pull to refresh, rich text facets, "Show more" for long posts, post controls with guards and haptics, repost sheet, like and repost mutation queues with `via` | `src/view/screens/Home.tsx`, `src/view/com/posts`, `src/lib/api/feed-manip.ts`, `src/state/queries/post-feed.ts`, `src/state/queries/post.ts` |
 | CP-02 | Post thread through `getPostThreadV2` with the preferred sort: parents, anchor, replies, "Continue thread" and "Read N more replies" rows, not-found and blocked tombstones, moderated replies behind "Show more replies" with `getPostThreadOtherV2`, cached anchor with reply skeletons while loading, `ThreadError` with Retry, fixed "Write your reply" prompt | `src/state/queries/usePostThread`, `src/screens/PostThread` |
-| CP-03 | Own profile: header loading placeholder, `ErrorScreen`, header (banner, avatar, Edit Profile, share, more, metrics, bio), section tabs, Posts feed with the author API filter and the shared `PostFeed` rows, "No posts yet" with "Write a post", "Posts hidden" for blocks, end of feed | `src/view/screens/Profile.tsx`, `src/screens/Profile` |
+| CP-03 | Own profile: header loading placeholder, `ErrorScreen`, header (banner, avatar, Edit Profile, share, more, metrics, bio with client-side facet detection), section tabs, Posts feed with the author API filter and the shared `PostFeed` rows, "No posts yet" with "Write a post", "Posts hidden" for blocks, end of feed | `src/view/screens/Profile.tsx`, `src/screens/Profile` |
 
 Android platform branches in the RN code are ported as logic, for example: the relative time in `PostMeta` is right-aligned with no "·"; the header title is left-aligned (it is centred only on iOS); the profile tabs scroll and include "Starter Packs"; RN Android text line boxes and hairline strokes are reproduced in the design system (`alfText`, `Hairline`).
 
@@ -36,7 +38,6 @@ Launching with `clearState` (the parity flows do) deletes the log.
 - Embeds, quote posts, label-based moderation, translations, deep links and the tree thread view.
 - Remote avatar and banner images. The seeded accounts have none, so every account shows the fallback avatar.
 - The Discover feed content under the fallback notice. RN development builds do not fetch it either.
-- Link and mention detection in the profile description (RN runs `detectFacets` client-side).
 
 ## Structure
 
@@ -105,24 +106,37 @@ Requirements: JDK 17 and Android SDK platform 36. The wrapper downloads Gradle 8
 
 Fixtures in `app/src/test/resources/fixtures` were captured with curl from the seeded server. Access and refresh tokens are redacted.
 
-Last measured results (emulator-5554, Android 16):
+Last measured results (emulator-5554, Android 16), all at code `fd88ba8`. The release smoke launch check is a
+separate step, recorded in [PARITY.md](PARITY.md) when it is run:
 
 | Suite | Result |
 |---|---|
-| JVM tests (code `5368546`) | 109 tests, 0 failures |
-| Compose UI and Keystore tests (code `1862ea3`) | 10 tests, 0 failures |
-| Release smoke | `assembleRelease` passed; installed and launched: "Create account" and "Sign in" present, `e2eSignInAlice` and `e2eSignInBob` absent, not debuggable |
+| JVM (`testDebugUnitTest`, with `assembleDebug assembleRelease`) | 126 tests, 0 failures |
+| Compose UI and Keystore (`connectedDebugAndroidTest`) | 12 tests, 0 failures |
+| Release | `assembleRelease` passed |
 
 The instrumented tests need Espresso 3.7.0 and the matching AndroidX Test libraries. The Espresso version brought in by `ui-test-junit4` calls `InputManager.getInstance`, which Android 16 removed.
 
 ## Capture parity
 
-From `android/parity`, with the server running:
+From `android/parity`, with the server running. One state per command:
 
-1. Default screens: `maestro --device emulator-5554 test -e PLATFORM=android capture-native.yml`, then `./compare.sh 5%`.
-2. Extra states (interactions, dark, font scale 2.0, empty, error): `./capture-states.sh io.nativestarter.showcase.bluesky native-android`, then `STATE=<state> ./compare.sh 5%`.
+```
+./run-round.sh <base|dark|font2|interactions|empty|error> out
+```
 
-Each flow reseeds the server under `/tmp/bsky-seed.lock`. Commands, masks and results are in [PARITY.md](PARITY.md).
+Each round captures both apps twice in one batch: `rn` and `native` for the diff, `rn-r2` and `native-r2` for
+that state's own noise floor. Every capture holds `/tmp/bsky-seed.lock` for its seed and reseeds through its
+flow, and has a hard time limit so a stuck flow cannot hold the lock. `collect-evidence.sh` then measures the
+masks on both images, runs `diff.mjs` raw and masked, diffs each repeat pair, and compares the event logs,
+writing everything under `parity/evidence/<state>/`. The PNGs stay out of git; the RN baselines in
+`parity/baseline/rn/` are the exception.
+
+The RN app has no analytics file sink, so `rn-events.mjs` derives its event log from the device log of the same
+capture. That needs `metric` in `EXPO_PUBLIC_LOG_DEBUG` in the RN app's local `.env` and a Metro restart, because
+Expo inlines the value at dev-server start. [PARITY.md](PARITY.md) records this as a capture step.
+
+Every number, mask area and command is in [PARITY.md](PARITY.md).
 
 ## Licensing
 
@@ -130,3 +144,6 @@ Each flow reseeds the server under `/tmp/bsky-seed.lock`. Commands, masks and re
 - **Icons: Lucide** (ISC), `lucide-static@1.46.0`. The iOS app uses the same set. Licence: `licenses/Lucide-LICENSE.txt`. Conversion script: `tools/lucide2vd.py`. Glyphs: `arrow-left`, `bell`, `bookmark`, `camera`, `chevron-right`, `circle-arrow-up`, `circle-plus`, `corner-down-right`, `earth`, `ellipsis`, `eye-off`, `forward`, `hash`, `heart`, `house`, `image`, `info`, `menu`, `message-circle-more`, `message-square`, `pin`, `repeat-2`, `rotate-ccw`, `search`, `sliders-vertical`, `sparkles`, `square-pen`, `trash-2`, `triangle-alert`, `user-x`. The upstream icons in `assets/icons/` are the Central icon system, licensed to Bluesky only (ASSETS.md section 2), so they are not used.
 - **Logo and default avatar:** Bluesky marks are trademarks (ASSETS.md section 3). The header shows a neutral placeholder mark (`ShowcaseMark`). The fallback avatar is drawn in code. The launcher icon is an original mark.
 - **Font: Inter** (SIL OFL 1.1), `app/src/main/res/font/inter_*.otf`. Licence: `licenses/Inter-OFL.txt`.
+- **Top-level domain list: `tlds`** (MIT), version 1.261.0, bundled as `app/src/main/resources/tlds.txt`. It is
+  the IANA TLD list, and it is the same data the RN app uses, so client-side facet detection in the profile
+  description accepts exactly the domains RN accepts. Licence: `licenses/tlds-LICENSE.txt`.
