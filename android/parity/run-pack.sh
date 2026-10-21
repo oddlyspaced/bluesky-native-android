@@ -39,12 +39,19 @@ reset_device() {
   adb -s $SERIAL shell cmd uimode night no >/dev/null 2>&1
   adb -s $SERIAL shell settings put system font_scale 1.0 >/dev/null 2>&1
 }
-until mkdir /tmp/bsky-seed.lock 2>/dev/null; do
-  age=$(( $(date +%s) - $(stat -f %m /tmp/bsky-seed.lock 2>/dev/null || date +%s) ))
-  if [ "$age" -gt 1200 ]; then rmdir /tmp/bsky-seed.lock 2>/dev/null || true; continue; fi
-  sleep 10
-done
-trap 'reset_device; rmdir /tmp/bsky-seed.lock 2>/dev/null || true' EXIT
+
+# Reset BEFORE the run, not only on the way out. A killed run never reaches its EXIT trap, so it
+# leaves the device at whatever it set (font_scale 2.0 after a `font2` run). The next capture then
+# runs at the wrong scale, and its own trap erases the evidence that it did. That is what happened
+# to the `font2` captures: the state's numbers could not be reproduced afterwards.
+reset_device
+
+# review finding A77: a PID-based lock, shared with the iOS captures. The old loop here broke any
+# lock older than 20 minutes without asking whether its holder was alive, which could pull the lock
+# out from under a running capture.
+. "$(dirname "$0")/seed-lock.sh"
+seed_lock_acquire
+trap 'reset_device; seed_lock_release' EXIT
 
 rm -rf "$OUT_ROOT/$STATE/$LABEL" "$OUT_ROOT/$STATE/.repeat"
 mkdir -p "$CAPTURE_OUT"
@@ -76,6 +83,24 @@ watchdog=$!
 wait "$cap_pid"
 rc=$?
 kill "$watchdog" 2>/dev/null
+
+# Record the device state this capture ran at, next to the images. A capture that silently ran at the
+# wrong font scale or in the wrong night mode is not evidence, and without this there is no way to
+# tell afterwards.
+if [ -d "$OUT_ROOT/$STATE/$LABEL/android" ] || [ -d "$CAPTURE_OUT/$BASE_LABEL/android" ]; then
+  manifest_dir="$OUT_ROOT/$STATE/$LABEL"
+  [ -d "$CAPTURE_OUT/$BASE_LABEL/android" ] && manifest_dir="$CAPTURE_OUT/$BASE_LABEL"
+  {
+    echo "state=$STATE"
+    echo "label=$LABEL"
+    echo "serial=$SERIAL"
+    echo "captured_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "font_scale=$(adb -s $SERIAL shell settings get system font_scale 2>/dev/null | tr -d '\r')"
+    echo "night_mode=$(adb -s $SERIAL shell cmd uimode night 2>/dev/null | tr -d '\r')"
+    echo "density=$(adb -s $SERIAL shell wm density 2>/dev/null | tr -d '\r')"
+    echo "size=$(adb -s $SERIAL shell wm size 2>/dev/null | tr -d '\r')"
+  } > "$manifest_dir/device.txt" 2>/dev/null
+fi
 
 # Move a repeat run to <state>/<label>-r2/android, which is where collect-evidence.sh looks for it.
 if [ "$LABEL" != "$BASE_LABEL" ] && [ -d "$CAPTURE_OUT/$BASE_LABEL/android" ]; then
