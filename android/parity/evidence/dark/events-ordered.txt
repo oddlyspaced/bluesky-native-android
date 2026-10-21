@@ -1,15 +1,4 @@
 MISMATCH (ordered): rn 21 event(s), native 19 event(s), ignoring uri, authorDid, initMs, likerClout, postClout
+  missing in native: home:feedDisplayed {"feedType":"following","feedUrl":"following","index":0} (rn line 7)
   missing in native: feed:endReached {"feedType":"author","feedUrl":"author|did:plc:SEEDED|posts_and_author_threads","itemCount":1} (rn line 20)
-  missing in native: post:view {"feedDescriptor":"author|did:plc:SEEDED|posts_and_author_threads","isReply":false,"logContext":"FeedItem","position":0} (rn line 21)
-  props differ:      post:view (rn line 8, native line 8): isReply rn=true native=false; position rn=0 native=1
-  props differ:      post:view (rn line 9, native line 9): position rn=1 native=2
-  props differ:      post:view (rn line 10, native line 10): position rn=2 native=3
-  order differs at 6: rn home:feedDisplayed (line 7), native post:view (line 7)
-  order differs at 10: rn post:view (line 11), native post:clickthroughItem (line 11)
-  order differs at 11: rn post:clickthroughItem (line 12), native post:view (line 12)
-  order differs at 12: rn post:view (line 13), native router:navigate (line 13)
-  order differs at 13: rn router:navigate (line 14), native post:view (line 14)
-  order differs at 14: rn post:view (line 15), native router:navigate (line 15)
-  order differs at 16: rn router:navigate (line 17), native nav:click (line 17)
-  order differs at 17: rn nav:click (line 18), native router:navigate (line 18)
-  order differs at 18: rn router:navigate (line 19), native post:view (line 19)
+  order differs at 16: router:navigate moved earlier in native, from rn position 16 (line 17) to native position 14 (line 15)

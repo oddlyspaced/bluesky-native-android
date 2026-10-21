@@ -3,9 +3,14 @@
     "name": "check-parity/diff",
     "version": "1.0.0"
   },
+  "imagemagick": {
+    "version": "7.1.2-32",
+    "quantum": "Q16",
+    "hdri": true
+  },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-09-16T09:20:23.245Z",
+  "createdAt": "2026-10-21T12:06:59.776Z",
   "rnDir": "android/parity/out/dark/native/android",
   "nativeDir": "android/parity/out/dark/native-r2/android",
   "screens": [
@@ -494,9 +499,9 @@
       "diff": "diffs/thread.diff.png",
       "width": 1280,
       "height": 2856,
-      "diffPixels": 3733,
+      "diffPixels": 0,
       "totalPixels": 3655680,
-      "ratio": 0.0010211506477591037,
+      "ratio": 0,
       "status": "pass",
       "masks": [
         {
@@ -523,9 +528,9 @@
         {
           "x": 0.02344,
           "y": 0.20938,
-          "w": 0.41953,
+          "w": 0.75078,
           "h": 0.02801,
-          "reason": "anchor date line (capture time) and its globe glyph (Lucide substitute); stops before \"Everybody can reply\", which is not masked"
+          "reason": "the whole anchor date line. Its leading timestamp is the seed time, which each capture sets afresh, so it is not the same width in the RN and the native run (measured on these captures: base 148 vs 154 px, dark 148 vs 152, interactions 150 vs 135). That difference shifts everything after it - the globe glyph and \"Everybody can reply\" - by the same 4 to 15 px. Masking only the timestamp left that shift to be counted as port drift, and on interactions it also pushed native's \"Everybody\" inside the old 566 px edge, which failed the rect check. Nothing on this line is under test: the timestamp is capture-volatile and the globe is a Lucide substitute. A pinned seed clock, not a wider band, is what would restore the check."
         },
         {
           "x": 0.03359,

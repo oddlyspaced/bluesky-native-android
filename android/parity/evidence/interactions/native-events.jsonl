@@ -1,0 +1,16 @@
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":900}}
+{"name":"account:loggedIn","props":{"logContext":"LoginForm","withPassword":true}}
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":4430}}
+{"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following","reason":"focus"}}
+{"name":"post:view","props":{"uri":"at://did:plc:mb36tev7tck34g5w2hb3j6fp/app.bsky.feed.post/3mvn2nv7qfb24","authorDid":"did:plc:mb36tev7tck34g5w2hb3j6fp","isReply":true,"logContext":"FeedItem","feedDescriptor":"following","position":0}}
+{"name":"post:view","props":{"uri":"at://did:plc:mb36tev7tck34g5w2hb3j6fp/app.bsky.feed.post/3mvn2nv74ub24","authorDid":"did:plc:mb36tev7tck34g5w2hb3j6fp","isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":1}}
+{"name":"post:view","props":{"uri":"at://did:plc:mpjhfjtryhqo5ijhs6dpqqpk/app.bsky.feed.post/3mvn2nv6yxb24","authorDid":"did:plc:mpjhfjtryhqo5ijhs6dpqqpk","isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":2}}
+{"name":"post:view","props":{"uri":"at://did:plc:4bglwjn7qdblj2fwdljf5izj/app.bsky.feed.post/3mvn2nv6vzj24","authorDid":"did:plc:4bglwjn7qdblj2fwdljf5izj","isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":3}}
+{"name":"post:like","props":{"uri":"at://did:plc:mpjhfjtryhqo5ijhs6dpqqpk/app.bsky.feed.post/3mvn2nv7mib24","authorDid":"did:plc:mpjhfjtryhqo5ijhs6dpqqpk","logContext":"FeedItem","doesPosterFollowLiker":true,"doesLikerFollowPoster":true,"likerClout":1,"postClout":0,"feedDescriptor":"following"}}
+{"name":"post:repost","props":{"uri":"at://did:plc:mpjhfjtryhqo5ijhs6dpqqpk/app.bsky.feed.post/3mvn2nv7mib24","authorDid":"did:plc:mpjhfjtryhqo5ijhs6dpqqpk","logContext":"FeedItem","feedDescriptor":"following"}}
+{"name":"post:clickthroughItem","props":{"uri":"at://did:plc:mpjhfjtryhqo5ijhs6dpqqpk/app.bsky.feed.post/3mvn2nv7mib24","authorDid":"did:plc:mpjhfjtryhqo5ijhs6dpqqpk","logContext":"FeedItem","feedDescriptor":"following"}}
+{"name":"post:view","props":{"uri":"at://did:plc:mpjhfjtryhqo5ijhs6dpqqpk/app.bsky.feed.post/3mvn2nv7mib24","authorDid":"did:plc:mpjhfjtryhqo5ijhs6dpqqpk","isReply":false,"logContext":"Post","feedDescriptor":"following"}}
+{"name":"router:navigate","props":{"from":"Home"}}
+{"name":"post:view","props":{"uri":"at://did:plc:mb36tev7tck34g5w2hb3j6fp/app.bsky.feed.post/3mvn2nv7qfb24","authorDid":"did:plc:mb36tev7tck34g5w2hb3j6fp","isReply":true,"logContext":"PostThreadItem"}}

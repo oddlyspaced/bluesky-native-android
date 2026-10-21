@@ -1,0 +1,2 @@
+MISMATCH (ordered): rn 17 event(s), native 16 event(s), ignoring uri, authorDid, initMs, likerClout, postClout
+  missing in native: home:feedDisplayed {"feedType":"following","feedUrl":"following","index":0} (rn line 7)

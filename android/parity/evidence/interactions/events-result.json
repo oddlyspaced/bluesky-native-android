@@ -1,0 +1,34 @@
+{
+  "tool": {
+    "name": "check-parity/events",
+    "version": "1.0.0"
+  },
+  "mode": "ordered",
+  "ignore": [
+    "uri",
+    "authorDid",
+    "initMs",
+    "likerClout",
+    "postClout"
+  ],
+  "rnCount": 17,
+  "nativeCount": 16,
+  "match": false,
+  "missing": [
+    {
+      "index": 6,
+      "name": "home:feedDisplayed",
+      "props": {
+        "index": 0,
+        "feedType": "following",
+        "feedUrl": "following"
+      },
+      "line": 7
+    }
+  ],
+  "extra": [],
+  "mismatches": [],
+  "orderMismatches": [],
+  "rnFile": "android/parity/evidence/interactions/rn-events-cmp.jsonl",
+  "nativeFile": "android/parity/evidence/interactions/native-events-cmp.jsonl"
+}

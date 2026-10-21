@@ -1,0 +1,17 @@
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":21375}}
+{"name":"account:loggedIn","props":{"logContext":"LoginForm","withPassword":true}}
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":28673}}
+{"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following","reason":"focus"}}
+{"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following"}}
+{"name":"post:view","props":{"uri":"at://did:plc:lg4fbliahfrvak4pn7xmj64p/app.bsky.feed.post/3mvmzlsgrfi24","authorDid":"did:plc:lg4fbliahfrvak4pn7xmj64p","isReply":true,"logContext":"FeedItem","feedDescriptor":"following","position":0}}
+{"name":"post:view","props":{"uri":"at://did:plc:lg4fbliahfrvak4pn7xmj64p/app.bsky.feed.post/3mvmzlsfr6a24","authorDid":"did:plc:lg4fbliahfrvak4pn7xmj64p","isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":1}}
+{"name":"post:view","props":{"uri":"at://did:plc:m2hqlcml5kwoa6w4pta65jqo/app.bsky.feed.post/3mvmzlsfoai24","authorDid":"did:plc:m2hqlcml5kwoa6w4pta65jqo","isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":2}}
+{"name":"post:view","props":{"uri":"at://did:plc:gs5qgjkfpffzp4q2apveentw/app.bsky.feed.post/3mvmzlsflcp24","authorDid":"did:plc:gs5qgjkfpffzp4q2apveentw","isReply":false,"logContext":"FeedItem","feedDescriptor":"following","position":3}}
+{"name":"post:like","props":{"uri":"at://did:plc:m2hqlcml5kwoa6w4pta65jqo/app.bsky.feed.post/3mvmzlsgmja24","authorDid":"did:plc:m2hqlcml5kwoa6w4pta65jqo","logContext":"FeedItem","doesPosterFollowLiker":true,"doesLikerFollowPoster":true,"likerClout":1,"postClout":1,"feedDescriptor":"following"}}
+{"name":"post:repost","props":{"uri":"at://did:plc:m2hqlcml5kwoa6w4pta65jqo/app.bsky.feed.post/3mvmzlsgmja24","authorDid":"did:plc:m2hqlcml5kwoa6w4pta65jqo","logContext":"FeedItem","feedDescriptor":"following"}}
+{"name":"post:clickthroughItem","props":{"uri":"at://did:plc:m2hqlcml5kwoa6w4pta65jqo/app.bsky.feed.post/3mvmzlsgmja24","authorDid":"did:plc:m2hqlcml5kwoa6w4pta65jqo","logContext":"FeedItem","feedDescriptor":"following"}}
+{"name":"post:view","props":{"uri":"at://did:plc:m2hqlcml5kwoa6w4pta65jqo/app.bsky.feed.post/3mvmzlsgmja24","authorDid":"did:plc:m2hqlcml5kwoa6w4pta65jqo","isReply":false,"logContext":"Post","feedDescriptor":"following"}}
+{"name":"router:navigate","props":{"from":"Home"}}
+{"name":"post:view","props":{"uri":"at://did:plc:lg4fbliahfrvak4pn7xmj64p/app.bsky.feed.post/3mvmzlsgrfi24","authorDid":"did:plc:lg4fbliahfrvak4pn7xmj64p","isReply":true,"logContext":"PostThreadItem"}}
