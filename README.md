@@ -63,16 +63,37 @@ the port sent it in the same three.
 
 ## What this does not claim
 
-**Four screens fail and none is signed off.** `error home` at 4.87% is a real behaviour difference:
-after a reseed the port refetches the feed and shows the load-more retry row, where React Native
-keeps the end-of-feed state. The other three are the home screen between 2.10% and 2.36%, just over
-the gate, with two causes: the placeholder mark that stands in for Bluesky's logo, and React
-Native's scroll indicator, which Android draws for a ScrollView and a Compose list does not.
+**Five screens fail and none is signed off.** One of them is a real defect. The other four were
+measured rather than guessed at, and they are a different thing.
 
-**That scroll indicator is deliberately not masked.** It is worth 0.40 to 0.44% of the home screen,
-enough to turn all three of those failures into drift. A mask for it was written and then removed,
-because `make_masks.py` refused it: on the profile screen both apps draw real content at the same
-right edge, and the mask would have hidden it. The refusal is the check working.
+**`error home` at 4.87% is the real one.** After a reseed React Native keeps its end-of-feed block
+and this port draws blank space where it belongs: one region of 83,049 pixels, 2.27% of the screen.
+78% of that screen's difference is strong difference, against 25 to 28% on every other home screen.
+Both apps log the same two `feed:refresh` soft-resets, and then this port logs 44 `feed:endReached`
+events where React Native logs none, so the port holds `hasNextPage` true where React Native holds
+it false. Why React Native holds it false is not yet explained, and the reading that was offered
+before has since been disproved: `parity/probes/tanstack-failed-refetch.mjs` drives the real
+`@tanstack/query-core` that React Native builds against and shows that a failed refetch over
+existing data leaves `hasNextPage=true status=error`, which would draw a retry row React Native
+does not draw either. Settling it needs a live capture with both apps instrumented. It is
+difference 2 in `PARITY.md`.
+
+**The other four are the same picture in the same place.** `base`, `dark`, `font scale 2.0` and
+`empty` home, between 2.10% and 2.36%. `parity/composition.py` grades every differing pixel by how
+far apart the two apps are and groups the strong ones into regions. On all four, only a quarter of
+the difference is strong, spread across 739 to 917 regions whose largest is about 1,000 pixels,
+three hundredths of one percent of the screen. A whole-image shift search over plus or minus three
+pixels finds its minimum at no offset at all, and the text bands pair one to one within a pixel.
+What is left is the scroll indicator below, the fallback avatars, and glyph-edge rasterisation.
+
+An earlier version of this section named "the placeholder mark and the scroll indicator" as the two
+causes. The placeholder mark is masked, so it cannot be one; the scroll indicator is 0.44%. That
+was an estimate, and the paragraph above replaces it with a measurement.
+
+**That scroll indicator is deliberately not masked.** It is worth 0.39 to 0.44% of the home screen,
+enough to turn those four failures into drift. A mask for it was written and then removed, because
+`make_masks.py` refused it: on the profile screen both apps draw real content at the same right
+edge, and the mask would have hidden it. The refusal is the check working.
 
 **Nothing is signed off.** Every drift needs a written acceptance from someone who did not write the
 port. `plan/owner-signoff.md` is the form, and it is empty.
@@ -95,6 +116,15 @@ had to be sized from an average of what was on screen.
 It helped the screen it was tuned against and hurt two others, because the estimate is
 state-sensitive. Net it was worse, so it was removed instead of being kept as an improvement the
 measurement did not support. The missing indicator stays listed as a difference.
+
+`parity/scroll-thumb.py` measures it rather than estimating it. On base and dark home the thumb is
+12 px at x 1268-1279, y 429-1755: 15,924 pixels, 0.44% of the screen, and the largest single
+contiguous block of differing pixels there. React Native draws it only on the three states whose
+flow scrolls, and on none of the eight iOS states. Its length cannot be derived, which is the whole
+problem: the thumb sits at offset 0 with length 1327 in a track of about 2212, so React Native's
+`ScrollView` believes its content is about 3687 pixels tall while the end-of-feed block is already
+on screen. A `LazyColumn` estimates content height from average item size and cannot reproduce
+that number.
 
 ## The tooling was wrong more often than the code
 
