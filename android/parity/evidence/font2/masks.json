@@ -1,0 +1,610 @@
+{
+ "home": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 1,
+   "h": 0.05252,
+   "reason": "status bar: clock, battery, signal"
+  },
+  {
+   "x": 0.03438,
+   "y": 0.06793,
+   "w": 0.06172,
+   "h": 0.01961,
+   "reason": "header glyphs and placeholder mark (licence substitution)"
+  },
+  {
+   "x": 0.46172,
+   "y": 0.06057,
+   "w": 0.07656,
+   "h": 0.03431,
+   "reason": "header glyphs and placeholder mark (licence substitution)"
+  },
+  {
+   "x": 0.9,
+   "y": 0.06583,
+   "w": 0.06563,
+   "h": 0.02381,
+   "reason": "header glyphs and placeholder mark (licence substitution)"
+  },
+  {
+   "x": 0.82344,
+   "y": 0.19188,
+   "w": 0.05781,
+   "h": 0.02171,
+   "reason": "composer camera and image glyphs (Lucide substitute)"
+  },
+  {
+   "x": 0.91016,
+   "y": 0.19083,
+   "w": 0.05312,
+   "h": 0.02381,
+   "reason": "composer camera and image glyphs (Lucide substitute)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.24965,
+   "w": 0.12656,
+   "h": 0.02381,
+   "reason": "relative timestamp (capture time)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.37465,
+   "w": 0.12656,
+   "h": 0.02381,
+   "reason": "relative timestamp (capture time)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.49685,
+   "w": 0.12656,
+   "h": 0.02381,
+   "reason": "relative timestamp (capture time)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.61905,
+   "w": 0.12656,
+   "h": 0.02381,
+   "reason": "relative timestamp (capture time)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.74125,
+   "w": 0.12656,
+   "h": 0.02381,
+   "reason": "relative timestamp (capture time)"
+  },
+  {
+   "x": 0.16172,
+   "y": 0.33053,
+   "w": 0.0875,
+   "h": 0.02206,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.35391,
+   "y": 0.32598,
+   "w": 0.06016,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.54219,
+   "y": 0.32703,
+   "w": 0.06719,
+   "h": 0.01786,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.76484,
+   "y": 0.33193,
+   "w": 0.03438,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83437,
+   "y": 0.33298,
+   "w": 0.04531,
+   "h": 0.01681,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.91094,
+   "y": 0.33824,
+   "w": 0.04219,
+   "h": 0.0063,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.16172,
+   "y": 0.45098,
+   "w": 0.05781,
+   "h": 0.01961,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.35391,
+   "y": 0.45098,
+   "w": 0.06016,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.54219,
+   "y": 0.45203,
+   "w": 0.06719,
+   "h": 0.01786,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.76484,
+   "y": 0.45098,
+   "w": 0.03438,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83437,
+   "y": 0.45203,
+   "w": 0.04531,
+   "h": 0.01681,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.91094,
+   "y": 0.45728,
+   "w": 0.04219,
+   "h": 0.0063,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.16172,
+   "y": 0.57318,
+   "w": 0.05781,
+   "h": 0.01961,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.35391,
+   "y": 0.57318,
+   "w": 0.06016,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.54219,
+   "y": 0.57423,
+   "w": 0.06719,
+   "h": 0.01786,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.76484,
+   "y": 0.57318,
+   "w": 0.03438,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83437,
+   "y": 0.57423,
+   "w": 0.04531,
+   "h": 0.01681,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.91094,
+   "y": 0.57948,
+   "w": 0.04219,
+   "h": 0.0063,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.16172,
+   "y": 0.69538,
+   "w": 0.05781,
+   "h": 0.01961,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.35391,
+   "y": 0.69538,
+   "w": 0.06016,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.54219,
+   "y": 0.69643,
+   "w": 0.06719,
+   "h": 0.01786,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.76484,
+   "y": 0.69538,
+   "w": 0.03438,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83437,
+   "y": 0.69643,
+   "w": 0.04531,
+   "h": 0.01681,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.91094,
+   "y": 0.70168,
+   "w": 0.04219,
+   "h": 0.0063,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.16172,
+   "y": 0.81758,
+   "w": 0.05781,
+   "h": 0.01961,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.35391,
+   "y": 0.81758,
+   "w": 0.06016,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.54219,
+   "y": 0.81863,
+   "w": 0.06719,
+   "h": 0.01786,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.76484,
+   "y": 0.81758,
+   "w": 0.03438,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83437,
+   "y": 0.81863,
+   "w": 0.04531,
+   "h": 0.01681,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.91094,
+   "y": 0.82388,
+   "w": 0.04219,
+   "h": 0.0063,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.8701,
+   "w": 0.07656,
+   "h": 0.02486,
+   "reason": "compose FAB glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.08359,
+   "y": 0.94923,
+   "w": 0.06328,
+   "h": 0.01926,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.27578,
+   "y": 0.94923,
+   "w": 0.06563,
+   "h": 0.01926,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.46875,
+   "y": 0.94923,
+   "w": 0.06484,
+   "h": 0.01856,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.6625,
+   "y": 0.94923,
+   "w": 0.0875,
+   "h": 0.01961,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.85156,
+   "y": 0.94923,
+   "w": 0.06719,
+   "h": 0.01961,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  }
+ ],
+ "profile": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 1,
+   "h": 0.05252,
+   "reason": "status bar: clock, battery, signal"
+  },
+  {
+   "x": 0.81641,
+   "y": 0.18207,
+   "w": 0.04141,
+   "h": 0.01961,
+   "reason": "share glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.90547,
+   "y": 0.18487,
+   "w": 0.0375,
+   "h": 0.0119,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.48109,
+   "w": 0.12656,
+   "h": 0.02381,
+   "reason": "relative timestamp (capture time)"
+  },
+  {
+   "x": 0.16172,
+   "y": 0.55707,
+   "w": 0.05781,
+   "h": 0.01996,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.35391,
+   "y": 0.55742,
+   "w": 0.06016,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.54219,
+   "y": 0.55812,
+   "w": 0.06719,
+   "h": 0.01786,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.76484,
+   "y": 0.55707,
+   "w": 0.03438,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83437,
+   "y": 0.55847,
+   "w": 0.04531,
+   "h": 0.01681,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.91094,
+   "y": 0.56338,
+   "w": 0.04219,
+   "h": 0.00665,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.84062,
+   "y": 0.8701,
+   "w": 0.07656,
+   "h": 0.02486,
+   "reason": "compose FAB glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.08359,
+   "y": 0.94923,
+   "w": 0.06328,
+   "h": 0.01926,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.27578,
+   "y": 0.94923,
+   "w": 0.06563,
+   "h": 0.01926,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.46875,
+   "y": 0.94923,
+   "w": 0.06484,
+   "h": 0.01856,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.6625,
+   "y": 0.94923,
+   "w": 0.0875,
+   "h": 0.01961,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.84922,
+   "y": 0.94923,
+   "w": 0.07187,
+   "h": 0.02066,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  }
+ ],
+ "thread": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 1,
+   "h": 0.05252,
+   "reason": "status bar: clock, battery, signal"
+  },
+  {
+   "x": 0.04531,
+   "y": 0.06793,
+   "w": 0.05391,
+   "h": 0.01961,
+   "reason": "back glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.89609,
+   "y": 0.06583,
+   "w": 0.05312,
+   "h": 0.02381,
+   "reason": "thread options glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.02344,
+   "y": 0.25735,
+   "w": 0.68047,
+   "h": 0.03186,
+   "reason": "anchor date line (capture time); at font scale 2.0 it wraps above the who-can-reply line"
+  },
+  {
+   "x": 0.03594,
+   "y": 0.30077,
+   "w": 0.04063,
+   "h": 0.01821,
+   "reason": "globe glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.03359,
+   "y": 0.33578,
+   "w": 0.05625,
+   "h": 0.02311,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.25312,
+   "y": 0.32913,
+   "w": 0.06172,
+   "h": 0.02241,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.46719,
+   "y": 0.33018,
+   "w": 0.07187,
+   "h": 0.02171,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.71719,
+   "y": 0.33578,
+   "w": 0.04063,
+   "h": 0.02241,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.80391,
+   "y": 0.33648,
+   "w": 0.05391,
+   "h": 0.02031,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.9,
+   "y": 0.34314,
+   "w": 0.05,
+   "h": 0.00735,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83828,
+   "y": 0.39671,
+   "w": 0.12656,
+   "h": 0.02416,
+   "reason": "relative timestamp (capture time)"
+  },
+  {
+   "x": 0.16172,
+   "y": 0.47339,
+   "w": 0.05781,
+   "h": 0.01961,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.35313,
+   "y": 0.47304,
+   "w": 0.06016,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.54063,
+   "y": 0.47409,
+   "w": 0.06719,
+   "h": 0.01821,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.7625,
+   "y": 0.47339,
+   "w": 0.03438,
+   "h": 0.01891,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.83203,
+   "y": 0.47409,
+   "w": 0.04531,
+   "h": 0.01681,
+   "reason": "icon glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.90859,
+   "y": 0.47934,
+   "w": 0.04219,
+   "h": 0.00665,
+   "reason": "more-options ellipsis glyph (Lucide substitute)"
+  },
+  {
+   "x": 0.08359,
+   "y": 0.94923,
+   "w": 0.06328,
+   "h": 0.01926,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.27578,
+   "y": 0.94923,
+   "w": 0.06563,
+   "h": 0.01926,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.46875,
+   "y": 0.94923,
+   "w": 0.06484,
+   "h": 0.01856,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.6625,
+   "y": 0.94923,
+   "w": 0.0875,
+   "h": 0.01961,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  },
+  {
+   "x": 0.85156,
+   "y": 0.94923,
+   "w": 0.06719,
+   "h": 0.01961,
+   "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+  }
+ ]
+}

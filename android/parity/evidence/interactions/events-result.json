@@ -12,20 +12,9 @@
     "postClout"
   ],
   "rnCount": 17,
-  "nativeCount": 16,
-  "match": false,
-  "missing": [
-    {
-      "index": 6,
-      "name": "home:feedDisplayed",
-      "props": {
-        "index": 0,
-        "feedType": "following",
-        "feedUrl": "following"
-      },
-      "line": 7
-    }
-  ],
+  "nativeCount": 17,
+  "match": true,
+  "missing": [],
   "extra": [],
   "mismatches": [],
   "orderMismatches": [],

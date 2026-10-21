@@ -12,33 +12,38 @@ Not affiliated with, endorsed by, or officially connected to Bluesky Social PBC.
 
 ## What was measured
 
-Six states, fifteen screens, captured 2026-10-22. Both apps are captured in the same batch, on the
-same build, against the same local server with fake accounts. Masked ratio is differing pixels after
-masks, over 3,655,680 pixels per screen. Pass is at or below 1%, drift is 1% to 2% and needs a human
-signature, above 2% is a fail.
+Six states, fifteen screens. Both apps are captured in the same batch, on the same build, against
+the same local server with fake accounts. Masked ratio is differing pixels after masks, over
+3,655,680 pixels per screen. Pass is at or below 1%, drift is 1% to 2% and needs a human signature,
+above 2% is a fail.
 
-**6 pass, 5 drift, 4 fail.**
+**6 pass, 4 drift, 5 fail.**
 
 | State | Screen | Raw | Masked | Status |
 |---|---|---|---|---|
 | base | home | 3.92% | **2.36%** | fail |
-| base | thread | 1.72% | 0.83% | pass |
-| base | profile | 4.29% | 0.95% | pass |
-| dark | home | 3.42% | 1.86% | drift |
-| dark | thread | 1.81% | 0.86% | pass |
-| dark | profile | 1.36% | 0.93% | pass |
+| base | thread | 1.74% | 0.83% | pass |
+| base | profile | 4.30% | 0.95% | pass |
+| dark | home | 3.87% | **2.30%** | fail |
+| dark | thread | 1.80% | 0.86% | pass |
+| dark | profile | 1.39% | 0.93% | pass |
 | font scale 2.0 | home | 4.24% | **2.32%** | fail |
-| font scale 2.0 | thread | 2.90% | 1.71% | drift |
+| font scale 2.0 | thread | 2.91% | 1.71% | drift |
 | font scale 2.0 | profile | 5.28% | 1.66% | drift |
-| empty | home | 2.77% | **2.10%** | fail |
+| empty | home | 2.78% | **2.10%** | fail |
 | empty | profile | 4.34% | 0.94% | pass |
 | after like and repost | home | 3.56% | 1.93% | drift |
-| after like and repost | thread | 2.31% | 1.24% | drift |
-| error | home | 6.71% | **5.24%** | fail |
-| error | thread | 1.01% | 0.76% | pass |
+| after like and repost | thread | 2.28% | 1.24% | drift |
+| error | home | 6.72% | **5.24%** | fail |
+| error | thread | 1.02% | 0.76% | pass |
 
-**Every noise floor is 0 px**, on all six states, for both apps. The same app captured twice is
-pixel-identical after masks, so each number above is the port and not the capture.
+**The noise floor inside a round is 0 px**, on every state, for both apps: the same app captured
+twice in one batch is pixel-identical after masks.
+
+**Between rounds, the same build moves by up to 0.44 points.** That is not in the figure above,
+which only measures one batch. Measured on `dark home`: 1.86% in one round and 2.30% in another,
+with nothing changed in between. Four of the five failures sit between 2.10% and 2.36% against a 2%
+gate, which is inside that spread, so those four verdicts are worth no more than the spread.
 
 ## Events match
 
@@ -71,6 +76,25 @@ right edge, and the mask would have hidden it. The refusal is the check working.
 
 **Nothing is signed off.** Every drift needs a written acceptance from someone who did not write the
 port. `plan/owner-signoff.md` is the form, and it is empty.
+
+## A scroll indicator, built and then removed
+
+React Native renders its feeds in a `ScrollView`, so Android draws it a 4 dp scrollbar that a
+Compose list does not get. A matching thumb was written for this port. Its position and width were
+exact, measured at 12 px from x 1268 at 480 dpi. Its length was not: a `LazyColumn` cannot know the
+height of items it has not composed, while a `ScrollView` knows its content height, so the thumb
+had to be sized from an average of what was on screen.
+
+| Home screen | Without | With |
+|---|---|---|
+| base | 2.36% | 2.04% |
+| after like and repost | 1.93% | 2.24% |
+| font scale 2.0 | 2.32% | 2.48% |
+| empty | 2.10% | 2.10% |
+
+It helped the screen it was tuned against and hurt two others, because the estimate is
+state-sensitive. Net it was worse, so it was removed instead of being kept as an improvement the
+measurement did not support. The missing indicator stays listed as a difference.
 
 ## The tooling was wrong more often than the code
 

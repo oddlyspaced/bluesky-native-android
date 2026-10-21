@@ -1,0 +1,65 @@
+{
+  "tool": {
+    "name": "check-parity/diff",
+    "version": "1.0.0"
+  },
+  "imagemagick": {
+    "version": "7.1.2-32",
+    "quantum": "Q16",
+    "hdri": true
+  },
+  "threshold": 0.02,
+  "fuzz": "5%",
+  "createdAt": "2026-10-21T21:26:36.075Z",
+  "rnDir": "out/font2/rn/android",
+  "nativeDir": "out/font2/native/android",
+  "screens": [
+    {
+      "name": "home",
+      "rn": "out/font2/rn/android/home.png",
+      "native": "out/font2/native/android/home.png",
+      "diff": "diffs/home.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 155151,
+      "totalPixels": 3655680,
+      "ratio": 0.04244107799369748,
+      "status": "fail",
+      "masks": [],
+      "warnings": []
+    },
+    {
+      "name": "profile",
+      "rn": "out/font2/rn/android/profile.png",
+      "native": "out/font2/native/android/profile.png",
+      "diff": "diffs/profile.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 193161,
+      "totalPixels": 3655680,
+      "ratio": 0.05283859637605042,
+      "status": "fail",
+      "masks": [],
+      "warnings": []
+    },
+    {
+      "name": "thread",
+      "rn": "out/font2/rn/android/thread.png",
+      "native": "out/font2/native/android/thread.png",
+      "diff": "diffs/thread.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 106347,
+      "totalPixels": 3655680,
+      "ratio": 0.029090894170168066,
+      "status": "fail",
+      "masks": [],
+      "warnings": []
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "drift": 0,
+    "fail": 3
+  }
+}

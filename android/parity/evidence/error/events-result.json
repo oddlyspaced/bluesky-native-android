@@ -1,0 +1,23 @@
+{
+  "tool": {
+    "name": "check-parity/events",
+    "version": "1.0.0"
+  },
+  "mode": "ordered",
+  "ignore": [
+    "uri",
+    "authorDid",
+    "initMs",
+    "likerClout",
+    "postClout"
+  ],
+  "rnCount": 20,
+  "nativeCount": 20,
+  "match": true,
+  "missing": [],
+  "extra": [],
+  "mismatches": [],
+  "orderMismatches": [],
+  "rnFile": "evidence/error/rn-events-cmp.jsonl",
+  "nativeFile": "evidence/error/native-events-cmp.jsonl"
+}

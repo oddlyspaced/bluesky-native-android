@@ -1,0 +1,9 @@
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":13341}}
+{"name":"account:loggedIn","props":{"logContext":"LoginForm","withPassword":true}}
+{"name":"router:navigate","props":{}}
+{"name":"init","props":{"initMs":39295}}
+{"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following","reason":"focus"}}
+{"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following"}}
+{"name":"nav:click","props":{"item":"profile","surface":"bottomBar"}}
+{"name":"router:navigate","props":{"from":"Home"}}

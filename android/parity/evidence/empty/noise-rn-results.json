@@ -1,0 +1,214 @@
+{
+  "tool": {
+    "name": "check-parity/diff",
+    "version": "1.0.0"
+  },
+  "imagemagick": {
+    "version": "7.1.2-32",
+    "quantum": "Q16",
+    "hdri": true
+  },
+  "threshold": 0.02,
+  "fuzz": "5%",
+  "createdAt": "2026-10-21T21:30:59.861Z",
+  "rnDir": "out/empty/rn/android",
+  "nativeDir": "out/empty/rn-r2/android",
+  "screens": [
+    {
+      "name": "home",
+      "rn": "out/empty/rn/android/home.png",
+      "native": "out/empty/rn-r2/android/home.png",
+      "diff": "diffs/home.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 0,
+      "totalPixels": 3655680,
+      "ratio": 0,
+      "status": "pass",
+      "masks": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 0.05252,
+          "reason": "status bar: clock, battery, signal"
+        },
+        {
+          "x": 0.03438,
+          "y": 0.06793,
+          "w": 0.06172,
+          "h": 0.01961,
+          "reason": "header glyphs and placeholder mark (licence substitution)"
+        },
+        {
+          "x": 0.46172,
+          "y": 0.06057,
+          "w": 0.07656,
+          "h": 0.03431,
+          "reason": "header glyphs and placeholder mark (licence substitution)"
+        },
+        {
+          "x": 0.9,
+          "y": 0.06583,
+          "w": 0.06563,
+          "h": 0.02381,
+          "reason": "header glyphs and placeholder mark (licence substitution)"
+        },
+        {
+          "x": 0.82344,
+          "y": 0.17087,
+          "w": 0.05781,
+          "h": 0.02171,
+          "reason": "composer camera and image glyphs (Lucide substitute)"
+        },
+        {
+          "x": 0.91016,
+          "y": 0.16982,
+          "w": 0.05312,
+          "h": 0.02381,
+          "reason": "composer camera and image glyphs (Lucide substitute)"
+        },
+        {
+          "x": 0.05625,
+          "y": 0.23109,
+          "w": 0.08438,
+          "h": 0.03782,
+          "reason": "info glyph (Lucide substitute)"
+        },
+        {
+          "x": 0.84062,
+          "y": 0.8701,
+          "w": 0.07656,
+          "h": 0.02486,
+          "reason": "compose FAB glyph (Lucide substitute)"
+        },
+        {
+          "x": 0.08359,
+          "y": 0.94923,
+          "w": 0.06328,
+          "h": 0.01926,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.27578,
+          "y": 0.94923,
+          "w": 0.06563,
+          "h": 0.01926,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.46875,
+          "y": 0.94923,
+          "w": 0.06484,
+          "h": 0.01856,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.6625,
+          "y": 0.94923,
+          "w": 0.07344,
+          "h": 0.01961,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.85156,
+          "y": 0.94923,
+          "w": 0.06719,
+          "h": 0.01961,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "name": "profile",
+      "rn": "out/empty/rn/android/profile.png",
+      "native": "out/empty/rn-r2/android/profile.png",
+      "diff": "diffs/profile.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 0,
+      "totalPixels": 3655680,
+      "ratio": 0,
+      "status": "pass",
+      "masks": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 0.05252,
+          "reason": "status bar: clock, battery, signal"
+        },
+        {
+          "x": 0.81641,
+          "y": 0.17997,
+          "w": 0.04141,
+          "h": 0.01541,
+          "reason": "share glyph (Lucide substitute)"
+        },
+        {
+          "x": 0.90547,
+          "y": 0.18487,
+          "w": 0.0375,
+          "h": 0.0056,
+          "reason": "more-options ellipsis glyph (Lucide substitute)"
+        },
+        {
+          "x": 0.44062,
+          "y": 0.43557,
+          "w": 0.11641,
+          "h": 0.05217,
+          "reason": "empty-state square-pen glyph (Lucide substitute)"
+        },
+        {
+          "x": 0.84062,
+          "y": 0.8701,
+          "w": 0.07656,
+          "h": 0.02486,
+          "reason": "compose FAB glyph (Lucide substitute)"
+        },
+        {
+          "x": 0.08359,
+          "y": 0.94923,
+          "w": 0.06328,
+          "h": 0.01926,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.27578,
+          "y": 0.94923,
+          "w": 0.06563,
+          "h": 0.01926,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.46875,
+          "y": 0.94923,
+          "w": 0.06484,
+          "h": 0.01856,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.6625,
+          "y": 0.94923,
+          "w": 0.07344,
+          "h": 0.01961,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        },
+        {
+          "x": 0.84922,
+          "y": 0.94923,
+          "w": 0.07187,
+          "h": 0.02066,
+          "reason": "bottom bar glyphs below the badge (Lucide substitute)"
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "summary": {
+    "pass": 2,
+    "drift": 0,
+    "fail": 0
+  }
+}

@@ -6,26 +6,45 @@ Acceptance: **awaiting owner acceptance.**
 
 ## Verdict
 
-- **All six states are measured.** `font scale 2.0`, `empty` and `error` were withdrawn on
-  2026-10-21 because their captures predated the fixes they credited. They were captured again on
-  2026-10-22, after the capture pipeline was repaired, and carry real numbers for the first time.
-- **6 pass, 5 drift, 4 fail** across 15 screens.
+- **All six states are measured.** 15 screens: **6 pass, 4 drift, 5 fail.**
 - **Events: the read-only flow MATCHES.** 21 React Native events against 21 native, in order,
   reproduced on three consecutive runs. This is the first flow in this port to match. The three
   differences recorded here before were all real defects and all three are fixed; see "Event diff".
-- **Every noise floor is 0 px.** The same app captured twice, same build, same batch, is
-  pixel-identical after masks, on all six states. Every number below is the port, not the capture.
-- **The four failures are the home screen in four states, and one of them is a behaviour
-  difference.** `error home` at 5.24% is the refetch difference described under "Error home". The
-  other three sit between 2.10% and 2.36%, just over the 2% gate, and have the same two causes:
-  the placeholder mark that replaces Bluesky's logo, and React Native's scroll indicator.
-- **The scroll indicator is deliberately not masked.** It is worth 0.40 to 0.44% of the home screen
-  and masking it would turn those three failures into drift. A mask was written and then removed:
-  `make_masks.py` refused it, because on the profile screen both apps draw real content at the same
-  right edge and the mask would have hidden it. That refusal is the check working. The indicator is
-  also transient, which is why the home screen moved between 1.92% and 2.36% run to run.
-- **Every ratio was measured on 2026-10-21/22** with a comparator that counts pixels itself. See
-  "Comparator".
+- **The within-batch noise floor is 0 px** on every state, for both apps: the same app captured
+  twice in one round is pixel-identical after masks.
+- **Between rounds, the same build moves by up to 0.44 points.** That is not in the noise floor
+  above, which only measures one batch. Measured on `dark home`: 1.86% in one round and 2.30% in
+  another, with no change to the app in between. `base home` was 2.36% in two rounds. Any screen
+  within about half a point of the 2% gate can therefore land either side of it, and four of the
+  five failures are in that band. A verdict on those screens is worth no more than the spread.
+- **The five failures are the home screen in five states.** `error home` at 5.24% is a behaviour
+  difference and is described under "Error home". The other four sit between 2.10% and 2.36% and
+  have the same causes: the placeholder mark that replaces Bluesky's logo, the Lucide glyphs that
+  replace the Central icon set, and React Native's scroll indicator, which Android draws for a
+  `ScrollView` and a Compose list does not.
+- **Nothing here can close those four.** Bluesky's `ASSETS.md` tells forks to replace its marks and
+  to source their own UI icons, because the icon set is licensed to Bluesky alone. The substitutions
+  are required, not a shortcut.
+
+### The scroll indicator: implemented, measured, removed
+
+A 4 dp grey thumb was added to the Compose lists to match the one Android draws for React Native's
+`ScrollView`. Its position and width matched exactly, measured at 12 px from x 1268 at 480 dpi. Its
+length did not: a `LazyColumn` cannot know the height of items it has not composed, while a
+`ScrollView` knows its content height, so the thumb was sized from an average of what was on screen.
+
+Measured on the four home screens it moved, against the same build without it:
+
+| State | Without | With |
+|---|---|---|
+| base | 2.36% | 2.04% |
+| after like and repost | 1.93% | 2.24% |
+| font scale 2.0 | 2.32% | 2.48% |
+| empty | 2.10% | 2.10% |
+
+It helped the screen it was tuned against and hurt two others, because the length estimate is
+state-sensitive. Net it was worse, so it was removed rather than kept as an improvement that the
+measurement did not support. It stays listed under "Differences that remain".
 
 ## Setup
 
@@ -92,21 +111,21 @@ Fuzz 5%, threshold 0.02.
 
 | State | Screen | Raw px (ratio) | Masked px (ratio) | Status | Valid? |
 |---|---|---|---|---|---|
-| base | home | 143,215 (3.92%) | 86,094 (2.36%) | **fail** | Yes |
-| base | thread | 63,045 (1.72%) | 30,476 (0.83%) | pass | Yes |
-| base | profile | 156,946 (4.29%) | 34,842 (0.95%) | pass | Yes. Both apps waited for "2 followers" and "2 following" |
-| dark | home | 124,878 (3.42%) | 68,173 (1.86%) | drift | Yes |
-| dark | thread | 66,128 (1.81%) | 31,465 (0.86%) | pass | Yes |
-| dark | profile | 49,791 (1.36%) | 33,937 (0.93%) | pass | Yes |
-| font scale 2.0 | home | 154,983 (4.24%) | 84,969 (2.32%) | **fail** | Yes |
-| font scale 2.0 | thread | 106,048 (2.90%) | 62,523 (1.71%) | drift | Yes |
-| font scale 2.0 | profile | 193,180 (5.28%) | 60,564 (1.66%) | drift | Yes |
-| empty | home | 101,150 (2.77%) | 76,630 (2.10%) | **fail** | Yes |
-| empty | profile | 158,761 (4.34%) | 34,432 (0.94%) | pass | Yes |
-| after like and repost | home | 130,156 (3.56%) | 70,615 (1.93%) | drift | Yes. Both apps wait for `FollowingEndOfFeed` before the screenshot |
-| after like and repost | thread | 84,563 (2.31%) | 45,319 (1.24%) | drift | Yes |
-| error | home | 245,314 (6.71%) | 191,518 (5.24%) | **fail** | Yes. Real behaviour difference, see "Error home" |
-| error | thread | 37,004 (1.01%) | 27,864 (0.76%) | pass | Yes |
+| base | home | 143,438 (3.92%) | 86,094 (2.36%) | **fail** | Yes |
+| base | thread | 63,513 (1.74%) | 30,476 (0.83%) | pass | Yes |
+| base | profile | 157,076 (4.30%) | 34,842 (0.95%) | pass | Yes. Both apps waited for "2 followers" and "2 following" |
+| dark | home | 141,486 (3.87%) | 84,085 (2.30%) | **fail** | Yes |
+| dark | thread | 65,942 (1.80%) | 31,465 (0.86%) | pass | Yes |
+| dark | profile | 50,930 (1.39%) | 33,937 (0.93%) | pass | Yes |
+| font scale 2.0 | home | 155,151 (4.24%) | 84,969 (2.32%) | **fail** | Yes |
+| font scale 2.0 | thread | 106,347 (2.91%) | 62,523 (1.71%) | drift | Yes |
+| font scale 2.0 | profile | 193,161 (5.28%) | 60,564 (1.66%) | drift | Yes |
+| empty | home | 101,576 (2.78%) | 76,630 (2.10%) | **fail** | Yes |
+| empty | profile | 158,767 (4.34%) | 34,432 (0.94%) | pass | Yes |
+| after like and repost | home | 129,989 (3.56%) | 70,615 (1.93%) | drift | Yes. Both apps wait for `FollowingEndOfFeed` before the screenshot |
+| after like and repost | thread | 83,461 (2.28%) | 45,319 (1.24%) | drift | Yes |
+| error | home | 245,806 (6.72%) | 191,518 (5.24%) | **fail** | Yes. Real behaviour difference, see "Error home" |
+| error | thread | 37,107 (1.02%) | 27,864 (0.76%) | pass | Yes |
 
 ### Fixed this round
 

@@ -1,4 +1,1 @@
-MISMATCH (ordered): rn 21 event(s), native 19 event(s), ignoring uri, authorDid, initMs, likerClout, postClout
-  missing in native: home:feedDisplayed {"feedType":"following","feedUrl":"following","index":0} (rn line 7)
-  missing in native: feed:endReached {"feedType":"author","feedUrl":"author|did:plc:SEEDED|posts_and_author_threads","itemCount":1} (rn line 20)
-  order differs at 16: router:navigate moved earlier in native, from rn position 16 (line 17) to native position 14 (line 15)
+MATCH (ordered): rn 21 event(s), native 21 event(s), ignoring uri, authorDid, initMs, likerClout, postClout

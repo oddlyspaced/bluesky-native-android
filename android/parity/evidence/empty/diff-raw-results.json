@@ -1,0 +1,51 @@
+{
+  "tool": {
+    "name": "check-parity/diff",
+    "version": "1.0.0"
+  },
+  "imagemagick": {
+    "version": "7.1.2-32",
+    "quantum": "Q16",
+    "hdri": true
+  },
+  "threshold": 0.02,
+  "fuzz": "5%",
+  "createdAt": "2026-10-21T21:30:55.144Z",
+  "rnDir": "out/empty/rn/android",
+  "nativeDir": "out/empty/native/android",
+  "screens": [
+    {
+      "name": "home",
+      "rn": "out/empty/rn/android/home.png",
+      "native": "out/empty/native/android/home.png",
+      "diff": "diffs/home.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 101576,
+      "totalPixels": 3655680,
+      "ratio": 0.02778580182072829,
+      "status": "fail",
+      "masks": [],
+      "warnings": []
+    },
+    {
+      "name": "profile",
+      "rn": "out/empty/rn/android/profile.png",
+      "native": "out/empty/native/android/profile.png",
+      "diff": "diffs/profile.diff.png",
+      "width": 1280,
+      "height": 2856,
+      "diffPixels": 158767,
+      "totalPixels": 3655680,
+      "ratio": 0.04343022365196078,
+      "status": "fail",
+      "masks": [],
+      "warnings": []
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "drift": 0,
+    "fail": 2
+  }
+}
