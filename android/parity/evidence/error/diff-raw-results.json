@@ -10,7 +10,7 @@
   },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-10-21T21:41:42.672Z",
+  "createdAt": "2026-10-21T21:57:32.338Z",
   "rnDir": "out/error/rn/android",
   "nativeDir": "out/error/native/android",
   "screens": [
@@ -21,9 +21,9 @@
       "diff": "diffs/home.diff.png",
       "width": 1280,
       "height": 2856,
-      "diffPixels": 245806,
+      "diffPixels": 245546,
       "totalPixels": 3655680,
-      "ratio": 0.06723947391456582,
+      "ratio": 0.06716835171568628,
       "status": "fail",
       "masks": [],
       "warnings": []
@@ -35,9 +35,9 @@
       "diff": "diffs/thread.diff.png",
       "width": 1280,
       "height": 2856,
-      "diffPixels": 37107,
+      "diffPixels": 36812,
       "totalPixels": 3655680,
-      "ratio": 0.010150505514705883,
+      "ratio": 0.010069809173669468,
       "status": "drift",
       "masks": [],
       "warnings": []

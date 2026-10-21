@@ -161,6 +161,25 @@ numbers that stood here were measured by the old comparator and were not re-run.
 real number from a matched pair, with a 0 px noise floor. The behaviour difference below is the
 cause, and it is a difference in the port, not an artefact of the capture.
 
+**Narrowed on 2026-10-22, not closed.** The event logs for this state are now identical: both apps
+log the same twenty events, including both `feed:refresh {reason: "soft-reset"}`. So the difference
+is not which code path ran. It is what the request returned.
+
+React Native ends with its end-of-feed block, which means its feed has no error and no next page:
+its refresh returned a final page. The port ends with the load-more retry row, which means its
+refresh failed. Both apps signed in before the reseed and both therefore hold a session for a DID
+that no longer exists, so why one request succeeds and the other does not is the open question.
+
+One explanation was tried and rejected rather than shipped. React Native reads `isError` straight
+off `useInfiniteQuery`, and TanStack Query reports `status: "error"` only when a query has no
+successful data to show, so a refetch that fails over existing data leaves the status at `success`.
+That would have explained the retry row as a rendering difference, and the port was changed to match
+it. It is the wrong explanation: React Native shows end-of-feed, which it can only reach with a
+successful final page, not with a failure it declined to render. The change was reverted, along with
+the two tests it would have required rewriting, both of which were written from React Native's own
+source. The next step is to instrument the port's refresh request on this flow and record what the
+server actually returns to each app.
+
 The error flow signs in, reseeds the server, opens the cached thread, goes back and refreshes the feed. A server probe on 2026-09-16 confirms what the apps meet after the reseed: `app.bsky.feed.getTimeline` with the old session returns **HTTP 500**, `com.atproto.server.refreshSession` returns 400 `InvalidRequest`, and alice's DID changes.
 
 In the same run:
