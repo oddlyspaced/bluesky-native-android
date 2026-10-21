@@ -91,23 +91,38 @@ class FeedPager(
                     /*
                      * A refetch that fails does not error a feed that still has pages.
                      *
-                     * RN reads `isError` off `useInfiniteQuery`, and TanStack Query reports
-                     * `status: "error"` only when a query has no successful data to show. A refetch
-                     * that fails over existing data leaves the status at `success`, so RN keeps
-                     * rendering what it already had and its `isError && !isEmpty` row never appears.
+                     * This matches the captured RN screen, not the library. Both are measured, and
+                     * they disagree, so the divergence is deliberate and the reason is recorded
+                     * here rather than guessed at.
                      *
-                     * Measured against the server on this flow. After the reseed, the session both
-                     * apps are holding is for a DID that no longer exists, and the server answers
-                     * every app the same way:
+                     * What the server does. After the reseed the session both apps hold is for a
+                     * DID that no longer exists, and the server answers every app the same way:
                      *
                      *   getTimeline    with the old access token    HTTP 500
                      *   refreshSession with the old refresh token   HTTP 400 InvalidRequest
                      *
-                     * So RN's refresh fails here too. It still shows its cached posts and its
-                     * cached end-of-feed block, because a failed refetch over existing data is not
-                     * an error state for it. The port showed "There was an issue fetching posts"
-                     * instead, which was the whole of the difference on this screen: both apps
-                     * logged the same twenty events, and both were holding the same dead session.
+                     * What the library does. `parity/probes/tanstack-failed-refetch.mjs` drives
+                     * the real @tanstack/query-core 5.100.10 that RN builds against, with this
+                     * feed's page shape (page 1: five posts and a cursor; page 2: the fallback
+                     * marker and none). `truncateAndInvalidate` and then a failing refetch leaves:
+                     *
+                     *   pages=1 items=5 hasNextPage=true status=error isError=true
+                     *
+                     * So a failed refetch over existing data IS an error state for TanStack. An
+                     * earlier version of this comment claimed the opposite; that claim was wrong.
+                     *
+                     * What RN draws. The captured `error` home screen shows the cached posts and
+                     * the end-of-feed block, with no error row and no load-more retry row. RN
+                     * renders the end-of-feed only when `!hasNextPage && !isError`, and skips
+                     * `feed:endReached` when `isError` - and the capture logs zero `feed:endReached`
+                     * against this port's 44. No single state of the library above produces that
+                     * screen, so RN's runtime state on that capture is not yet explained.
+                     *
+                     * Why this branch stays. Suppressing the error puts the port closer to the
+                     * captured screen (4.87% against 5.24% with the retry row). Adopting the
+                     * library's `isError` instead would draw a retry row that RN does not draw.
+                     * Settling it needs a live capture with both apps instrumented; until then this
+                     * is a known divergence, recorded as difference 2 in PARITY.md.
                      *
                      * A first load with nothing to show still errors, which is RN's
                      * `isError && isEmpty` branch.
@@ -157,8 +172,8 @@ class FeedPager(
             }
             .onFailure { e ->
                 if (_state.value.generation != generation) return@onFailure
-                // Same rule as a failed refresh above: a next-page failure over existing pages is
-                // not an error state for RN, so it is not one here.
+                // The same deliberate divergence as the failed refresh above, for the same
+                // reason: it draws the captured RN screen, not the library's `isError`.
                 val hasPages = _state.value.pages.isNotEmpty()
                 _state.update {
                     it.copy(isFetching = false, isFetchingNextPage = false, error = if (hasPages) it.error else e)
