@@ -4,6 +4,58 @@ appId: ${APP_ID}
 - launchApp:
     appId: ${APP_ID}
     clearState: true
+# Everything in this block is the RN build only. The native Compose app never shows
+# "DEVELOPMENT SERVERS", so it skips straight to "Sign in" and pays nothing for these steps.
+#
+# 1. The RN app is an expo-dev-client build. `clearState` erases the dev server it last used, so it
+#    opens its launcher instead of the app. It auto-connects only when a packager answers on the
+#    device's default port, which this flow cannot rely on: host port 8081 may belong to another
+#    project, in which case Metro is on another port and the capture runs with
+#    `adb reverse tcp:8081 tcp:<other>`. Tapping whichever server the launcher found avoids writing
+#    a machine address into the flow. A `bluesky://expo-development-client/?url=...` deep link was
+#    tried first and does not work: the app accepts it and still loads from assets
+#    (`ReactInstance.loadJSBundleFromAssets`), which a debug build has no bundle in.
+#    The tap is repeated while the launcher is still up. After `clearState` the dev client has to
+#    fetch the whole bundle again, and a tap taken before it is ready is accepted and then dropped,
+#    which leaves the run sitting on the launcher until the capture times out with no screenshots.
+#
+# 2. Once the bundle is running, the RN app asks Play Services for location. On a device that has
+#    not answered that prompt, the "Location Accuracy" dialog covers the app and "Sign in" is never
+#    visible, so the capture fails with no screenshots. Setting `network_location_opt_in` does not
+#    suppress it. The dialog is dismissed with "No thanks", which is also the choice that shares
+#    least. It is optional because a device that has already answered never shows it.
+- runFlow:
+    when:
+      visible: "DEVELOPMENT SERVERS"
+    commands:
+      # "New development server" is the last row the launcher draws. Waiting for it is what makes the
+      # tap land: a tap taken while the launcher is still drawing is accepted, reported COMPLETED,
+      # and then dropped, which leaves the run on the launcher until the capture times out with no
+      # screenshots. Measured: a tap about 14 s after launch loads the bundle, an immediate one does
+      # not. The repeat is the second line of defence, not the first.
+      - extendedWaitUntil:
+          visible: "New development server"
+          timeout: 30000
+      - repeat:
+          times: 5
+          while:
+            visible: "DEVELOPMENT SERVERS"
+          commands:
+            - tapOn:
+                text: "http://.*"
+            - extendedWaitUntil:
+                notVisible: "DEVELOPMENT SERVERS"
+                timeout: 30000
+                optional: true
+      - extendedWaitUntil:
+          visible: "No thanks"
+          timeout: 30000
+          optional: true
+      - runFlow:
+          when:
+            visible: "No thanks"
+          commands:
+            - tapOn: "No thanks"
 - extendedWaitUntil:
     visible: "Sign in"
     timeout: 180000
