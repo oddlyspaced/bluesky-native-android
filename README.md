@@ -12,38 +12,65 @@ Not affiliated with, endorsed by, or officially connected to Bluesky Social PBC.
 
 ## What was measured
 
-Captured 2026-09-16, re-measured 2026-10-21 after the comparator was corrected. Both apps are
-captured in the same batch, on the same build, against the same local server with fake accounts.
-Masked ratio is differing pixels after masks, over 3,655,680 pixels per screen. Pass is at or below
-1%, drift is 1% to 2% and needs a human signature, above 2% is a fail.
+Six states, fifteen screens, captured 2026-10-22. Both apps are captured in the same batch, on the
+same build, against the same local server with fake accounts. Masked ratio is differing pixels after
+masks, over 3,655,680 pixels per screen. Pass is at or below 1%, drift is 1% to 2% and needs a human
+signature, above 2% is a fail.
+
+**6 pass, 5 drift, 4 fail.**
 
 | State | Screen | Raw | Masked | Status |
 |---|---|---|---|---|
-| base | home | 3.49% | **1.92%** | drift |
-| base | thread | 1.83% | 0.83% | pass |
-| base | profile | 4.30% | 0.95% | pass |
-| dark | home | 3.42% | **1.86%** | drift |
+| base | home | 3.92% | **2.36%** | fail |
+| base | thread | 1.72% | 0.83% | pass |
+| base | profile | 4.29% | 0.95% | pass |
+| dark | home | 3.42% | 1.86% | drift |
 | dark | thread | 1.81% | 0.86% | pass |
 | dark | profile | 1.36% | 0.93% | pass |
-| after like and repost | home | 3.56% | **1.93%** | drift |
-| after like and repost | thread | 2.31% | **1.24%** | drift |
+| font scale 2.0 | home | 4.24% | **2.32%** | fail |
+| font scale 2.0 | thread | 2.90% | 1.71% | drift |
+| font scale 2.0 | profile | 5.28% | 1.66% | drift |
+| empty | home | 2.77% | **2.10%** | fail |
+| empty | profile | 4.34% | 0.94% | pass |
+| after like and repost | home | 3.56% | 1.93% | drift |
+| after like and repost | thread | 2.31% | 1.24% | drift |
+| error | home | 6.71% | **5.24%** | fail |
+| error | thread | 1.01% | 0.76% | pass |
 
-**The noise floor is 0.00% on every screen.** The same app captured twice, same build, same batch,
-is pixel-identical after masks. That is what makes the numbers above mean anything: a difference is
-the port, not the capture.
+**Every noise floor is 0 px**, on all six states, for both apps. The same app captured twice is
+pixel-identical after masks, so each number above is the port and not the capture.
+
+## Events match
+
+**The read-only flow matches: 21 React Native events against 21 native, in order**, reproduced on
+three consecutive runs. It did not match before — it ran 21 against 19, with two events missing and
+one out of order. All three were defects in this port, and each was found by reading React Native's
+own device log rather than an expectation of it:
+
+| Defect | Cause |
+|---|---|
+| The second `home:feedDisplayed` was never sent | RN logs it from two call sites: `useFocusEffect` with `reason: "focus"`, and the pager's `onPageSelected` with no `reason`. The port had only the first. |
+| `router:navigate` preceded the destination's events on a pop | RN is not symmetric. React Navigation reports state after it commits, so a push leads with the navigate event and a pop trails it. |
+| `feed:endReached` was never sent | The pager filled short pages inside its own fetch, consuming the next page before the list had laid out once. RN fills from an effect after render, so the layout pass reports the end while a next page still exists. |
+
+`feed:endReached` is timing-dependent in React Native too: over four runs RN sent it in three, and
+the port sent it in the same three.
 
 ## What this does not claim
 
-Three states — font scale 2.0, empty seed, and the error state — **are withdrawn and carry no
-number**. Their captures on disk predate the fixes those numbers credited, so they were not
-reproducible. They need a fresh capture. `android/PARITY.md` records exactly why.
+**Four screens fail and none is signed off.** `error home` at 5.24% is a real behaviour difference:
+after a reseed the port refetches the feed and shows the load-more retry row, where React Native
+keeps the end-of-feed state. The other three are the home screen between 2.10% and 2.36%, just over
+the gate, with two causes: the placeholder mark that stands in for Bluesky's logo, and React
+Native's scroll indicator, which Android draws for a ScrollView and a Compose list does not.
 
-**No flow matches on events.** The read-only flow logs 21 React Native events against 19 native.
-All three differences are real defects in this port, not comparison artefacts, and each is traced
-to a file and line in `android/PARITY.md`.
+**That scroll indicator is deliberately not masked.** It is worth 0.40 to 0.44% of the home screen,
+enough to turn all three of those failures into drift. A mask for it was written and then removed,
+because `make_masks.py` refused it: on the profile screen both apps draw real content at the same
+right edge, and the mask would have hidden it. The refusal is the check working.
 
-**Nothing is signed off.** Every drift above needs a written acceptance from someone who did not
-write the port. `plan/owner-signoff.md` is the form, and it is empty.
+**Nothing is signed off.** Every drift needs a written acceptance from someone who did not write the
+port. `plan/owner-signoff.md` is the form, and it is empty.
 
 ## The tooling was wrong more often than the code
 

@@ -120,6 +120,45 @@ class FeedViewModel(
     val homeReady: StateFlow<Boolean> = combine(preferencesLoaded, pinnedFeedsLoaded) { p, f -> p && f }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    /**
+     * RN's second `home:feedDisplayed` call site, `onPageSelected` (src/view/screens/Home.tsx:197-203).
+     *
+     * The pager reports the page it settled on. It does that once for the page it mounts on, which is
+     * why RN logs this immediately after the focus event at startup, and again on every later page
+     * change. It carries no `reason` key, and that absence is what tells the two call sites apart.
+     *
+     * It is reported here rather than from a composable because RN's pager stays mounted while the
+     * thread is open. This shell composes the current back-stack entry alone, so a composable keyed
+     * on composition would log this again on every return from the thread; the captured RN log shows
+     * only the focus event there. This view model is keyed by session and outlives navigation, so the
+     * "already reported" flag is only reset by signing out.
+     */
+    private var pageSelectedReported = false
+
+    private fun reportPageSelected(index: Int) {
+        pageSelectedReported = true
+        analytics.metric(
+            "home:feedDisplayed",
+            linkedMapOf("index" to index, "feedType" to FEED, "feedUrl" to FEED),
+        )
+    }
+
+    /**
+     * The pager's report for the page it mounted on. Called by the screen immediately after it logs
+     * the focus event, because RN logs the two together in that order and the pager cannot report a
+     * page before the screen that owns it has been focused.
+     *
+     * Reporting this from the view model's own `init` instead put it three events early, ahead of the
+     * `router:navigate` and `init` that RN logs first.
+     *
+     * The guard lives here rather than in the screen because this view model is keyed by session and
+     * outlives navigation, while the screen leaves composition whenever the thread is open.
+     */
+    fun reportInitialPageSelected() {
+        if (pageSelectedReported) return
+        reportPageSelected(selectedTab.value)
+    }
+
     private var preferencesJob: Job? = null
     private var pinnedFeedsJob: Job? = null
 
@@ -157,7 +196,10 @@ class FeedViewModel(
     }
 
     fun selectTab(index: Int) {
+        if (selectedTab.value == index) return
         selectedTab.value = index
+        // A real page change, which is when RN's pager calls `onPageSelected`.
+        reportPageSelected(index)
     }
 
     /** RN `feed:refresh`: reason `pull-to-refresh` (PostFeed `refreshFeed`) or `soft-reset` (FeedPage). */
@@ -177,6 +219,9 @@ class FeedViewModel(
     fun retryLoadMore() = pager.fetchNextPage(fromRetry = true)
 
     /** RN `onEndReached`: does nothing while fetching, without a next page, or in error. */
+    /** RN `useFillPages`: the screen asks after each render; the pager decides whether to top up. */
+    fun fillPages() = pager.fillIfNeeded()
+
     fun onEndReached() {
         if (!pager.canFetchNextPage()) return
         analytics.metric(

@@ -91,6 +91,8 @@ data class ProfileCallbacks(
     val onRetry: () -> Unit = {},
     val onRetryLoadMore: () -> Unit = {},
     val onEndReached: () -> Unit = {},
+    /** RN `useFillPages`: top up short pages after the list has rendered them. */
+    val onFillPages: () -> Unit = {},
     val onPostSeen: (PostFeedRow.SliceItemRow) -> Unit = {},
     val onOpenFullThread: (String) -> Unit = {},
     val onNotInShowcase: (String) -> Unit = {},
@@ -161,8 +163,24 @@ private fun ProfileLoaded(
             (info.totalItemsCount - 1 - last.index) * last.size <= viewport * 2
         }
     }
-    LaunchedEffect(endReached, feed.rows.size) {
+    // Re-evaluated when the fetch settles, not only when the list changes.
+    //
+    // `onEndReached` is refused while a fetch is in flight, which is RN's own guard
+    // (`PostFeed.onEndReached`: `if (isFetching || !hasNextPage || isError) return`). Auto-pagination
+    // runs a fetch as soon as the first page lands, so on a short feed the end of the list is reached
+    // while that fetch is still running: the call is refused, and without `isFetching` in the keys
+    // nothing changes afterwards to make it run again. `feed:endReached` was then never logged at all,
+    // where RN logs it with the next page still available. RN does not have this problem because
+    // FlatList calls `onEndReached` again on later scroll and layout passes.
+    LaunchedEffect(endReached, feed.rows.size, feed.isFetching, feed.hasNextPage) {
         if (endReached && feed.isFetched && selectedTab == 0) current.onEndReached()
+    }
+    // RN's page fill (`useFillPages`, src/state/queries/util.ts) is an effect, and it is declared
+    // after the end-reached effect so the two run in RN's order: the list reports that its end is
+    // visible first, then the fill fetches. Reversing them consumes the next page before anything
+    // can report the end, which is how `feed:endReached` came to be missing from the port's log.
+    LaunchedEffect(feed.rows.size, feed.isFetching, feed.hasNextPage, feed.isFetched) {
+        current.onFillPages()
     }
     TrackPostViews(listState, feed.rows, { current.onPostSeen(it) }, enabled = state.selectedTab == 0)
 

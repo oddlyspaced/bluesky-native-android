@@ -173,6 +173,7 @@ class Cp01FeedLogicTest {
         }
         val pager = FeedPager(scope = this, fetch = source::fetch, selectedCount = { 1 })
         pager.refresh()
+        pager.settleFill()
         assertEquals("auto-pagination loaded page 2 with the marker", 2, pager.state.value.pages.size)
         assertTrue(pager.state.value.items.any { it.post.uri == FALLBACK_MARKER_URI })
         failFollowing = true
@@ -224,10 +225,12 @@ class Cp01FeedLogicTest {
         var fetches = 0
         val pager = FeedPager(this, fetch = { fetches++; FeedPage(emptyList(), "c${fetches}") }, selectedCount = { 0 })
         pager.refresh()
+        pager.settleFill()
         assertEquals("first page plus 5 attempts", 6, fetches)
         var repeated = 0
         val pager2 = FeedPager(this, fetch = { repeated++; FeedPage(emptyList(), "same") }, selectedCount = { 0 })
         pager2.refresh()
+        pager2.settleFill()
         assertEquals("a repeated cursor ends pagination", 2, repeated)
         assertFalse(pager2.state.value.hasNextPage)
     }
@@ -312,4 +315,10 @@ class Cp01FeedLogicTest {
     private fun itemFor(n: Int): FeedViewPost = item(
         """{"post":${postJson("at://f/app.bsky.feed.post/$n", author("did:plc:friend", "friend.test", following = true))}}""",
     )
+
+    /** What the screen's fill effect does: ask after each render until the pager stops topping up. */
+    private fun FeedPager.settleFill() {
+        repeat(8) { fillIfNeeded() }
+    }
+
 }

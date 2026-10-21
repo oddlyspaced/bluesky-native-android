@@ -62,9 +62,20 @@ private fun openRichText(segment: RichSegment, uriHandler: UriHandler, navigator
  *
  * RN mounts `HomeScreenReady` only when preferences and pinned feeds have loaded, so the event waits for both.
  * The index is read when the event fires, as RN's `useNonReactiveCallback` does.
+ *
+ * RN's other `home:feedDisplayed` call site, `onPageSelected`, is NOT here. It belongs to the pager,
+ * which in RN stays mounted while the thread is open, so RN logs it once on the page it mounts on
+ * and again only on a real page change. This shell composes the current back-stack entry alone, so
+ * anything keyed on composition here would fire again on every return from the thread, which RN
+ * does not do. It lives in [FeedViewModel], which outlives navigation.
  */
 @Composable
-fun HomeFeedDisplayedEffect(homeReady: Boolean, selectedTab: Int, analytics: Analytics) {
+fun HomeFeedDisplayedEffect(
+    homeReady: Boolean,
+    selectedTab: Int,
+    analytics: Analytics,
+    onFocusReported: () -> Unit,
+) {
     if (!homeReady) return
     val tab by rememberUpdatedState(selectedTab)
     LaunchedEffect(Unit) {
@@ -72,6 +83,10 @@ fun HomeFeedDisplayedEffect(homeReady: Boolean, selectedTab: Int, analytics: Ana
             "home:feedDisplayed",
             mapOf("index" to tab, "feedType" to "following", "feedUrl" to "following", "reason" to "focus"),
         )
+        // RN's pager reports the page it mounted on right after this. The view model owns the
+        // once-only guard, because this effect runs again on every return from the thread and RN
+        // logs only the focus event there.
+        onFocusReported()
     }
 }
 
@@ -85,7 +100,7 @@ fun HomeRoute(account: AccountScope, session: Session, navigator: AppNavigator) 
     )
     val state by vm.state.collectAsStateWithLifecycle()
     val homeReady by vm.homeReady.collectAsStateWithLifecycle()
-    HomeFeedDisplayedEffect(homeReady, state.selectedTab, analytics)
+    HomeFeedDisplayedEffect(homeReady, state.selectedTab, analytics, vm::reportInitialPageSelected)
     val softResets = remember(account) { account.softReset.resets.filter { it == Routes.HOME }.map { } }
     HomeScreen(
         state = state,
@@ -98,6 +113,7 @@ fun HomeRoute(account: AccountScope, session: Session, navigator: AppNavigator) 
             onSoftReset = { vm.refresh(FeedViewModel.REASON_SOFT_RESET) },
             onNotInShowcase = navigator::openNotInShowcase,
             onEndReached = vm::onEndReached,
+            onFillPages = vm::fillPages,
             onRetry = vm::retry,
             onRetryLoadMore = vm::retryLoadMore,
             onPostSeen = vm::onPostSeen,
@@ -166,6 +182,7 @@ fun ProfileRoute(account: AccountScope, session: Session, navigator: AppNavigato
             onRetry = vm::retry,
             onRetryLoadMore = vm::retryLoadMore,
             onEndReached = vm::onEndReached,
+            onFillPages = vm::fillPages,
             onPostSeen = vm::onPostSeen,
             onOpenFullThread = navigator::openThread,
             onNotInShowcase = navigator::openNotInShowcase,

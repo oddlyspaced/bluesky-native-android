@@ -58,6 +58,8 @@ class FeedPager(
      */
     fun refresh(isPullToRefresh: Boolean = false) {
         job?.cancel()
+        fillAttempts = 0
+        lastFillCount = -1
         val generation = _state.value.generation + 1
         _state.update {
             val truncated = it.pages.isNotEmpty()
@@ -83,7 +85,6 @@ class FeedPager(
                         generation = generation,
                         firstPageCursor = page.cursor,
                     )
-                    autoPaginate(generation)
                 }
                 .onFailure { e ->
                     if (_state.value.generation != generation) return@onFailure
@@ -98,10 +99,7 @@ class FeedPager(
         if (s.isFetching || !s.hasNextPage || (s.error != null && !fromRetry)) return
         val generation = s.generation
         _state.update { it.copy(isFetching = true, isFetchingNextPage = true, error = null) }
-        job = scope.launch {
-            loadNext(generation)
-            autoPaginate(generation)
-        }
+        job = scope.launch { loadNext(generation) }
     }
 
     /** Result used by tests and by the end-reached event: true when a next-page load started. */
@@ -132,17 +130,41 @@ class FeedPager(
         return ok
     }
 
-    private suspend fun autoPaginate(generation: Int) {
-        var attempts = 0
-        while (true) {
-            val s = _state.value
-            if (s.generation != generation || s.error != null || !s.hasNextPage) break
-            if (selectedCount(s.items) >= wantedCount || attempts >= maxAttempts) break
-            attempts++
-            _state.update { it.copy(isFetching = true, isFetchingNextPage = true) }
-            if (!loadNext(generation)) break
+    /**
+     * One pass of RN's page fill (`src/state/queries/util.ts`), driven by the screen.
+     *
+     * This used to run inline, immediately after the first page landed, and that is what stopped
+     * `feed:endReached` from ever being logged. RN's fill is an effect: the list renders the first
+     * page, the layout pass reports that the end is already visible, and `onEndReached` logs the
+     * event while a next page still exists. Only then does the fill effect run. Running the fill
+     * inside the fetch instead consumed the next page before the list had laid out even once, so
+     * `hasNextPage` was already false by the time anything could ask.
+     *
+     * Measured on the seeded author feed: page 1 returns 1 item and a cursor, page 2 returns 0 items
+     * and no cursor. RN logs `feed:endReached` with `itemCount: 1`; the port logged nothing.
+     */
+    fun fillIfNeeded() {
+        val s = _state.value
+        if (s.isFetching || s.error != null || !s.hasNextPage || !s.isFetched) return
+        val selected = selectedCount(s.items)
+        if (selected >= wantedCount) return
+        // RN keeps its attempt count in a ref across renders and clears it whenever the item count
+        // moves (`attemptCount`, src/state/queries/util.ts). Counting per call instead would let the
+        // screen, which asks after every render, fetch without limit against a feed that keeps
+        // returning a cursor and no items.
+        if (selected != lastFillCount) {
+            fillAttempts = 0
+            lastFillCount = selected
         }
+        if (fillAttempts >= maxAttempts) return
+        fillAttempts++
+        val generation = s.generation
+        _state.update { it.copy(isFetching = true, isFetchingNextPage = true) }
+        job = scope.launch { loadNext(generation) }
     }
+
+    private var fillAttempts = 0
+    private var lastFillCount = -1
 
     companion object {
         const val MIN_POSTS = 30

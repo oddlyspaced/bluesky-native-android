@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -294,10 +295,27 @@ private fun SignedInShell(account: AccountScope, session: Session) {
     BackHandler(enabled = stacks.canGoBack()) { navigator.back() }
 
     // RN onStateChange: `router:navigate {from: previousScreen}` on every navigation state change.
+    //
+    // Where it falls relative to the destination's own events depends on whether the destination is
+    // being mounted or revealed, and RN is not symmetric about it. React Navigation reports the
+    // state after it commits. On a push the destination mounts after that commit, so the navigate
+    // event precedes everything the new screen logs. On a pop the destination is already mounted and
+    // its focus effects run during the transition, so they precede the navigate event.
+    //
+    // Both halves are in the captured RN log for the read-only flow:
+    //   push to the thread   router:navigate {from: Home}   then the thread's post:view
+    //   pop back to home     home:feedDisplayed {focus}     then router:navigate {from: PostThread}
+    //
+    // Effects within one composition start in the order they are declared, and this one is declared
+    // above the screen content, so it would otherwise always win. On a pop it waits one frame, which
+    // lets the destination's effects run first. A pop is detected by the previous entry no longer
+    // being in any stack: `back()` removes it, `push()` and `select()` leave it in place.
     var previousEntry by remember { mutableStateOf<RouteEntry?>(null) }
     LaunchedEffect(current.id) {
         val previous = previousEntry
         if (previous != null && previous.id != current.id) {
+            val popped = stacks.allEntries().none { it.id == previous.id }
+            if (popped) withFrameNanos { }
             analytics.metric("router:navigate", mapOf("from" to Routes.rnScreenName(previous.route)))
         }
         previousEntry = current

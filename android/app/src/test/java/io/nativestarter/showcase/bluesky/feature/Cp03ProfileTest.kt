@@ -46,7 +46,17 @@ class Cp03ProfileTest {
 
     @After fun tearDown() = Dispatchers.resetMain()
 
-    private fun vm(onLoaded: (ProfileViewDetailed) -> Unit = {}) = ProfileViewModel(me, repo, interactions, analytics, PostCache(), onLoaded)
+    /**
+     * A view model with its screen attached.
+     *
+     * RN tops short pages up from an effect that runs after the list renders (`useFillPages`), and
+     * this port does the same: the pager no longer fills inside its own fetch, because doing so
+     * consumed the next page before the list could report that it had reached the end, and
+     * `feed:endReached` was never logged. Tests therefore have to play the part of the screen and
+     * ask, the way the screen asks after every render.
+     */
+    private fun vm(onLoaded: (ProfileViewDetailed) -> Unit = {}) =
+        ProfileViewModel(me, repo, interactions, analytics, PostCache(), onLoaded).also { vm -> repeat(8) { vm.fillPages() } }
 
     @Test
     fun profileLoadsFirstThenThePostsFeed() = runTest {

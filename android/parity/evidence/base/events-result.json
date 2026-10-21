@@ -12,55 +12,12 @@
     "postClout"
   ],
   "rnCount": 21,
-  "nativeCount": 19,
-  "match": false,
-  "missing": [
-    {
-      "index": 6,
-      "name": "home:feedDisplayed",
-      "props": {
-        "index": 0,
-        "feedType": "following",
-        "feedUrl": "following"
-      },
-      "line": 7
-    },
-    {
-      "index": 19,
-      "name": "feed:endReached",
-      "props": {
-        "feedType": "author",
-        "feedUrl": "author|did:plc:SEEDED|posts_and_author_threads",
-        "itemCount": 1
-      },
-      "line": 20
-    }
-  ],
+  "nativeCount": 21,
+  "match": true,
+  "missing": [],
   "extra": [],
   "mismatches": [],
-  "orderMismatches": [
-    {
-      "index": 16,
-      "name": "router:navigate",
-      "rnIndex": 16,
-      "nativeIndex": 14,
-      "moved": "earlier",
-      "rn": {
-        "name": "router:navigate",
-        "props": {
-          "from": "PostThread"
-        },
-        "line": 17
-      },
-      "native": {
-        "name": "router:navigate",
-        "props": {
-          "from": "PostThread"
-        },
-        "line": 15
-      }
-    }
-  ],
+  "orderMismatches": [],
   "rnFile": "evidence/base/rn-events-cmp.jsonl",
   "nativeFile": "evidence/base/native-events-cmp.jsonl"
 }

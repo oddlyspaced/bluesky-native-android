@@ -108,9 +108,16 @@ def ink_bounds(px, box, bg_x):
     return [xs[0], min(v[0] for v in cols.values()), xs[-1], max(v[1] for v in cols.values())]
 
 
-def check_rect(where, band, box, rn, nat, bg_x):
-    """review A10: the declared rectangle must contain the element's ink with room to spare on both images."""
+def check_rect(where, band, box, rn, nat, bg_x, size=None):
+    """review A10: the declared rectangle must contain the element's ink with room to spare on both images.
+
+    An edge of the rectangle that is also an edge of the image is exempt. The check exists to catch an
+    element that reaches past its mask, and an element cannot reach past the edge of the screen: there
+    is nowhere for it to go. Without this, a mask for anything drawn against the screen edge, such as a
+    scroll indicator, can never be declared.
+    """
     x0, y0, x1, y1 = box
+    width, height = size if size else (None, None)
     for label, px in (("rn", rn), ("native", nat)):
         bounds = ink_bounds(px, box, bg_x)
         if bounds is None:
@@ -118,7 +125,10 @@ def check_rect(where, band, box, rn, nat, bg_x):
         bx0, by0, bx1, by1 = bounds
         touching = [
             name for name, hit in (
-                ("left", bx0 <= x0), ("top", by0 <= y0), ("right", bx1 >= x1 - 1), ("bottom", by1 >= y1 - 1),
+                ("left", bx0 <= x0 and x0 > 0),
+                ("top", by0 <= y0 and y0 > 0),
+                ("right", bx1 >= x1 - 1 and (width is None or x1 < width)),
+                ("bottom", by1 >= y1 - 1 and (height is None or y1 < height)),
             ) if hit
         ]
         if touching:
@@ -166,7 +176,7 @@ def build(band, size, rn, nat, where="band"):
                  "px": [0, 0, W, STATUS_H]}]
     if kind == "rect":
         x0, y0, x1, y1 = band["box"]
-        check_rect(where, band, band["box"], rn, nat, band.get("bg_x", 6))
+        check_rect(where, band, band["box"], rn, nat, band.get("bg_x", 6), size)
         return [rect(size, x0, y0, x1, y1, band["reason"], pad=0)]
     box = band["box"]
     bg_x = band.get("bg_x", 6)

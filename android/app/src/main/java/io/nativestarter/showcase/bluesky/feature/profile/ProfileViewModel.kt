@@ -215,6 +215,9 @@ class ProfileViewModel(
 
     fun retryLoadMore() = pager.fetchNextPage(fromRetry = true)
 
+    /** RN `useFillPages`: the screen asks after each render; the pager decides whether to top up. */
+    fun fillPages() = pager.fillIfNeeded()
+
     fun onEndReached() {
         if (!pager.canFetchNextPage()) return
         analytics.metric(
