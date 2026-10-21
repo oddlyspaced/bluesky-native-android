@@ -17,7 +17,7 @@ Acceptance: **awaiting owner acceptance.**
   another, with no change to the app in between. `base home` was 2.36% in two rounds. Any screen
   within about half a point of the 2% gate can therefore land either side of it, and four of the
   five failures are in that band. A verdict on those screens is worth no more than the spread.
-- **The five failures are the home screen in five states.** `error home` at 5.24% is a behaviour
+- **The five failures are the home screen in five states.** `error home` at 4.87% is a behaviour
   difference and is described under "Error home". The other four sit between 2.10% and 2.36% and
   have the same causes: the placeholder mark that replaces Bluesky's logo, the Lucide glyphs that
   replace the Central icon set, and React Native's scroll indicator, which Android draws for a
@@ -124,8 +124,8 @@ Fuzz 5%, threshold 0.02.
 | empty | profile | 158,767 (4.34%) | 34,432 (0.94%) | pass | Yes |
 | after like and repost | home | 129,989 (3.56%) | 70,615 (1.93%) | drift | Yes. Both apps wait for `FollowingEndOfFeed` before the screenshot |
 | after like and repost | thread | 83,461 (2.28%) | 45,319 (1.24%) | drift | Yes |
-| error | home | 245,806 (6.72%) | 191,518 (5.24%) | **fail** | Yes. Real behaviour difference, see "Error home" |
-| error | thread | 37,107 (1.02%) | 27,864 (0.76%) | pass | Yes |
+| error | home | 232,233 (6.35%) | 178,042 (4.87%) | **fail** | Yes. Real behaviour difference, see "Error home" |
+| error | thread | 36,831 (1.01%) | 27,864 (0.76%) | pass | Yes |
 
 ### Fixed this round
 
@@ -161,24 +161,36 @@ numbers that stood here were measured by the old comparator and were not re-run.
 real number from a matched pair, with a 0 px noise floor. The behaviour difference below is the
 cause, and it is a difference in the port, not an artefact of the capture.
 
-**Narrowed on 2026-10-22, not closed.** The event logs for this state are now identical: both apps
-log the same twenty events, including both `feed:refresh {reason: "soft-reset"}`. So the difference
-is not which code path ran. It is what the request returned.
+**Improved on 2026-10-22, 5.24% to 4.87%, and still failing.**
 
-React Native ends with its end-of-feed block, which means its feed has no error and no next page:
-its refresh returned a final page. The port ends with the load-more retry row, which means its
-refresh failed. Both apps signed in before the reseed and both therefore hold a session for a DID
-that no longer exists, so why one request succeeds and the other does not is the open question.
+The event logs for this state match exactly: both apps log the same twenty events, including both
+`feed:refresh {reason: "soft-reset"}`. The difference was never which code path ran.
 
-One explanation was tried and rejected rather than shipped. React Native reads `isError` straight
-off `useInfiniteQuery`, and TanStack Query reports `status: "error"` only when a query has no
-successful data to show, so a refetch that fails over existing data leaves the status at `success`.
-That would have explained the retry row as a rendering difference, and the port was changed to match
-it. It is the wrong explanation: React Native shows end-of-feed, which it can only reach with a
-successful final page, not with a failure it declined to render. The change was reverted, along with
-the two tests it would have required rewriting, both of which were written from React Native's own
-source. The next step is to instrument the port's refresh request on this flow and record what the
-server actually returns to each app.
+The server was asked directly what it returns to the session both apps are holding after the
+reseed, which is a session for a DID that no longer exists:
+
+```
+getTimeline    with the old access token    HTTP 500 InternalServerError
+refreshSession with the old refresh token   HTTP 400 InvalidRequest
+                                            "Could not find user info for account: did:plc:..."
+```
+
+So React Native's refresh fails here too. It keeps rendering its cached posts, because it reads
+`isError` off `useInfiniteQuery` and TanStack Query reports `status: "error"` only when a query has
+no successful data to show; a refetch that fails over existing data leaves it at `success`. The port
+set its own feed error on any failure, so it showed "There was an issue fetching posts. Tap here to
+try again." where React Native showed nothing of the sort. That is fixed, and the retry row is gone.
+
+**What remains:** React Native shows its end-of-feed block and the port now shows nothing in that
+space. A third change was written to close it, restoring the cursor and `hasNextPage` the refresh
+had optimistically replaced, and it was reverted: `truncateAndInvalidate`
+(`src/state/queries/util.ts:151-165`) calls `setQueriesData` to cut the cache to page 1 **before**
+it invalidates, so the truncation survives a failed refetch and `hasNextPage` is derived from page
+1's own cursor, which is not null. The existing test says so and was written from that source.
+Rewriting it to fit the change would have been the wrong way round.
+
+Why React Native still renders end-of-feed with a next page apparently available is the open
+question, and the next step is to read its query state on this flow rather than infer it again.
 
 The error flow signs in, reseeds the server, opens the cached thread, goes back and refreshes the feed. A server probe on 2026-09-16 confirms what the apps meet after the reseed: `app.bsky.feed.getTimeline` with the old session returns **HTTP 500**, `com.atproto.server.refreshSession` returns 400 `InvalidRequest`, and alice's DID changes.
 

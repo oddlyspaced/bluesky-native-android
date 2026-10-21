@@ -183,12 +183,14 @@ class Cp01FeedLogicTest {
         assertFalse("no fallback marker after the truncation", s.items.any { it.post.uri == FALLBACK_MARKER_URI })
         assertEquals("page 1's cursor, so RN still has a next page", "c1", s.cursor)
         assertTrue(s.hasNextPage)
-        assertNotNull(s.error)
+        assertNull("a failed refresh does not error a feed that still has pages", s.error)
         assertFalse(s.isFetching)
-        // PostFeed rows: page 1 plus the load-more retry row; end of feed is hidden while in error.
+        // PostFeed rows: page 1 and no retry row. RN keeps rendering what it already had, because a
+        // refetch that fails over existing data leaves TanStack Query at `status: "success"`. This
+        // is what the error state measured: the same dead session for both apps, the same twenty
+        // events, and RN showing its cached end-of-feed block where the port showed the retry row.
         val ui = FeedUiState(rows = listOf(), isFetched = true, isFetching = false, hasNextPage = s.hasNextPage, isEmpty = false, error = s.error)
-        assertTrue(ui.showLoadMoreError)
-        assertFalse(ui.showEndOfFeed)
+        assertFalse(ui.showLoadMoreError)
     }
 
     @Test
@@ -208,12 +210,17 @@ class Cp01FeedLogicTest {
         pager.refresh()
         pager.fetchNextPage()
         var s = pager.state.value
-        assertNotNull(s.error)
-        assertTrue("hasNextPage stays true so the retry row can load it", s.hasNextPage)
+        // RN reads `isError` off `useInfiniteQuery`, and TanStack Query reports `status: "error"`
+        // only when a query has no successful data to show, so a `fetchNextPage` that fails after
+        // page 1 has loaded leaves it at `success`. Confirmed against the server on the error flow:
+        // the stale session gets HTTP 500 from getTimeline and 400 from refreshSession, so RN's
+        // refresh fails there too, and RN still renders its cached posts with no error row.
+        assertNull("a next-page failure does not error a feed that already has pages", s.error)
+        assertTrue("hasNextPage stays true so the page can be tried again", s.hasNextPage)
         assertEquals(1, s.pages.size)
-        assertFalse("onEndReached does nothing while in error", pager.canFetchNextPage())
+        assertTrue("and another attempt is allowed, as RN allows one on the next scroll", pager.canFetchNextPage())
         failNext = false
-        pager.fetchNextPage(fromRetry = true)
+        pager.fetchNextPage()
         s = pager.state.value
         assertNull(s.error)
         assertEquals(2, s.pages.size)

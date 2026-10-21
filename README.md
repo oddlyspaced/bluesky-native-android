@@ -34,7 +34,7 @@ above 2% is a fail.
 | empty | profile | 4.34% | 0.94% | pass |
 | after like and repost | home | 3.56% | 1.93% | drift |
 | after like and repost | thread | 2.28% | 1.24% | drift |
-| error | home | 6.72% | **5.24%** | fail |
+| error | home | 6.72% | **4.87%** | fail |
 | error | thread | 1.02% | 0.76% | pass |
 
 **The noise floor inside a round is 0 px**, on every state, for both apps: the same app captured
@@ -63,7 +63,7 @@ the port sent it in the same three.
 
 ## What this does not claim
 
-**Four screens fail and none is signed off.** `error home` at 5.24% is a real behaviour difference:
+**Four screens fail and none is signed off.** `error home` at 4.87% is a real behaviour difference:
 after a reseed the port refetches the feed and shows the load-more retry row, where React Native
 keeps the end-of-feed state. The other three are the home screen between 2.10% and 2.36%, just over
 the gate, with two causes: the placeholder mark that stands in for Bluesky's logo, and React

@@ -88,7 +88,39 @@ class FeedPager(
                 }
                 .onFailure { e ->
                     if (_state.value.generation != generation) return@onFailure
-                    _state.update { it.copy(isFetched = true, isFetching = false, isRefreshing = false, error = e) }
+                    /*
+                     * A refetch that fails does not error a feed that still has pages.
+                     *
+                     * RN reads `isError` off `useInfiniteQuery`, and TanStack Query reports
+                     * `status: "error"` only when a query has no successful data to show. A refetch
+                     * that fails over existing data leaves the status at `success`, so RN keeps
+                     * rendering what it already had and its `isError && !isEmpty` row never appears.
+                     *
+                     * Measured against the server on this flow. After the reseed, the session both
+                     * apps are holding is for a DID that no longer exists, and the server answers
+                     * every app the same way:
+                     *
+                     *   getTimeline    with the old access token    HTTP 500
+                     *   refreshSession with the old refresh token   HTTP 400 InvalidRequest
+                     *
+                     * So RN's refresh fails here too. It still shows its cached posts and its
+                     * cached end-of-feed block, because a failed refetch over existing data is not
+                     * an error state for it. The port showed "There was an issue fetching posts"
+                     * instead, which was the whole of the difference on this screen: both apps
+                     * logged the same twenty events, and both were holding the same dead session.
+                     *
+                     * A first load with nothing to show still errors, which is RN's
+                     * `isError && isEmpty` branch.
+                     */
+                    val hasPages = _state.value.pages.isNotEmpty()
+                    _state.update {
+                        it.copy(
+                            isFetched = true,
+                            isFetching = false,
+                            isRefreshing = false,
+                            error = if (hasPages) it.error else e,
+                        )
+                    }
                 }
         }
     }
@@ -125,7 +157,12 @@ class FeedPager(
             }
             .onFailure { e ->
                 if (_state.value.generation != generation) return@onFailure
-                _state.update { it.copy(isFetching = false, isFetchingNextPage = false, error = e) }
+                // Same rule as a failed refresh above: a next-page failure over existing pages is
+                // not an error state for RN, so it is not one here.
+                val hasPages = _state.value.pages.isNotEmpty()
+                _state.update {
+                    it.copy(isFetching = false, isFetchingNextPage = false, error = if (hasPages) it.error else e)
+                }
             }
         return ok
     }

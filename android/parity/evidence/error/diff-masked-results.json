@@ -10,7 +10,7 @@
   },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-10-21T21:57:33.891Z",
+  "createdAt": "2026-10-21T22:25:04.936Z",
   "rnDir": "out/error/rn/android",
   "nativeDir": "out/error/native/android",
   "screens": [
@@ -21,9 +21,9 @@
       "diff": "diffs/home.diff.png",
       "width": 1280,
       "height": 2856,
-      "diffPixels": 191518,
+      "diffPixels": 178042,
       "totalPixels": 3655680,
-      "ratio": 0.052389158788515404,
+      "ratio": 0.04870284051120448,
       "status": "fail",
       "masks": [
         {
@@ -69,37 +69,37 @@
           "reason": "composer camera and image glyphs (Lucide substitute)"
         },
         {
-          "x": 0.89375,
+          "x": 0.90234,
           "y": 0.22689,
-          "w": 0.07266,
+          "w": 0.06406,
           "h": 0.01436,
           "reason": "relative timestamp (capture time)"
         },
         {
-          "x": 0.89375,
+          "x": 0.90234,
           "y": 0.31303,
-          "w": 0.07266,
+          "w": 0.06406,
           "h": 0.01436,
           "reason": "relative timestamp (capture time)"
         },
         {
-          "x": 0.89375,
+          "x": 0.90234,
           "y": 0.40791,
-          "w": 0.07266,
+          "w": 0.06406,
           "h": 0.01436,
           "reason": "relative timestamp (capture time)"
         },
         {
-          "x": 0.89375,
+          "x": 0.90234,
           "y": 0.5028,
-          "w": 0.07266,
+          "w": 0.06406,
           "h": 0.01436,
           "reason": "relative timestamp (capture time)"
         },
         {
-          "x": 0.89375,
+          "x": 0.90234,
           "y": 0.59769,
-          "w": 0.07266,
+          "w": 0.06406,
           "h": 0.01436,
           "reason": "relative timestamp (capture time)"
         },
