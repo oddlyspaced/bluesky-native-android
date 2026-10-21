@@ -6,9 +6,16 @@ Acceptance: **awaiting owner acceptance.**
 
 ## Verdict
 
-- **Every state is measured in the same run as its RN capture.** No baseline from an older run is used in a diff.
-- **One screen fails: error home (4.91% masked).** It is a real behaviour difference, not a capture artefact (see "Error home").
-- **Drift, above 1% (a person who did not write the port must sign off):** base home 1.61%, dark home 1.75%, font scale 2.0 home 1.68%, thread 1.45% and profile 1.26%, empty home 1.38%, interactions home 1.62%.
+- **Only three states have evidence: base, dark and interactions.** For those, both captures are from
+  the same run and from a build that includes every fix they credit. **font scale 2.0, empty and
+  error are withdrawn**: their captures on disk predate the fixes their rows credited, so the numbers
+  that stood here could not be reproduced and are not restated. They need a new capture. The
+  previous version of this file claimed "every state is measured in the same run as its RN capture".
+  That was false for font scale 2.0, whose native capture predates its RN capture by a day.
+- **No screen fails in the three measured states.** The `error home` failure that stood here is
+  withdrawn with the rest of that state, not resolved.
+- **Drift, above 1% (a person who did not write the port must sign off):** base home 1.92%, dark home
+  1.86%, interactions home 1.93% and thread 1.24%.
 - **Everything else passes masked.** No screen passes raw.
 - **Events: no flow matches. Nothing in this file may claim event parity today.**
   - Readonly flow: 21 RN events against 19 native. Three real differences, all port defects. See
@@ -17,8 +24,14 @@ Acceptance: **awaiting owner acceptance.**
     its own result file, which records `match: false`. Re-measured it reports a mismatch and exits 1.
   - Both earlier claims were written without checking the measurement beside them. The comparator
     that produced them was also defective, and is fixed (Pack `32666de`, `26d1a80`).
-- **Noise floor:** native masked 0 px on home and profile, 0.10% on thread; RN masked 0 px on home and profile, 0.16% on thread.
-- Fixed this round: font scale 2.0 home 6.24% → 1.68%, interactions home 4.45% → 1.62%, and the RN empty profile now loads and is captured.
+- **Noise floor: 0 px masked on every screen, for both apps.** The same app captured twice is pixel-identical after masks, so every number above is signal, not capture noise.
+- **Every ratio was re-measured on 2026-10-21**, because the comparator was reading a number that had
+  stopped meaning what it said. `diff.mjs` took its count from `magick compare -metric AE`, which on
+  ImageMagick 7.1.2-32 is a sum of normalised per-channel magnitudes, not a pixel count: a 40x40 red
+  rectangle over white (1600 differing pixels) reports `AE = 800`. The Pack now counts the pixels
+  itself and records the ImageMagick build; see the Pack commit "Count differing pixels instead of
+  reading magick's AE metric". The ratios here rose by roughly 0.1 to 0.3 percentage points. **No
+  verdict changed** in the three measured states.
 
 ## Setup
 
@@ -85,43 +98,51 @@ Fuzz 5%, threshold 0.02.
 
 | State | Screen | Raw px (ratio) | Masked px (ratio) | Status | Valid? |
 |---|---|---|---|---|---|
-| base | home | 115,250 (3.15%) | 58,774 (1.61%) | drift | Yes |
-| base | thread | 55,152 (1.51%) | 26,392 (0.72%) | pass | Yes |
-| base | profile | 109,202 (2.99%) | 30,031 (0.82%) | pass | Yes. Both apps waited for "2 followers" and "2 following" |
-| dark | home | 116,780 (3.19%) | 64,050 (1.75%) | drift | Yes |
-| dark | thread | 62,664 (1.71%) | 33,682 (0.92%) | pass | Yes |
-| dark | profile | 47,847 (1.31%) | 31,845 (0.87%) | pass | Yes |
-| font scale 2.0 | home | 131,032 (3.58%) | 61,350 (1.68%) | drift | Yes |
-| font scale 2.0 | thread | 98,260 (2.69%) | 52,873 (1.45%) | drift | Yes |
-| font scale 2.0 | profile | 143,220 (3.92%) | 46,175 (1.26%) | drift | Yes. Posts loaded in both apps |
-| empty | home | 74,082 (2.03%) | 50,380 (1.38%) | drift | Yes |
-| empty | profile | 111,054 (3.04%) | 29,819 (0.82%) | pass | Yes. RN needed up to 90 s to leave `ProfileHeaderLoading` |
-| interactions | home | 117,312 (3.21%) | 59,204 (1.62%) | drift | Yes. Both apps wait for `FollowingEndOfFeed` before the screenshot |
-| interactions | thread | 62,611 (1.71%) | 31,877 (0.87%) | pass | Yes |
-| error | home | 237,324 (6.49%) | 179,637 (4.91%) | **fail** | Yes. Real difference, see "Error home" |
-| error | thread | 32,769 (0.90%) | 24,120 (0.66%) | pass | Yes. Both show "Error loading post" and Retry |
+| base | home | 127,479 (3.49%) | 70,182 (1.92%) | drift | Yes |
+| base | thread | 66,914 (1.83%) | 30,476 (0.83%) | pass | Yes |
+| base | profile | 157,144 (4.30%) | 34,842 (0.95%) | pass | Yes. Both apps waited for "2 followers" and "2 following" |
+| dark | home | 124,878 (3.42%) | 68,173 (1.86%) | drift | Yes |
+| dark | thread | 66,128 (1.81%) | 31,465 (0.86%) | pass | Yes |
+| dark | profile | 49,791 (1.36%) | 33,937 (0.93%) | pass | Yes |
+| interactions | home | 130,156 (3.56%) | 70,615 (1.93%) | drift | Yes. Both apps wait for `FollowingEndOfFeed` before the screenshot |
+| interactions | thread | 84,563 (2.31%) | 45,319 (1.24%) | drift | Yes |
+| font scale 2.0 | home, thread, profile | — | — | **withdrawn** | No. The native capture on disk is dated 2026-09-15 18:31, before the fix `29055d7` (2026-09-15 20:21) that these rows credit. Its RN capture is dated 2026-09-16 14:53. They are not the same run |
+| empty | home, profile | — | — | **withdrawn** | No. Both captures predate `b4054fb` (2026-09-16 04:07), the fix the `empty profile` row credits |
+| error | home, thread | — | — | **withdrawn** | No. Both captures predate `b4054fb`, and the RN side is `rnbase`, a baseline from an older run |
 
 ### Fixed this round
 
 | Screen | Before | After | Fix |
 |---|---|---|---|
-| font scale 2.0 home | 228,220 (6.24%), RN r2 baseline | 61,350 (1.68%), same run | `29055d7`: RN's linear `useHeaderOffset` prediction |
-| interactions home | 162,854 (4.45%) | 59,204 (1.62%) | `b4054fb`: both apps wait for the end-of-feed state |
-| empty profile | not captured | 29,819 (0.82%) | `b4054fb`: 90 s wait for the loaded Posts tab |
+| interactions home | 162,854 (4.45%) | 70,615 (1.93%) | `b4054fb`: both apps wait for the end-of-feed state |
+
+The `font scale 2.0 home` and `empty profile` rows that stood here are removed. Both cited an "after"
+number from a capture that is not on disk: what is on disk for those states predates the fix being
+credited. The fixes are in the code; the measurement that showed them working is not reproducible,
+so it is not claimed.
 
 ## Noise floor
 
 Two base runs of each app, same build, same batch, base masks:
 
-| Screen | Native raw | Native masked | RN raw | RN masked |
-|---|---|---|---|---|
-| home | 772 (0.02%) | 0 (0.00%) | 3,267 (0.09%) | 0 (0.00%) |
-| thread | 9,157 (0.25%) | 3,803 (0.10%) | 17,343 (0.47%) | 5,941 (0.16%) |
-| profile | 760 (0.02%) | 0 (0.00%) | 2,628 (0.07%) | 0 (0.00%) |
+| Screen | Native masked | RN masked |
+|---|---|---|
+| home | 0 (0.00%) | 0 (0.00%) |
+| thread | 0 (0.00%) | 0 (0.00%) |
+| profile | 0 (0.00%) | 0 (0.00%) |
 
-The raw pixels are the status bar and relative times. Every drift above is at least 1.2 percentage points above the noise floor.
+Every masked noise floor is zero: two runs of the same app, same build, same batch, are
+pixel-identical once the masks are applied. The thread floor used to read 0.10% native and 0.16% RN;
+that was the anchor date line moving between the two runs, and the widened date band now covers it.
+Every drift above is therefore the port, not the capture. Only masked noise is kept: the raw noise
+numbers that stood here were measured by the old comparator and were not re-run.
 
 ## Error home
+
+**This state is withdrawn and carries no number.** The captures on disk predate `b4054fb`,
+and the RN side is a baseline from an older run, so the 4.91% that stood here is not reproducible.
+The behaviour difference described below was observed on the device and is kept as an open
+question; it needs a fresh capture before any ratio is quoted for it.
 
 The error flow signs in, reseeds the server, opens the cached thread, goes back and refreshes the feed. A server probe on 2026-09-16 confirms what the apps meet after the reseed: `app.bsky.feed.getTimeline` with the old session returns **HTTP 500**, `com.atproto.server.refreshSession` returns 400 `InvalidRequest`, and alice's DID changes.
 
@@ -289,7 +310,7 @@ None of these is accepted. Each needs a named owner.
 
 | # | Difference | Screen | Evidence |
 |---|---|---|---|
-| 1 | Drift above 1%: base home 1.61%, dark home 1.75%, font scale 2.0 home 1.68%, thread 1.45%, profile 1.26%, empty home 1.38%, interactions home 1.62% | Home, thread, profile | Results |
+| 1 | Drift above 1%: base home 1.92%, dark home 1.86%, interactions home 1.93% and thread 1.24% | Home, thread | Results |
 | 2 | After a reseed, native refetches the feed and shows the load-more retry row; RN does not refetch and keeps the end-of-feed state | Home (error) | "Error home" |
 | 3 | Relative time: native shows "now" where RN shows "1m" to "3m" (tick start differs) | All | Masked |
 | 4 | Header dropdown and share glyph shapes (Lucide) | All | Glyph masks |
