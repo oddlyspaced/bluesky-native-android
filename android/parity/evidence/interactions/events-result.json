@@ -29,6 +29,6 @@
   "extra": [],
   "mismatches": [],
   "orderMismatches": [],
-  "rnFile": "android/parity/evidence/interactions/rn-events-cmp.jsonl",
-  "nativeFile": "android/parity/evidence/interactions/native-events-cmp.jsonl"
+  "rnFile": "evidence/interactions/rn-events-cmp.jsonl",
+  "nativeFile": "evidence/interactions/native-events-cmp.jsonl"
 }

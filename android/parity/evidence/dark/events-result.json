@@ -61,6 +61,6 @@
       }
     }
   ],
-  "rnFile": "android/parity/evidence/dark/rn-events-cmp.jsonl",
-  "nativeFile": "android/parity/evidence/dark/native-events-cmp.jsonl"
+  "rnFile": "evidence/dark/rn-events-cmp.jsonl",
+  "nativeFile": "evidence/dark/native-events-cmp.jsonl"
 }
