@@ -1,11 +1,16 @@
 # Bluesky, ported to Jetpack Compose
 
-Three screens of the [Bluesky](https://github.com/bluesky-social/social-app) React Native app —
-home feed, post thread and profile — rebuilt in Jetpack Compose, then measured against the running
-React Native app on the same device, the same build and the same seeded data.
+The [Bluesky](https://github.com/bluesky-social/social-app) social app, ported off React Native
+into a native Android app in Kotlin and Jetpack Compose. It is a real app, not a set of screens in a harness: it builds, signs in, and talks
+to a live AT Protocol server, with no mock data and no hard-coded posts. Every screen is measured
+against the running React Native app on the same device, the same build and the same seeded data.
+
+This build ports the app's foundation — design tokens, XRPC client, session, tab shell — and three
+of its screens: home feed, post thread and profile. The upstream app has 78, and
+`plan/full-app-plan.md` is the plan for all of them.
 
 Built with the [Nativestarter](https://nativestarter.io) Migration Pack, one checkpoint at a time.
-The iOS half of the same slice is in
+The iOS build of the same app is in
 [bluesky-native-ios](https://github.com/oddlyspaced/bluesky-native-ios).
 
 Not affiliated with, endorsed by, or officially connected to Bluesky Social PBC. See `NOTICE.md`.
@@ -21,30 +26,36 @@ above 2% is a fail.
 
 | State | Screen | Raw | Masked | Status |
 |---|---|---|---|---|
-| base | home | 3.48% | 1.92% | drift |
-| base | thread | 1.74% | 0.83% | pass |
+| base | home | 3.51% | 1.92% | drift |
+| base | thread | 1.75% | 0.83% | pass |
 | base | profile | 4.30% | 0.95% | pass |
 | dark | home | 3.42% | 1.86% | drift |
-| dark | thread | 1.80% | 0.86% | pass |
-| dark | profile | 1.39% | 0.93% | pass |
-| font scale 2.0 | home | 3.84% | 1.93% | drift |
-| font scale 2.0 | thread | 2.91% | 1.71% | drift |
-| font scale 2.0 | profile | 5.28% | 1.66% | drift |
-| empty | home | 2.34% | 1.66% | drift |
-| empty | profile | 4.34% | 0.94% | pass |
-| after like and repost | home | 3.56% | 1.93% | drift |
-| after like and repost | thread | 2.28% | 1.24% | drift |
-| error | home | 3.02% | 1.56% | drift |
-| error | thread | 1.00% | 0.76% | pass |
+| dark | thread | 1.82% | 0.86% | pass |
+| dark | profile | 1.37% | 0.93% | pass |
+| font scale 2.0 | home | 3.82% | 1.93% | drift |
+| font scale 2.0 | thread | 2.95% | 1.71% | drift |
+| font scale 2.0 | profile | 5.29% | 1.66% | drift |
+| empty seed | home | 2.34% | 1.66% | drift |
+| empty seed | profile | 4.34% | 0.94% | pass |
+| after like and repost | home | 3.55% | 1.93% | drift |
+| after like and repost | thread | 2.23% | 1.24% | drift |
+| error | home | 3.04% | 1.56% | drift |
+| error | thread | 1.02% | 0.76% | pass |
 
 **The noise floor inside a round is 0 px**, on every state, for both apps: the same app captured
 twice in one batch is pixel-identical after masks.
 
-**Between rounds, the same build moves by up to 0.44 points.** That is not in the figure above,
-which only measures one batch. Measured on `dark home`: 1.86% in one round and 2.30% in another,
-with nothing changed in between. No screen is now above the gate, but nine are drift, and several sit close
-enough to it that the spread, not the port, would decide a re-run. Drift is not a pass: each one
-needs a written acceptance, and none has one.
+**Between rounds, the masked results now reproduce exactly.** A full six-state round on 2026-10-22
+returned the same differing-pixel count for all fifteen screens as the round before it, on a
+different day: `base home` 70,182 px both times, `dark home` 68,173 px, and so on. Only the raw,
+unmasked counts moved, by up to 3,580 px, which is the dynamic content the masks cover.
+
+This section used to report that the same build moved by up to 0.44 points between rounds, and
+concluded that the spread rather than the port would decide a re-run. That spread had a cause:
+whether the first screenshot of a flow caught Android's own `ScrollView` scrollbar still fading.
+Once the flows waited for the settled screen, it went away. Nine screens are drift, and drift is
+not a pass: each needs a written acceptance, and the owner gave one on 2026-10-22, at 2%. See
+`plan/owner-signoff.md`.
 
 ## Events match
 
@@ -70,9 +81,10 @@ result worth re-running rather than reporting once.
 
 ## What this does not claim
 
-**No screen fails, and nothing is signed off.** Two defects were closed to get here, and one
-measurement error was corrected. Nine screens are drift, which needs a human signature this
-repository does not have.
+**No screen fails, and the drift is accepted but not reviewed screen by screen.** Two defects were
+closed to get here, and one measurement error was corrected. Nine screens are drift. The owner
+accepted the drift band in writing on 2026-10-22, at 2%, which is a threshold decision rather than
+a review of each diff image, and `plan/owner-signoff.md` records it as the narrower act it is.
 
 **`error home` was the real defect, and it is closed: 4.87% to 1.56%.** After a reseed React Native
 kept its end-of-feed block and this port drew blank space where it belongs, one region of 83,049
@@ -145,10 +157,12 @@ enough to turn all four remaining failures into drift. A mask for it was written
 `make_masks.py` refused it: on the profile screen both apps draw real content at the same right
 edge, and the mask would have hidden it. The refusal is the check working.
 
-**Nothing is signed off.** Every drift needs a written acceptance from someone who did not write the
-port. `plan/owner-signoff.md` is the form, and it is empty.
+**The drift is accepted; the rest of the form is not signed.** Every drift needs a written
+acceptance from someone who did not write the port. The owner gave one on 2026-10-22, at 2%, which
+closes Group A of `plan/owner-signoff.md`. Groups B to E of that form — the differences the port
+keeps on purpose, the proposed scope, and the limits of the method — are still unsigned.
 
-## A scroll indicator, built and then removed
+## A scroll indicator, removed once and then built properly
 
 React Native renders its feeds in a `ScrollView`, so Android draws it a 4 dp scrollbar that a
 Compose list does not get. A matching thumb was written for this port. Its position and width were
@@ -164,8 +178,22 @@ had to be sized from an average of what was on screen.
 | empty | 2.10% | 2.10% |
 
 It helped the screen it was tuned against and hurt two others, because the estimate is
-state-sensitive. Net it was worse, so it was removed instead of being kept as an improvement the
-measurement did not support. The missing indicator stays listed as a difference.
+state-sensitive. Net it was worse, so that version was removed instead of being kept as an
+improvement the measurement did not support.
+
+**The port now draws one, and this is the second attempt, not the first.** The numbers above were
+also reading a capture artefact: React Native's scrollbar is awakened at first layout and fades
+over 500 ms, so it was caught mid-fade on the first screenshot of a flow and absent from every
+later one. That alone was worth 0.40% to 0.44% on four home screens. The flows now wait for the
+settled screen both apps reach.
+
+Waiting for the fade does not by itself give the port an indicator, so one was written from the
+platform's own geometry and timing rather than from an estimate tuned to a screenshot:
+`designsystem/PlatformScrollbar.kt` reproduces `View.awakenScrollBars`, the 250 ms hold and 250 ms
+fade from `ViewConfiguration`, and `ScrollBarDrawable`'s geometry. It is measured against React
+Native to within four pixels of position. It moves no number, which is the point: the screens
+cleared the gate because the artefact was removed from the capture, not because the indicator was
+drawn.
 
 `parity/scroll-thumb.py` measures it rather than estimating it. On base and dark home the thumb is
 12 px at x 1268-1279, y 429-1755: 15,924 pixels, 0.44% of the screen, and the largest single
