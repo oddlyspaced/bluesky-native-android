@@ -1,9 +1,10 @@
 # Bluesky, ported to Jetpack Compose
 
 The [Bluesky](https://github.com/bluesky-social/social-app) social app, ported off React Native
-into a native Android app in Kotlin and Jetpack Compose. It is a real app, not a set of screens in a harness: it builds, signs in, and talks
-to a live AT Protocol server, with no mock data and no hard-coded posts. Every screen is measured
-against the running React Native app on the same device, the same build and the same seeded data.
+into a native Android app in Kotlin and Jetpack Compose. It is a real app, not a set of screens in
+a harness: it builds, signs in, and talks to a live AT Protocol server, with no mock data and no
+hard-coded posts. Every screen is measured against the running React Native app on the same
+device, the same build and the same seeded data.
 
 This build ports the app's foundation — design tokens, XRPC client, session, tab shell — and three
 of its screens: home feed, post thread and profile. The upstream app has 78, and
