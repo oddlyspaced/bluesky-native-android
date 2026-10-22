@@ -32,10 +32,15 @@ def main():
     im = Image.open(path).convert("RGB")
     w, h = im.size
     p = im.load()
-    ref = luma(p[w // 2, h // 2])
 
     rows = []
     for y in range(120, h - 60):
+        # The background of THIS row, taken from the strip just left of the indicator, as the mode
+        # of its luma. A single reference pixel for the whole screen is wrong: on the empty state
+        # the centre of the screen is not the page background, which made every white pixel read as
+        # ink and hid the real thumb behind one full-height false positive.
+        strip = [luma(p[x, y]) for x in range(max(0, x0 - 80), x0, 4)]
+        ref = max(set(round(v) for v in strip), key=lambda v: sum(1 for s in strip if abs(s - v) < 6))
         inked = sum(1 for x in range(x0, min(x1, w)) if abs(luma(p[x, y]) - ref) > OFF)
         rows.append(inked >= WIDE)
 

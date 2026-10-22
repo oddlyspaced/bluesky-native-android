@@ -22,11 +22,27 @@ Acceptance: **awaiting owner acceptance.**
 - **The four failures are the home screen in four states**, between 2.10% and 2.36%. The one real
   behaviour difference among the failures is gone: `error home` went from 4.87% to **1.56%** when
   the refresh defect below was fixed, and it is now drift.
-- **Those four are the same picture in the same place**, measured rather than assumed. On each,
-  only a quarter of the differing pixels are a strong difference, spread over 739 to 917 regions
-  whose largest is about 1,000 px. A whole-image shift search finds its minimum at no offset, and
-  the text bands pair one to one within a pixel. What is left is the licence substitutions, the
-  scroll indicator and glyph-edge rasterisation.
+- **The scroll indicator is the whole of the remaining gap.** Masked differing pixels in its column
+  (x >= 1264), against the screen without them:
+
+  | state | total | indicator column | without it |
+  |---|---|---|---|
+  | base home | 2.36% | 0.44% | **1.92%** |
+  | dark home | 2.30% | 0.44% | **1.86%** |
+  | font scale 2.0 home | 2.32% | 0.40% | **1.93%** |
+  | empty home | 2.10% | 0.44% | **1.66%** |
+  | after like and repost home | 1.93% | 0.00% | 1.93% |
+  | error home | 1.56% | 0.00% | 1.55% |
+
+  Every failing screen clears the gate without it, and the two that already pass carry 172 px and
+  140 px there. An earlier version of this section put the licence substitutions first; that was
+  wrong about which term dominates.
+- **Those four are otherwise the same picture in the same place**, measured rather than assumed. On
+  each, only a quarter of the differing pixels are a strong difference, spread over 739 to 917
+  regions whose largest is about 1,000 px. A whole-image shift search finds its minimum at no
+  offset, and a search that gives every 24 px strip its own best shift - a floor no layout change
+  can beat - recovers 0.02% to 0.03%. What is left after the indicator is the licence substitutions
+  and glyph-edge rasterisation.
 - **Nothing here can close those four.** Bluesky's `ASSETS.md` tells forks to replace its marks and
   to source their own UI icons, because the icon set is licensed to Bluesky alone. The substitutions
   are required, not a shortcut.
@@ -395,7 +411,7 @@ None of these is accepted. Each needs a named owner.
 | 3 | Relative time: native shows "now" where RN shows "1m" to "3m" (tick start differs) | All | Masked |
 | 4 | Header dropdown and share glyph shapes (Lucide) | All | Glyph masks |
 | 5 | Code-drawn fallback avatars | All | Not masked; counted. A `rect` band over each avatar was declared on iOS first: on `home-api` the pixels inside the avatar rects are 14,607 of 88,958, about a sixth of the difference, and masking them would still leave a fail at about 2.3%. `make_masks.py` refused the bands, because the home masks then cover 16.7% to 17.3% against its 15% limit. The same limit applies here, so the avatar stays counted on both platforms |
-| 6 | Scroll indicator | Home, profile | RN shows a scrollbar; Compose lists show none. Measured with `parity/scroll-thumb.py`, not estimated: on base and dark home a solid 12 px bar at x1268-1279, y429-1755, which is 15,924 px or 0.44% of the screen, #B0B0B0 in light and #6A6F76 in dark; on font scale 2.0 home it is y471-1673, 14,436 px or 0.39%. It is the largest single contiguous block of differing pixels on these screens, by a wide margin over the largest strong region at about 1,000 px, but a mid-strength one: #B0B0B0 against white is a channel distance of 79, so `parity/composition.py` grades it mid and its column window carries only 3.1% of the strong pixels. RN draws it only on the three states whose flow scrolls (base, dark, font2), on neither interactions nor error, and on none of the eight iOS states. Porting it was tried and measured worse (base 2.36 to 2.04, but interactions 1.93 to 2.24 and font2 2.32 to 2.48), because the port drew a thumb where RN draws none and guessed its length. The length cannot be derived: the thumb sits at offset 0 with length 1327 in a track of about 2212, so RN's ScrollView believes its content is about 3687 px tall while the end-of-feed block is already on screen. A `LazyColumn` estimates content height from average item size and cannot reproduce that number | Not drawn; counted |
+| 6 | Scroll indicator | Home, profile | RN shows a scrollbar; Compose lists show none, and this is the single largest remaining difference on every failing screen: 0.40% to 0.44%, and each of the four clears the 2% gate without it. Measured with `parity/scroll-thumb.py`: 12 px at x1268-1279, #B0B0B0 in light and #6A6F76 in dark. It appears on base, dark, font scale 2.0 and empty, and not on interactions or error. An earlier note here said three states; that came from a detector that took one pixel at the centre of the screen as the page background, which on the empty state is not background, so every white pixel read as ink and one full-height false positive hid the real thumb. The detector now takes the background of each row from the strip left of the indicator. **Neither route to closing it is open.** Porting it was tried and measured worse (base 2.36 to 2.04, interactions 1.93 to 2.24, font2 2.32 to 2.48), and the capture flows show why it cannot be made stable: the home screenshot on base, dark and font scale 2.0 is taken *before* the flow scrolls, and the empty flow never scrolls, so what RN draws there is the platform scrollbar still fading from first layout. Reproducing that in Compose makes the ratio depend on a fade race. Masking it is refused by `make_masks.py`: the band is 16 x 1212 px against its 160 px limit, and covering it would take eight stacked rects | Not drawn; counted |
 | 7 | Profile description links and mentions are not detected | Profile | RN runs `detectFacets`; the seeded bio has none |
 
 ## Accepted design differences
