@@ -112,9 +112,22 @@ the suite, and it now waits for the fade, which is the settled screen every othe
 already recorded. Both apps run the identical flow; neither app changed; the four predicted
 numbers came back exactly.
 
-This does not make the port draw a scroll indicator. It does not draw one, that stays listed as a
-difference, and the 0.40% to 0.44% it costs is recorded with it — the same treatment relative time
-gets, which is masked out of the ratio and written down as a difference.
+Waiting for the fade does not, by itself, make the port draw a scroll indicator. So it now draws
+one. `PlatformScrollbar` takes the platform's behaviour rather than approximating it: 4 dp thick,
+`#B0B0B0` light and `#6A6F76` dark, `ViewConfiguration`'s 250 ms hold and 250 ms fade,
+`ScrollBarDrawable`'s length and offset, `RecyclerView`'s `ScrollbarHelper` estimate for the
+content height a lazy list cannot know, and awakened at first layout the way
+`View.awakenScrollBars` is from `onLayout`. Measured against React Native on base home, both at
+rest after launch:
+
+| | top | length | width | colour |
+|---|---|---|---|---|
+| React Native | y544 | 1212 | 12 px | `#B0B0B0` |
+| this port | y548 | 1262 | 12 px | `#B0B0B0` |
+
+Four pixels and fifty, which is the estimate showing through. It changes no parity number, and
+that is the point: with the flows waiting for the fade, neither app shows a thumb in a measured
+screen, and base home is 70,182 px with the change and 70,182 px without it.
 
 What is left on those four, between 1.66% and 1.93%: `parity/composition.py` grades every differing pixel by how
 far apart the two apps are and groups the strong ones into regions. On all four, only a quarter of
