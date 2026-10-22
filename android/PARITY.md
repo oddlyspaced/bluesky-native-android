@@ -50,6 +50,29 @@ Acceptance: **awaiting owner acceptance.**
   to source their own UI icons, because the icon set is licensed to Bluesky alone. The substitutions
   are required, not a shortcut.
 
+
+### The ceiling on everything that is left
+
+Nine Android screens are drift, between 1.24% and 1.93%, and the gate for a pass is 1%. Every
+mechanism for closing that was measured rather than argued about, and this is all of them:
+
+| Mechanism | Recoverable | How it was measured |
+|---|---|---|
+| Vertical line-box alignment | 0.02% to 0.03% | Every 24 px strip given its own best shift |
+| Vertical and horizontal together | 0.16% | Every strip given its own best (dx, dy); includes anything letter tracking could buy |
+| Fitting the substitute glyphs to RN's ink boxes | 0.06% | Differing pixels within 22 px of one of the 42 glyph masks but outside it |
+| Matching the font | 0 | The port's four Inter weights are byte-identical to React Native's |
+| Drawing the scroll indicator | 0 | Implemented; both apps are faded by the time a screenshot is taken |
+| Content and structure | 0 | 35 screens, no element missing or extra |
+
+The two alignment rows overlap, so the most that all of this together can return is about 0.22
+points. `base home` would go from 1.92% to roughly 1.70%. The gap to a pass is about 0.9 points.
+
+What is left after that is not reachable from this repository: the icon and avatar substitutions
+Bluesky's `ASSETS.md` requires of a fork, and the fact that React Native and Compose rasterise the
+same Inter outlines, at the same positions, slightly differently. That is what a signature on these
+rows is accepting, and it is why `thresholds.md` makes drift a decision rather than a defect.
+
 ### The scroll indicator: implemented, measured, removed
 
 A 4 dp grey thumb was added to the Compose lists to match the one Android draws for React Native's
