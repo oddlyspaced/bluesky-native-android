@@ -71,6 +71,8 @@ import io.nativestarter.showcase.bluesky.designsystem.LocalAlf
 import io.nativestarter.showcase.bluesky.designsystem.NotInShowcase
 import io.nativestarter.showcase.bluesky.designsystem.Radius
 import io.nativestarter.showcase.bluesky.designsystem.ShowcaseMark
+import io.nativestarter.showcase.bluesky.designsystem.PlatformScrollbar
+import io.nativestarter.showcase.bluesky.designsystem.platformScrollbar
 import io.nativestarter.showcase.bluesky.designsystem.Space
 import io.nativestarter.showcase.bluesky.designsystem.Txt
 import io.nativestarter.showcase.bluesky.designsystem.text.rememberJsLineHeightExcess
@@ -281,8 +283,12 @@ private fun FeedList(
     // RN FeedFooter offset: max(headerOffset, 32) * 2 on native.
     val footerOffset = maxOf(headerHeight, Space._4xl) * 2
     TrackPostViews(listState, state.rows, callbacks.onPostSeen)
+    // RN's feed is a ScrollView, so Android draws it a scrollbar; a LazyColumn gets none unless it
+    // is asked for one (PARITY.md difference 6).
+    val scrollbarColor = if (LocalAlf.current.isDark) PlatformScrollbar.dark else PlatformScrollbar.light
     LazyColumn(
-        Modifier.fillMaxSize().testTag("followingFeedPage-feed-flatlist"),
+        Modifier.fillMaxSize().testTag("followingFeedPage-feed-flatlist")
+            .platformScrollbar(listState, scrollbarColor),
         state = listState,
         contentPadding = PaddingValues(top = contentTop),
     ) {
