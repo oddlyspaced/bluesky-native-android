@@ -53,14 +53,31 @@ class FeedPager(
 
     /**
      * First load, pull to refresh and soft reset. RN `truncateAndInvalidate` (src/state/queries/util.ts:151-165)
-     * first keeps only page 1 and its page param, then refetches. If the refetch fails, the query keeps page 1 and is
-     * in error, so `PostFeed` shows page 1, the load-more retry row, and no fallback marker from later pages.
+     * keeps only page 1 and its page param, then refetches.
+     *
+     * The truncation is provisional. `setQueriesData` writes it into the cache, but a cache write is not a
+     * successful fetch, so the query's last successful data is still the untruncated one. When the refetch
+     * fails, TanStack re-emits that, and the truncation is undone.
+     *
+     * Measured on the device rather than reasoned about, after three readings of this that were all wrong.
+     * The React Native app was instrumented to log the gates it renders from, and on the parity `error`
+     * flow it went, within 24 ms of the soft-reset:
+     *
+     *   hasNextPage=true  isError=true   pages=1 items=4   <- truncated, refetch failed
+     *   hasNextPage=false isError=false  pages=2 items=4   <- reverted to both pages
+     *
+     * So after a failed refresh React Native is back where it started: both pages, the fallback marker from
+     * page 2, no next page and no error, and it draws the end-of-feed block. This port used to keep the
+     * truncated state, which left `hasNextPage` true, dropped the marker, drew no end-of-feed and fired 44
+     * `feed:endReached` events against React Native's none. [restoreOnFailedRefresh] puts the pages back.
      */
     fun refresh(isPullToRefresh: Boolean = false) {
         job?.cancel()
         fillAttempts = 0
         lastFillCount = -1
         val generation = _state.value.generation + 1
+        // What to put back if the refetch fails, which is what TanStack keeps as the last successful data.
+        val before = _state.value
         _state.update {
             val truncated = it.pages.isNotEmpty()
             it.copy(
@@ -89,51 +106,42 @@ class FeedPager(
                 .onFailure { e ->
                     if (_state.value.generation != generation) return@onFailure
                     /*
-                     * A refetch that fails does not error a feed that still has pages.
+                     * Put back what the truncation took, because that is what RN ends up showing.
                      *
-                     * This matches the captured RN screen, not the library. Both are measured, and
-                     * they disagree, so the divergence is deliberate and the reason is recorded
-                     * here rather than guessed at.
+                     * The device trace in [refresh] above: 24 ms after the soft-reset RN is back to both
+                     * pages with no error. TanStack kept the untruncated data as the query's last successful
+                     * value, and re-emitted it when the refetch failed. The feed is then exactly as it was
+                     * before the refresh: the same pages, the fallback marker from page 2, no next page.
                      *
-                     * What the server does. After the reseed the session both apps hold is for a
-                     * DID that no longer exists, and the server answers every app the same way:
+                     * The fallback marker does not come back with them. The same trace counted the
+                     * tuned slices on each side of the refresh:
                      *
-                     *   getTimeline    with the old access token    HTTP 500
-                     *   refreshSession with the old refresh token   HTTP 400 InvalidRequest
+                     *   before the refresh   pages=2 items=5   <- four post slices and the marker
+                     *   after the restore    pages=2 items=4   <- page 2 contributes nothing
                      *
-                     * What the library does. `parity/probes/tanstack-failed-refetch.mjs` drives
-                     * the real @tanstack/query-core 5.100.10 that RN builds against, with this
-                     * feed's page shape (page 1: five posts and a cursor; page 2: the fallback
-                     * marker and none). `truncateAndInvalidate` and then a failing refetch leaves:
+                     * and the captured screen agrees: React Native draws the end-of-feed block with no
+                     * "We ran out of posts from your follows" row above it, which is the marker's row. The
+                     * restore therefore puts the posts back and leaves the marker out. Restoring it as well
+                     * drew a row React Native does not draw and took this screen from 4.87% to 7.59%.
                      *
-                     *   pages=1 items=5 hasNextPage=true status=error isError=true
-                     *
-                     * So a failed refetch over existing data IS an error state for TanStack. An
-                     * earlier version of this comment claimed the opposite; that claim was wrong.
-                     *
-                     * What RN draws. The captured `error` home screen shows the cached posts and
-                     * the end-of-feed block, with no error row and no load-more retry row. RN
-                     * renders the end-of-feed only when `!hasNextPage && !isError`, and skips
-                     * `feed:endReached` when `isError` - and the capture logs zero `feed:endReached`
-                     * against this port's 44. No single state of the library above produces that
-                     * screen, so RN's runtime state on that capture is not yet explained.
-                     *
-                     * Why this branch stays. Suppressing the error puts the port closer to the
-                     * captured screen (4.87% against 5.24% with the retry row). Adopting the
-                     * library's `isError` instead would draw a retry row that RN does not draw.
-                     * Settling it needs a live capture with both apps instrumented; until then this
-                     * is a known divergence, recorded as difference 2 in PARITY.md.
-                     *
-                     * A first load with nothing to show still errors, which is RN's
-                     * `isError && isEmpty` branch.
+                     * A first load with nothing to restore still errors, which is RN's `isError && isEmpty`
+                     * branch and the `showFirstLoadError` row here.
                      */
-                    val hasPages = _state.value.pages.isNotEmpty()
+                    val hadPages = before.pages.isNotEmpty()
+                    val restored = before.pages
+                        .map { page -> page.filterNot { it.post.uri == FALLBACK_MARKER_URI } }
+                        .filterIndexed { index, page -> index == 0 || page.isNotEmpty() }
                     _state.update {
                         it.copy(
+                            pages = restored,
+                            cursor = before.cursor,
+                            hasNextPage = before.hasNextPage,
+                            firstPageCursor = before.firstPageCursor,
                             isFetched = true,
                             isFetching = false,
+                            isFetchingNextPage = false,
                             isRefreshing = false,
-                            error = if (hasPages) it.error else e,
+                            error = if (hadPages) null else e,
                         )
                     }
                 }

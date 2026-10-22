@@ -6,22 +6,27 @@ Acceptance: **awaiting owner acceptance.**
 
 ## Verdict
 
-- **All six states are measured.** 15 screens: **6 pass, 4 drift, 5 fail.**
-- **Events: the read-only flow MATCHES.** 21 React Native events against 21 native, in order,
-  reproduced on three consecutive runs. This is the first flow in this port to match. The three
-  differences recorded here before were all real defects and all three are fixed; see "Event diff".
+- **All six states are measured.** 15 screens: **6 pass, 5 drift, 4 fail.**
+- **Events: every flow MATCHES.** base 21 against 21, dark 21, font scale 2.0 21, interactions 17,
+  empty 9, and the error flow 20 against 20, each in order. The error flow was the last to match:
+  it logged 64 native events against React Native's 20 until the refresh defect below was fixed.
+  `feed:endReached` on the author feed is timing-dependent in React Native, so a round can show 20
+  against 21; the re-run of that round matched at 21 against 21.
 - **The within-batch noise floor is 0 px** on every state, for both apps: the same app captured
   twice in one round is pixel-identical after masks.
 - **Between rounds, the same build moves by up to 0.44 points.** That is not in the noise floor
   above, which only measures one batch. Measured on `dark home`: 1.86% in one round and 2.30% in
   another, with no change to the app in between. `base home` was 2.36% in two rounds. Any screen
-  within about half a point of the 2% gate can therefore land either side of it, and four of the
-  five failures are in that band. A verdict on those screens is worth no more than the spread.
-- **The five failures are the home screen in five states.** `error home` at 4.87% is a behaviour
-  difference and is described under "Error home". The other four sit between 2.10% and 2.36% and
-  have the same causes: the placeholder mark that replaces Bluesky's logo, the Lucide glyphs that
-  replace the Central icon set, and React Native's scroll indicator, which Android draws for a
-  `ScrollView` and a Compose list does not.
+  within about half a point of the 2% gate can therefore land either side of it, and all four
+  remaining failures are in that band. A verdict on those screens is worth no more than the spread.
+- **The four failures are the home screen in four states**, between 2.10% and 2.36%. The one real
+  behaviour difference among the failures is gone: `error home` went from 4.87% to **1.56%** when
+  the refresh defect below was fixed, and it is now drift.
+- **Those four are the same picture in the same place**, measured rather than assumed. On each,
+  only a quarter of the differing pixels are a strong difference, spread over 739 to 917 regions
+  whose largest is about 1,000 px. A whole-image shift search finds its minimum at no offset, and
+  the text bands pair one to one within a pixel. What is left is the licence substitutions, the
+  scroll indicator and glyph-edge rasterisation.
 - **Nothing here can close those four.** Bluesky's `ASSETS.md` tells forks to replace its marks and
   to source their own UI icons, because the icon set is licensed to Bluesky alone. The substitutions
   are required, not a shortcut.
@@ -124,7 +129,7 @@ Fuzz 5%, threshold 0.02.
 | empty | profile | 158,767 (4.34%) | 34,432 (0.94%) | pass | Yes |
 | after like and repost | home | 129,989 (3.56%) | 70,615 (1.93%) | drift | Yes. Both apps wait for `FollowingEndOfFeed` before the screenshot |
 | after like and repost | thread | 83,461 (2.28%) | 45,319 (1.24%) | drift | Yes |
-| error | home | 232,233 (6.35%) | 178,042 (4.87%) | **fail** | Yes. Real behaviour difference, see "Error home" |
+| error | home | 232,233 (6.35%) | 56,905 (1.56%) | drift | Yes. Was 4.87% and failing; see "Error home" |
 | error | thread | 36,831 (1.01%) | 27,864 (0.76%) | pass | Yes |
 
 ### Fixed this round
@@ -156,15 +161,9 @@ numbers that stood here were measured by the old comparator and were not re-run.
 
 ## Error home
 
-**Re-captured 2026-10-22: `error home` is 5.24% masked, and it fails.** The state was withdrawn on
-2026-10-21 because the captures behind its old 4.91% predated the fixes they credited. It now has a
-real number from a matched pair, with a 0 px noise floor. The behaviour difference below is the
-cause, and it is a difference in the port, not an artefact of the capture.
-
-**Improved on 2026-10-22, 5.24% to 4.87%, and still failing.**
-
-The event logs for this state match exactly: both apps log the same twenty events, including both
-`feed:refresh {reason: "soft-reset"}`. The difference was never which code path ran.
+**Resolved 2026-10-22: 5.24% to 4.87% to 1.56%, and it is now drift.** It was the only failing
+screen with a real behaviour difference behind it. The events match too: 20 against 20, where the
+port logged 64 before the fix.
 
 The server was asked directly what it returns to the session both apps are holding after the
 reseed, which is a session for a DID that no longer exists:
@@ -175,31 +174,48 @@ refreshSession with the old refresh token   HTTP 400 InvalidRequest
                                             "Could not find user info for account: did:plc:..."
 ```
 
-So React Native's refresh fails here too. It keeps rendering its cached posts, because it reads
-`isError` off `useInfiniteQuery` and TanStack Query reports `status: "error"` only when a query has
-no successful data to show; a refetch that fails over existing data leaves it at `success`. The port
-set its own feed error on any failure, so it showed "There was an issue fetching posts. Tap here to
-try again." where React Native showed nothing of the sort. That is fixed, and the retry row is gone.
+So React Native's refresh fails here too, and the question was always what it does next.
 
-**What remains:** React Native shows its end-of-feed block and the port now shows nothing in that
-space. A third change was written to close it, restoring the cursor and `hasNextPage` the refresh
-had optimistically replaced, and it was reverted: `truncateAndInvalidate`
-(`src/state/queries/util.ts:151-165`) calls `setQueriesData` to cut the cache to page 1 **before**
-it invalidates, so the truncation survives a failed refetch and `hasNextPage` is derived from page
-1's own cursor, which is not null. The existing test says so and was written from that source.
-Rewriting it to fit the change would have been the wrong way round.
+**It took three wrong answers to get this right, so the method matters more than the conclusion.**
+The first said TanStack reports `status: "error"` only when a query has no data, which
+`parity/probes/tanstack-failed-refetch.mjs` disproves against the real query-core 5.100.10: a
+failed refetch over existing data leaves `hasNextPage=true status=error`. The second read that
+probe's answer as React Native's final state, when it is a state that exists for 24 ms. The third
+reverted the correct fix on the grounds that `truncateAndInvalidate` cuts the cache to page 1
+before invalidating, so the truncation must survive a failed refetch.
 
-Why React Native still renders end-of-feed with a next page apparently available is the open
-question, and the next step is to read its query state on this flow rather than infer it again.
+It does not survive it. The truncation is a `setQueriesData` write, not a successful fetch, so the
+query's last successful data is still the untruncated one, and a failed refetch re-emits it.
+
+**Measured on the device.** The React Native app was instrumented to log the gates it renders from
+and the flow was captured again. Within 24 ms of the soft-reset:
+
+```
+04:58:48.263  feed:refresh (soft-reset)
+04:58:48.278  hasNextPage=true   isError=true   pages=1 items=4
+04:58:48.302  hasNextPage=false  isError=false  pages=2 items=4
+```
+
+Both pages back, no error, and `shouldRenderEndOfFeed` true. Note `items=4`, where the same feed
+held 5 before the refresh: the fallback marker does not come back, and the captured screen agrees,
+with no "We ran out of posts from your follows" row above the block.
+
+`FeedPager.refresh` now restores the pre-refresh pages when the refetch fails, and leaves the
+marker out. Restoring the marker as well was tried first and measured: it drew a row React Native
+does not draw and took the screen to 7.59%. That capture is why the marker is excluded rather than
+kept for symmetry.
+
+The instrumented React Native capture was pixel-identical to the committed baseline (0 differing
+px), so the instrumentation changed nothing about what was compared.
 
 The error flow signs in, reseeds the server, opens the cached thread, goes back and refreshes the feed. A server probe on 2026-09-16 confirms what the apps meet after the reseed: `app.bsky.feed.getTimeline` with the old session returns **HTTP 500**, `com.atproto.server.refreshSession` returns 400 `InvalidRequest`, and alice's DID changes.
 
 In the same run:
 
-- **Native** reaches the failed-refresh state: page 1 posts and the load-more retry row ("There was an issue fetching posts. Tap here to try again."), with no Discover notice. This is what RN's own code renders for a failed refresh (`PostFeed.tsx:688` adds `loadMoreError` when `isError && !isEmpty`; line 951 hides end of feed; `util.ts:151-165` keeps only page 1).
-- **RN** keeps the stale cached pages and shows `FollowingEndOfFeed`, with no retry row and no Discover notice. Its recorded hierarchy contains no error row at all, although the same flow's thread capture shows RN's thread query failing ("Error loading post").
+- **RN** ends with both cached pages restored and shows `FollowingEndOfFeed`, with no retry row and no Discover notice. Its recorded hierarchy contains no error row at all, although the same flow's thread capture shows RN's thread query failing ("Error loading post").
+- **Native** now does the same. Earlier in this round it showed the load-more retry row, then blank space where the end-of-feed block belongs; both are fixed.
 
-Three gestures were measured (swipe 40→80%, swipe 30→90%, and the Home tab soft reset, which RN wires to the same `truncateAndInvalidate` path). RN never refetched the feed in any of them, so its feed query never entered the error state. The native app was fixed this round to truncate to page 1 on refresh (`b4054fb`), which removed the Discover notice from its failed-refresh screen; the remaining difference is that RN does not refetch at all here. The flow now takes each screenshot at the app's settled state after the same gesture and records the difference instead of asserting a state RN never reaches. Open: difference 2.
+Three gestures were measured (swipe 40→80%, swipe 30→90%, and the Home tab soft reset, which RN wires to the same `truncateAndInvalidate` path). An earlier note here concluded that RN never refetched the feed and so never entered the error state; the instrumented capture shows it does refetch, does fail, and is briefly in error before TanStack re-emits the untruncated data. The flow takes each screenshot at the app's settled state after the same gesture. Difference 2 is closed.
 
 ## Font scale (`29055d7`)
 
@@ -374,11 +390,11 @@ None of these is accepted. Each needs a named owner.
 | # | Difference | Screen | Evidence |
 |---|---|---|---|
 | 1 | Drift above 1%: dark home 1.86%, font scale 2.0 thread 1.71% and profile 1.66%, after like and repost home 1.93% and thread 1.24% | Home, thread, profile | Results |
-| 1b | Above the 2% gate: base home 2.36%, font scale 2.0 home 2.32%, dark home 2.30%, empty home 2.10%. A fail is never signed off. Measured composition, not an estimate: on each of these four screens only 25-28% of the differing pixels are a strong difference, spread over 739-917 regions whose largest is about 1,000 px (0.03% of the screen). No region is large. A whole-image shift search over dx and dy from -3 to +3 px finds its minimum at dx=0 dy=0 on all four, and on the three light-theme states the text bands pair one to one within 1 px (base 17 bands, 6 of them at -1; font scale 2.0 13 bands, 1 at -1 and 4 at +1; empty 10 bands, 1 at -1). `bandscan.py` scans dark ink, so dark home rests on the shift search alone. The two apps agree on content and on position. The named parts are the scroll indicator (difference 6, 0.44%) and the fallback avatars (difference 5); the rest is glyph-edge rasterisation | Home | Results; `parity/composition.py`, `parity/bandscan.py` |
-| 2 | After a reseed, RN keeps the end-of-feed block and the port draws blank space there. Measured: the block is 83,049 px, 2.27% of the screen, and 78% of this screen's whole diff is strong difference, against 25-28% on every other home state. Both apps log the same two `feed:refresh` soft-resets, then the port logs 44 `feed:endReached` and RN logs 0, so the port holds `hasNextPage` true where RN holds it false. `parity/probes/tanstack-failed-refetch.mjs`, driving the real @tanstack/query-core 5.100.10 that RN builds against, leaves `hasNextPage=true isError=true` after a failed truncate-refetch, which would draw a retry row that RN does not draw either, so RN's state on that capture is still unexplained and needs a live instrumented capture | Home (error) | "Error home"; `parity/composition.py`; `FeedPager.refresh` |
+| 1b | Above the 2% gate: base home 2.36%, font scale 2.0 home 2.32%, dark home 2.30%, empty home 2.10%. These four are now the only failures; `error home` was the fifth and is fixed (difference 2). A fail is never signed off. Measured composition, not an estimate: on each of these four screens only 25-28% of the differing pixels are a strong difference, spread over 739-917 regions whose largest is about 1,000 px (0.03% of the screen). No region is large. A whole-image shift search over dx and dy from -3 to +3 px finds its minimum at dx=0 dy=0 on all four, and on the three light-theme states the text bands pair one to one within 1 px (base 17 bands, 6 of them at -1; font scale 2.0 13 bands, 1 at -1 and 4 at +1; empty 10 bands, 1 at -1). `bandscan.py` scans dark ink, so dark home rests on the shift search alone. The two apps agree on content and on position. The named parts are the scroll indicator (difference 6, 0.44%) and the fallback avatars (difference 5); the rest is glyph-edge rasterisation | Home | Results; `parity/composition.py`, `parity/bandscan.py` |
+| 2 | ~~After a reseed, RN keeps the end-of-feed block and the port draws blank space there.~~ **Fixed.** The block is 83,049 px, 2.27% of the screen, and the port drew nothing there because it kept the pages that `refresh` had truncated when the refetch failed. React Native does not: the truncation is a cache write, not a successful fetch, so TanStack re-emits the untruncated data. Measured on the device, 24 ms after the soft-reset, React Native goes from `hasNextPage=true isError=true pages=1` to `hasNextPage=false isError=false pages=2`. `FeedPager.refresh` now restores those pages, without the fallback marker, which the same trace shows does not come back. Result: 4.87% to 1.56%, and `feed:endReached` 44 to 0, matching React Native | Home (error) | "Error home"; `parity/composition.py`; `FeedPager.refresh` |
 | 3 | Relative time: native shows "now" where RN shows "1m" to "3m" (tick start differs) | All | Masked |
 | 4 | Header dropdown and share glyph shapes (Lucide) | All | Glyph masks |
-| 5 | Code-drawn fallback avatars | All | Not masked; counted. A `rect` band over each avatar was declared on iOS first, where the arithmetic was clearest: on `home-api` the avatars carry 0.84 of the 2.76 points. `make_masks.py` refused the bands, because the home masks then cover 16.7% to 17.3% against its 15% limit. The same limit applies here, so the avatar stays counted on both platforms |
+| 5 | Code-drawn fallback avatars | All | Not masked; counted. A `rect` band over each avatar was declared on iOS first: on `home-api` the pixels inside the avatar rects are 14,607 of 88,958, about a sixth of the difference, and masking them would still leave a fail at about 2.3%. `make_masks.py` refused the bands, because the home masks then cover 16.7% to 17.3% against its 15% limit. The same limit applies here, so the avatar stays counted on both platforms |
 | 6 | Scroll indicator | Home, profile | RN shows a scrollbar; Compose lists show none. Measured with `parity/scroll-thumb.py`, not estimated: on base and dark home a solid 12 px bar at x1268-1279, y429-1755, which is 15,924 px or 0.44% of the screen, #B0B0B0 in light and #6A6F76 in dark; on font scale 2.0 home it is y471-1673, 14,436 px or 0.39%. It is the largest single contiguous block of differing pixels on these screens, by a wide margin over the largest strong region at about 1,000 px, but a mid-strength one: #B0B0B0 against white is a channel distance of 79, so `parity/composition.py` grades it mid and its column window carries only 3.1% of the strong pixels. RN draws it only on the three states whose flow scrolls (base, dark, font2), on neither interactions nor error, and on none of the eight iOS states. Porting it was tried and measured worse (base 2.36 to 2.04, but interactions 1.93 to 2.24 and font2 2.32 to 2.48), because the port drew a thumb where RN draws none and guessed its length. The length cannot be derived: the thumb sits at offset 0 with length 1327 in a track of about 2212, so RN's ScrollView believes its content is about 3687 px tall while the end-of-feed block is already on screen. A `LazyColumn` estimates content height from average item size and cannot reproduce that number | Not drawn; counted |
 | 7 | Profile description links and mentions are not detected | Profile | RN runs `detectFacets`; the seeded bio has none |
 

@@ -10,7 +10,7 @@
   },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-10-21T22:25:08.035Z",
+  "createdAt": "2026-10-22T00:28:43.423Z",
   "rnDir": "out/error/rn/android",
   "nativeDir": "out/error/rn-r2/android",
   "screens": [

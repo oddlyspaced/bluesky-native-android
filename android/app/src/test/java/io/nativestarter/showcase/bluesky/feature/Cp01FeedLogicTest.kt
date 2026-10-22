@@ -164,8 +164,23 @@ class Cp01FeedLogicTest {
     }
 
     @Test
-    fun failedRefreshKeepsOnlyPageOneWithoutTheFallbackMarker() = runTest(UnconfinedTestDispatcher()) {
-        // RN truncateAndInvalidate: keep page 1 and its page param, then refetch. Page 2 is where Following ran out.
+    fun failedRefreshPutsBackTheEndOfFeedButNotTheFallbackMarker() = runTest(UnconfinedTestDispatcher()) {
+        /*
+         * RN `truncateAndInvalidate` keeps page 1 and its page param, then refetches. The truncation is a
+         * cache write, not a successful fetch, so when the refetch fails TanStack re-emits the last
+         * successful data and the truncation is undone.
+         *
+         * Measured on the device, not inferred. The React Native app was instrumented to log the gates it
+         * renders from, and on the parity `error` flow it went, within 24 ms of the soft-reset:
+         *
+         *   hasNextPage=true  isError=true   pages=1
+         *   hasNextPage=false isError=false  pages=2
+         *
+         * An earlier version of this test asserted the truncated state and named it RN's. It was wrong,
+         * and it is what kept the `error home` screen failing: the port dropped the marker, held
+         * `hasNextPage` true, drew no end-of-feed block and fired 44 `feed:endReached` events where React
+         * Native fired none.
+         */
         var failFollowing = false
         val source = HomeFeedSource { cursor ->
             if (failFollowing) error("HTTP 500")
@@ -179,18 +194,23 @@ class Cp01FeedLogicTest {
         failFollowing = true
         pager.refresh(isPullToRefresh = true)
         val s = pager.state.value
-        assertEquals("page 1 only", listOf(itemFor(1)), s.items)
-        assertFalse("no fallback marker after the truncation", s.items.any { it.post.uri == FALLBACK_MARKER_URI })
-        assertEquals("page 1's cursor, so RN still has a next page", "c1", s.cursor)
-        assertTrue(s.hasNextPage)
+        assertEquals("page 1's posts are back", listOf(itemFor(1)), s.items)
+        assertFalse(
+            "the marker does not come back: RN counted 5 tuned slices before the refresh and 4 after, " +
+                "and its captured screen has no \"We ran out of posts\" row",
+            s.items.any { it.post.uri == FALLBACK_MARKER_URI },
+        )
+        assertFalse("page 2 ended Following, so there is no next page", s.hasNextPage)
         assertNull("a failed refresh does not error a feed that still has pages", s.error)
         assertFalse(s.isFetching)
-        // PostFeed rows: page 1 and no retry row. RN keeps rendering what it already had, because a
-        // refetch that fails over existing data leaves TanStack Query at `status: "success"`. This
-        // is what the error state measured: the same dead session for both apps, the same twenty
-        // events, and RN showing its cached end-of-feed block where the port showed the retry row.
-        val ui = FeedUiState(rows = listOf(), isFetched = true, isFetching = false, hasNextPage = s.hasNextPage, isEmpty = false, error = s.error)
+        assertFalse(s.isRefreshing)
+        // PostFeed rows: no retry row, and the end-of-feed block, which is what RN draws here.
+        val ui = FeedUiState(
+            rows = listOf(), isFetched = true, isFetching = false,
+            hasNextPage = s.hasNextPage, isEmpty = false, error = s.error,
+        )
         assertFalse(ui.showLoadMoreError)
+        assertTrue("RN renders FollowingEndOfFeed on this screen", ui.showEndOfFeed)
     }
 
     @Test

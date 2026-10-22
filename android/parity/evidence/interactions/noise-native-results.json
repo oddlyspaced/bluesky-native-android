@@ -10,7 +10,7 @@
   },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-10-21T21:35:16.097Z",
+  "createdAt": "2026-10-22T00:15:41.264Z",
   "rnDir": "out/interactions/native/android",
   "nativeDir": "out/interactions/native-r2/android",
   "screens": [
@@ -71,35 +71,35 @@
         {
           "x": 0.89375,
           "y": 0.22689,
-          "w": 0.07266,
+          "w": 0.07344,
           "h": 0.01471,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.89375,
           "y": 0.31303,
-          "w": 0.07266,
+          "w": 0.07344,
           "h": 0.01471,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.89375,
           "y": 0.40791,
-          "w": 0.07266,
+          "w": 0.07344,
           "h": 0.01471,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.89375,
           "y": 0.5028,
-          "w": 0.07266,
+          "w": 0.07344,
           "h": 0.01471,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.89375,
           "y": 0.59769,
-          "w": 0.07266,
+          "w": 0.07344,
           "h": 0.01471,
           "reason": "relative timestamp (capture time)"
         },
@@ -450,7 +450,7 @@
         {
           "x": 0.89141,
           "y": 0.34174,
-          "w": 0.07266,
+          "w": 0.07344,
           "h": 0.01506,
           "reason": "relative timestamp (capture time)"
         },
