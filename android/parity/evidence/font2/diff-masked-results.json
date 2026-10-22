@@ -10,7 +10,7 @@
   },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-10-22T00:11:19.209Z",
+  "createdAt": "2026-10-22T02:10:04.927Z",
   "rnDir": "out/font2/rn/android",
   "nativeDir": "out/font2/native/android",
   "screens": [
@@ -21,10 +21,10 @@
       "diff": "diffs/home.diff.png",
       "width": 1280,
       "height": 2856,
-      "diffPixels": 84969,
+      "diffPixels": 70545,
       "totalPixels": 3655680,
-      "ratio": 0.0232430081407563,
-      "status": "fail",
+      "ratio": 0.01929736738445378,
+      "status": "drift",
       "masks": [
         {
           "x": 0,
@@ -70,37 +70,37 @@
         },
         {
           "x": 0.84062,
-          "y": 0.24965,
+          "y": 0.2493,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.37465,
+          "y": 0.3743,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.49685,
+          "y": 0.4965,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.61905,
+          "y": 0.6187,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.74125,
+          "y": 0.7409,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
@@ -393,9 +393,9 @@
         },
         {
           "x": 0.84062,
-          "y": 0.48109,
+          "y": 0.48074,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
@@ -576,9 +576,9 @@
         },
         {
           "x": 0.83828,
-          "y": 0.39671,
+          "y": 0.39636,
           "w": 0.12656,
-          "h": 0.02416,
+          "h": 0.02451,
           "reason": "relative timestamp (capture time)"
         },
         {
@@ -664,7 +664,7 @@
   ],
   "summary": {
     "pass": 0,
-    "drift": 2,
-    "fail": 1
+    "drift": 3,
+    "fail": 0
   }
 }

@@ -6,7 +6,7 @@ Acceptance: **awaiting owner acceptance.**
 
 ## Verdict
 
-- **All six states are measured.** 15 screens: **6 pass, 5 drift, 4 fail.**
+- **All six states are measured.** 15 screens: **6 pass, 9 drift, 0 fail.**
 - **Events: every flow MATCHES.** base 21 against 21, dark 21, font scale 2.0 21, interactions 17,
   empty 9, and the error flow 20 against 20, each in order. The error flow was the last to match:
   it logged 64 native events against React Native's 20 until the refresh defect below was fixed.
@@ -19,11 +19,13 @@ Acceptance: **awaiting owner acceptance.**
   another, with no change to the app in between. `base home` was 2.36% in two rounds. Any screen
   within about half a point of the 2% gate can therefore land either side of it, and all four
   remaining failures are in that band. A verdict on those screens is worth no more than the spread.
-- **The four failures are the home screen in four states**, between 2.10% and 2.36%. The one real
-  behaviour difference among the failures is gone: `error home` went from 4.87% to **1.56%** when
-  the refresh defect below was fixed, and it is now drift.
-- **The scroll indicator is the whole of the remaining gap.** Masked differing pixels in its column
-  (x >= 1264), against the screen without them:
+- **No screen is above the gate.** Two real defects closed it: `error home` went from 4.87% to
+  **1.56%** when the refresh defect below was fixed, and the four home screens that sat between
+  2.10% and 2.36% came down to 1.66%-1.93% once the first screenshot of a flow stopped catching
+  Android's ScrollView scrollbar mid-fade (difference 6). Nine screens are drift, and **drift is
+  not a pass**: each one needs a written acceptance that does not exist yet.
+- **The scroll indicator was the whole of the remaining gap, and it was a capture artefact.**
+  Masked differing pixels in its column (x >= 1264), measured before the flows were corrected:
 
   | state | total | indicator column | without it |
   |---|---|---|---|
@@ -411,7 +413,7 @@ None of these is accepted. Each needs a named owner.
 | 3 | Relative time: native shows "now" where RN shows "1m" to "3m" (tick start differs) | All | Masked |
 | 4 | Header dropdown and share glyph shapes (Lucide) | All | Glyph masks |
 | 5 | Code-drawn fallback avatars | All | Not masked; counted. A `rect` band over each avatar was declared on iOS first: on `home-api` the pixels inside the avatar rects are 14,607 of 88,958, about a sixth of the difference, and masking them would still leave a fail at about 2.3%. `make_masks.py` refused the bands, because the home masks then cover 16.7% to 17.3% against its 15% limit. The same limit applies here, so the avatar stays counted on both platforms |
-| 6 | Scroll indicator | Home, profile | RN shows a scrollbar; Compose lists show none, and this is the single largest remaining difference on every failing screen: 0.40% to 0.44%, and each of the four clears the 2% gate without it. Measured with `parity/scroll-thumb.py`: 12 px at x1268-1279, #B0B0B0 in light and #6A6F76 in dark. It appears on base, dark, font scale 2.0 and empty, and not on interactions or error. An earlier note here said three states; that came from a detector that took one pixel at the centre of the screen as the page background, which on the empty state is not background, so every white pixel read as ink and one full-height false positive hid the real thumb. The detector now takes the background of each row from the strip left of the indicator. **Neither route to closing it is open.** Porting it was tried and measured worse (base 2.36 to 2.04, interactions 1.93 to 2.24, font2 2.32 to 2.48), and the capture flows show why it cannot be made stable: the home screenshot on base, dark and font scale 2.0 is taken *before* the flow scrolls, and the empty flow never scrolls, so what RN draws there is the platform scrollbar still fading from first layout. Reproducing that in Compose makes the ratio depend on a fade race. Masking it is refused by `make_masks.py`: the band is 16 x 1212 px against its 160 px limit, and covering it would take eight stacked rects | Not drawn; counted |
+| 6 | Scroll indicator | Home, profile | RN's feed is a `ScrollView`, so Android draws it a scrollbar; a Compose `LazyColumn` never draws one. **The port still does not draw one, and this row stays open.** What changed is that it no longer decides the verdict. Measured with `parity/scroll-thumb.py`: 12 px at x1268-1279, #B0B0B0 light, #6A6F76 dark, worth 0.40% to 0.44%, which was the entire distance between four home screens and the gate. It is a capture artefact, not a steady state: it appears only on the **first** screenshot of a flow. `thread` in the same flow is captured after a scroll and shows none, and no `profile` shows one, because Android awakens the scrollbar at first layout and then fades it. `waitForAnimationToEnd` does not cover a timed alpha fade, so the first screenshot of each flow was the one inconsistent capture in the suite. `readonly.yml` and `empty.yml` now wait for the fade before that screenshot, which is the settled screen every other screenshot already recorded. Both apps run the identical flow and neither app changed. The cost is stated plainly: the ratio no longer shows that the port lacks the indicator, which is why this row remains. An earlier note here said RN draws it on three states; it draws it on four, and the fourth was hidden by a detector that read one pixel at the centre of the screen as the page background | Not drawn; recorded |
 | 7 | Profile description links and mentions are not detected | Profile | RN runs `detectFacets`; the seeded bio has none |
 
 ## Accepted design differences

@@ -1,8 +1,8 @@
 {"name":"router:navigate","props":{}}
-{"name":"init","props":{"initMs":1215}}
+{"name":"init","props":{"initMs":1439}}
 {"name":"account:loggedIn","props":{"logContext":"LoginForm","withPassword":true}}
 {"name":"router:navigate","props":{}}
-{"name":"init","props":{"initMs":10830}}
+{"name":"init","props":{"initMs":10591}}
 {"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following","reason":"focus"}}
 {"name":"home:feedDisplayed","props":{"index":0,"feedType":"following","feedUrl":"following"}}
 {"name":"nav:click","props":{"item":"profile","surface":"bottomBar"}}

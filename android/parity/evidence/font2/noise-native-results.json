@@ -10,7 +10,7 @@
   },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-10-22T00:11:21.581Z",
+  "createdAt": "2026-10-22T02:10:07.267Z",
   "rnDir": "out/font2/native/android",
   "nativeDir": "out/font2/native-r2/android",
   "screens": [
@@ -70,37 +70,37 @@
         },
         {
           "x": 0.84062,
-          "y": 0.24965,
+          "y": 0.2493,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.37465,
+          "y": 0.3743,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.49685,
+          "y": 0.4965,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.61905,
+          "y": 0.6187,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
           "x": 0.84062,
-          "y": 0.74125,
+          "y": 0.7409,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
@@ -393,9 +393,9 @@
         },
         {
           "x": 0.84062,
-          "y": 0.48109,
+          "y": 0.48074,
           "w": 0.12656,
-          "h": 0.02381,
+          "h": 0.02416,
           "reason": "relative timestamp (capture time)"
         },
         {
@@ -576,9 +576,9 @@
         },
         {
           "x": 0.83828,
-          "y": 0.39671,
+          "y": 0.39636,
           "w": 0.12656,
-          "h": 0.02416,
+          "h": 0.02451,
           "reason": "relative timestamp (capture time)"
         },
         {

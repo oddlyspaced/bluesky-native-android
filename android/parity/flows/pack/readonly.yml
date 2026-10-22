@@ -17,6 +17,20 @@ appId: ${APP_ID}
       id: "feedItem-by-alice.test"
     timeout: 60000
 - waitForAnimationToEnd
+# The first screenshot of a flow lands while Android is still fading the ScrollView's scrollbar,
+# which it awakens at first layout. React Native's feed is a ScrollView and gets one; a Compose
+# LazyColumn never draws one, so the fade decides 0.40% to 0.44% of this screen by itself. Every
+# later screenshot in every flow is taken after the fade: `thread` and `profile` here show no
+# scrollbar even though `thread` follows a scroll. Only the first was inconsistent.
+#
+# `waitForAnimationToEnd` does not cover it, because a timed alpha fade is not the kind of change
+# it samples for. This waits for a condition that never comes true, which is Maestro's idiom for a
+# fixed delay, so the screenshot records the settled screen the flow already means to record.
+# The missing indicator is still a difference and is still counted: PARITY.md difference 6.
+- extendedWaitUntil:
+    notVisible: "Following"
+    timeout: 2500
+    optional: true
 - takeScreenshot: home
 - scrollUntilVisible:
     element: "Thread root"

@@ -10,7 +10,7 @@
   },
   "threshold": 0.02,
   "fuzz": "5%",
-  "createdAt": "2026-10-22T00:39:42.385Z",
+  "createdAt": "2026-10-22T01:47:07.089Z",
   "rnDir": "out/base/rn/android",
   "nativeDir": "out/base/rn-r2/android",
   "screens": [
@@ -21,9 +21,9 @@
       "diff": "diffs/home.diff.png",
       "width": 1280,
       "height": 2856,
-      "diffPixels": 15912,
+      "diffPixels": 0,
       "totalPixels": 3655680,
-      "ratio": 0.004352678571428572,
+      "ratio": 0,
       "status": "pass",
       "masks": [
         {
