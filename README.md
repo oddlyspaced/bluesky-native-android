@@ -17,20 +17,20 @@ the same local server with fake accounts. Masked ratio is differing pixels after
 3,655,680 pixels per screen. Pass is at or below 1%, drift is 1% to 2% and needs a human signature,
 above 2% is a fail.
 
-**6 pass, 5 drift, 4 fail.**
+**6 pass, 9 drift, 0 fail.**
 
 | State | Screen | Raw | Masked | Status |
 |---|---|---|---|---|
-| base | home | 3.92% | **2.36%** | fail |
+| base | home | 3.48% | 1.92% | drift |
 | base | thread | 1.74% | 0.83% | pass |
 | base | profile | 4.30% | 0.95% | pass |
-| dark | home | 3.87% | **2.30%** | fail |
+| dark | home | 3.42% | 1.86% | drift |
 | dark | thread | 1.80% | 0.86% | pass |
 | dark | profile | 1.39% | 0.93% | pass |
-| font scale 2.0 | home | 4.24% | **2.32%** | fail |
+| font scale 2.0 | home | 3.84% | 1.93% | drift |
 | font scale 2.0 | thread | 2.91% | 1.71% | drift |
 | font scale 2.0 | profile | 5.28% | 1.66% | drift |
-| empty | home | 2.78% | **2.10%** | fail |
+| empty | home | 2.34% | 1.66% | drift |
 | empty | profile | 4.34% | 0.94% | pass |
 | after like and repost | home | 3.56% | 1.93% | drift |
 | after like and repost | thread | 2.28% | 1.24% | drift |
@@ -42,8 +42,9 @@ twice in one batch is pixel-identical after masks.
 
 **Between rounds, the same build moves by up to 0.44 points.** That is not in the figure above,
 which only measures one batch. Measured on `dark home`: 1.86% in one round and 2.30% in another,
-with nothing changed in between. All four remaining failures sit between 2.10% and 2.36% against a 2%
-gate, which is inside that spread, so those four verdicts are worth no more than the spread.
+with nothing changed in between. No screen is now above the gate, but nine are drift, and several sit close
+enough to it that the spread, not the port, would decide a re-run. Drift is not a pass: each one
+needs a written acceptance, and none has one.
 
 ## Events match
 
@@ -69,8 +70,9 @@ result worth re-running rather than reporting once.
 
 ## What this does not claim
 
-**Four screens fail and none is signed off.** None of the four is a behaviour difference. The one
-that was has been fixed.
+**No screen fails, and nothing is signed off.** Two defects were closed to get here, and one
+measurement error was corrected. Nine screens are drift, which needs a human signature this
+repository does not have.
 
 **`error home` was the real defect, and it is closed: 4.87% to 1.56%.** After a reseed React Native
 kept its end-of-feed block and this port drew blank space where it belongs, one region of 83,049
@@ -99,8 +101,22 @@ Native does not draw, and took the screen to 7.59%; that capture is why it is le
 instrumented React Native capture was pixel-identical to the committed baseline, so nothing about
 the comparison moved.
 
-**The four that remain are the same picture in the same place.** `base`, `dark`, `font scale 2.0`
-and `empty` home, between 2.10% and 2.36%. `parity/composition.py` grades every differing pixel by how
+**The four that used to fail were losing to a fading scrollbar.** `base`, `dark`, `font scale 2.0`
+and `empty` home sat between 2.10% and 2.36%, and the indicator column carried 0.40% to 0.44% on
+each: every one of them cleared the gate without it. It turned out not to be a steady difference
+at all. React Native draws it only on the **first** screenshot of a flow — `thread`, captured
+after a scroll in the same flow, has none, and no `profile` has one — because Android awakens the
+`ScrollView` scrollbar at first layout and then fades it, and `waitForAnimationToEnd` does not
+cover a timed alpha fade. The first screenshot of each flow was the one inconsistent capture in
+the suite, and it now waits for the fade, which is the settled screen every other screenshot
+already recorded. Both apps run the identical flow; neither app changed; the four predicted
+numbers came back exactly.
+
+This does not make the port draw a scroll indicator. It does not draw one, that stays listed as a
+difference, and the 0.40% to 0.44% it costs is recorded with it — the same treatment relative time
+gets, which is masked out of the ratio and written down as a difference.
+
+What is left on those four, between 1.66% and 1.93%: `parity/composition.py` grades every differing pixel by how
 far apart the two apps are and groups the strong ones into regions. On all four, only a quarter of
 the difference is strong, spread across 739 to 917 regions whose largest is about 1,000 pixels,
 three hundredths of one percent of the screen. A whole-image shift search over plus or minus three
