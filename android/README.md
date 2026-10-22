@@ -1,8 +1,14 @@
-# Native showcase (Bluesky slice): Android (Kotlin + Jetpack Compose)
+# Bluesky in Jetpack Compose: a native Android app ported from React Native
 
-A native Android port of a slice of the Bluesky social app (React Native, MIT, pinned commit `2bfb94d`).
-It is a public showcase of the Nativestarter Migration Pack. The app talks to a real AT Protocol server
-(the local Bluesky dev network). It contains no hard-coded posts.
+The Bluesky social app (React Native, MIT, pinned commit `2bfb94d`), ported to a native Android app
+in Kotlin and Jetpack Compose with the Nativestarter Migration Pack. It is a real app, not a set of
+screens in a harness: it builds, signs in, and talks to a real AT Protocol server (the local Bluesky
+dev network). It contains no mock data and no hard-coded posts.
+
+This build ports the app's foundation - design tokens, XRPC client, session, tab shell - and three
+of its screens: home feed, post thread and profile. The upstream app has 78 screens, and
+`plan/full-app-plan.md` is the plan for all of them. Tabs outside that slice show a labelled
+placeholder. It is a public showcase of the Pack.
 
 - applicationId, namespace and Kotlin package root: `io.nativestarter.showcase.bluesky`. The app does not use Bluesky's reverse domain or name as its identity (copycat and trademark risk; ASSETS.md section 3). Launcher label: "Native showcase".
 - Design mode: keep-design. The UI is built from the RN app's ALF tokens, not from Material 3 defaults. Two

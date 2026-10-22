@@ -2,7 +2,11 @@
 
 Every number in this file was measured with the commands below. Nothing is estimated. Where a result is not valid evidence, the row says so and gives the reason.
 
-Acceptance: **awaiting owner acceptance.**
+Acceptance: **accepted 2026-10-22 under the owner's 2% gate.** The owner set the acceptance
+threshold for this port at "max drift acceptable is 2%". No screen is above 2%, so every drift row
+is inside the accepted band. See `plan/owner-signoff.md`, which records what that decision is and
+what it does not cover: the owner bounded the set with a number rather than reviewing each diff
+image, and Groups B to E of that file are still unsigned.
 
 ## Verdict
 
@@ -14,16 +18,23 @@ Acceptance: **awaiting owner acceptance.**
   against 21; the re-run of that round matched at 21 against 21.
 - **The within-batch noise floor is 0 px** on every state, for both apps: the same app captured
   twice in one round is pixel-identical after masks.
-- **Between rounds, the same build moves by up to 0.44 points.** That is not in the noise floor
-  above, which only measures one batch. Measured on `dark home`: 1.86% in one round and 2.30% in
-  another, with no change to the app in between. `base home` was 2.36% in two rounds. Any screen
-  within about half a point of the 2% gate can therefore land either side of it, and all four
-  remaining failures are in that band. A verdict on those screens is worth no more than the spread.
+- **Between rounds, the masked results now reproduce exactly.** A full six-state round on
+  2026-10-22 returned the same `diffPixels` for all 15 screens as the round before it, on a
+  different day: `base home` 70,182 px both times, `dark home` 68,173 px, every other screen
+  likewise. The raw, unmasked counts moved by up to 3,580 px, which is the dynamic content the
+  masks exist to cover.
+- **The 0.44-point between-round spread was the scrollbar, not noise.** This bullet used to report
+  that the same build moved by up to 0.44 points between rounds, measured on `dark home` at 1.86%
+  in one round and 2.30% in another. That spread had a cause: whether the first screenshot of the
+  flow caught Android's ScrollView scrollbar mid-fade (difference 6). Once the flows waited for the
+  settled screen, it went away. The earlier conclusion drawn from it - that a verdict on a screen
+  near the gate "is worth no more than the spread" - no longer holds, because the spread is 0 px.
 - **No screen is above the gate.** Two real defects closed it: `error home` went from 4.87% to
   **1.56%** when the refresh defect below was fixed, and the four home screens that sat between
   2.10% and 2.36% came down to 1.66%-1.93% once the first screenshot of a flow stopped catching
   Android's ScrollView scrollbar mid-fade (difference 6). Nine screens are drift, and **drift is
-  not a pass**: each one needs a written acceptance that does not exist yet.
+  not a pass**: each one needs a written acceptance, and each now has one (the owner's 2% gate of
+  2026-10-22, recorded in `plan/owner-signoff.md`).
 - **The scroll indicator was the whole of the remaining gap. It was a capture artefact, and the
   port now draws one anyway** (difference 6). Masked differing pixels in its column
   (x >= 1264), measured before the flows were corrected:
